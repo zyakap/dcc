@@ -56,7 +56,7 @@ class ClientEmployerAdmin(admin.ModelAdmin):
 
 @admin.register(ClientBankAccount)
 class ClientBankAccountAdmin(admin.ModelAdmin):
-    list_display = ('client', 'bank_name', 'account_number')
+    list_display = ('client', 'bank', 'account_number')
     search_fields = ('client__first_name', 'client__last_name', 'account_number')
-    list_filter = ('bank_name',)
+    list_filter = ('bank',)
     readonly_fields = ('created_at', 'updated_at')
