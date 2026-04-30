@@ -1,0 +1,28 @@
+<!-- add_business.html -->
+{% extends "admin_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %} Upload Complete {% endblock %}
+
+{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Client {% endblock %}
+{% block dashboard_title %} Upload Records {% endblock %}
+
+
+{% block content %}
+
+    
+    
+    
+    <div class="card p-3">
+      <h3>Thank you for upload your data</h3>
+      <p>We will add each record to our database after our extensive reivew of every record.</p>
+    </div>
+
+  <!-- Content Ends Here -->
+
+{% endblock %}
+
+
+
+

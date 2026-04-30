@@ -1,0 +1,72 @@
+<!-- add_Client.html -->
+{% extends "dashboard_base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %} Client Records{% endblock %}
+
+
+
+{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Records {% endblock %}
+{% block dashboard_title %} Client Records {% endblock %}
+
+
+{% block content %}
+  <!-- Content Ends Here -->
+  
+    <div class="row">
+        <div class="col-lg-12">
+
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">DCC Client Records</h5>
+              <p>This is the list of all records in the database</p>
+
+               <!-- Table with stripped rows -->
+               <table class="table datatable">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>C.Rating</th>
+                    <th>Status</th>
+                    
+                    <th>Email</th>
+                    <th>Mobile</th>
+                    <th>Owner</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for client in clients %}
+                    <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                        <td>{{ client.first_name }} {{ client.last_name }}</td>
+                        <td>{{ client.credit_rating }}</td>
+                        <td>{{ client.dcc_status }}</td>
+                        
+                        <td>{{ client.email }}</td>
+                        <td>{{ client.mobile1 }}</td>
+                        <td>{{ client.user_profile.organisation }}</td>
+                        <td>  
+                          <a href="{% url 'client_record_detail' client.id %}">
+                          <button type="button" class="btn btn-sm btn-primary m-0 py-1">
+                            View Details
+                          </button>
+                          </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+              </table>
+              <!-- End Table with stripped rows -->
+
+            </div>
+          </div>
+
+        </div>
+    </div>
+   
+
+{% endblock %}
+
+

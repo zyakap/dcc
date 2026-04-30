@@ -1,0 +1,378 @@
+{% load static %}
+{% load site_filter %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  <title>{% block title %} {% endblock%}</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+
+  <!-- Favicons -->
+  <link href="{% static 'clientimgs/favicon.png' %}" rel="icon">
+  <link href="{% static 'clientimgs/apple-touch-icon.png' %}" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="{% static 'admin/assets/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'admin/assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+  <link href="{% static 'admin/assets/vendor/boxicons/css/boxicons.min.css' %}" rel="stylesheet">
+  <link href="{% static 'admin/assets/vendor/quill/quill.snow.css' %}" rel="stylesheet">
+  <link href="{% static 'admin/assets/vendor/quill/quill.bubble.css' %}" rel="stylesheet">
+  <link href="{% static 'admin/assets/vendor/remixicon/remixicon.css' %}" rel="stylesheet">
+  <link href="{% static 'admin/assets/vendor/simple-datatables/style.css' %}" rel="stylesheet">
+
+  
+
+  {% block css %} {% endblock%}
+  <!-- Custom Styles -->
+  <link href="{% static 'custom/css/style.css' %}" rel="stylesheet">
+
+  <!-- =======================================================
+  * Template Name: NiceAdmin
+  * Updated: Mar 09 2023 with Bootstrap v5.2.3
+  * Template URL: https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/
+  * Author: BootstrapMade.com
+  * License: https://bootstrapmade.com/license/
+  ======================================================== -->
+  <!-- Template Main CSS File -->
+  <link href="{% static 'admin/assets/css/style.css' %}" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- ======= Header ======= -->
+  <header id="header" class="header fixed-top d-flex align-items-center">
+
+    <div class="d-flex align-items-center justify-content-between">
+      <a href="{% url 'dashboard' %}" class="logo d-flex align-items-center">
+        <img src="{% static 'clientimgs/logo.png' %}" alt="">
+        <span class="d-none d-lg-block">{{ sn|sitename }}</span>
+      </a>
+      <i class="bi bi-list toggle-sidebar-btn"></i>
+    </div><!-- End Logo -->
+
+    
+
+    <nav class="header-nav ms-auto">
+      <ul class="d-flex align-items-center">
+
+
+
+        <li class="nav-item dropdown pe-3">
+
+          <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+            
+            <span class="d-none d-md-block dropdown-toggle ps-2">{{ user.first_name }} {{ user.last_name }}</span>
+          </a><!-- End Profile Iamge Icon -->
+
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+            <li class="dropdown-header">
+              <h6>{{ user.first_name }} {{ user.last_name }}</h6>
+              <span>{{ user.role }} | {{ user.organisation }} </span>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="{% url 'profile' %}">
+                <i class="bi bi-person"></i>
+                <span>My Profile</span>
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="#">
+                <i class="bi bi-gear"></i>
+                <span>Account Settings</span>
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="#">
+                <i class="bi bi-question-circle"></i>
+                <span>Need Help?</span>
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="{% url 'logout_user' %}">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Log Out</span>
+              </a>
+            </li>
+
+          </ul><!-- End Profile Dropdown Items -->
+        </li><!-- End Profile Nav -->
+
+      </ul>
+    </nav><!-- End Icons Navigation -->
+
+  </header><!-- End Header -->
+
+  <!-- ======= Sidebar ======= -->
+  <aside id="sidebar" class="sidebar">
+
+    <ul class="sidebar-nav" id="sidebar-nav">
+      <li class="nav-item">
+        <a class="nav-link {% if nav == 'database_search' or nav == 'add_client'  or nav == 'add_business' %} active {% endif %}" data-bs-target="#create-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-plus-circle"></i><span>New</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="create-nav" class="nav-content collapse {% if nav == 'database_search' or nav == 'add_client' or nav == 'add_business' %} show {% endif %}" data-bs-parent="#sidebar-nav">
+          <li>
+            <a class="nav-link {% if nav == 'database_search' %} active bg-primary text-white {% endif %}" href="{% url 'database_search' %}">
+              <i class="bi bi-circle"></i><span>Search</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link {% if nav == 'add_client' %} active bg-primary text-white {% endif %}" href="{% url 'add_client' %}">
+              <i class="bi bi-circle"></i><span>Record - Customer</span>
+            </a>
+            </li>
+          <li>
+            <a class="nav-link {% if nav == 'add_business' %} active bg-primary text-white {% endif %}" href="{% url 'add_business' %}">
+              <i class="bi bi-circle"></i><span>Record - Business</span>
+            </a>
+          </li>
+          
+          
+        </ul>
+      </li><!-- End Components Nav -->
+
+      <li class="nav-item">
+        <a class="nav-link {% if nav == 'dashboard' %} active bg-primary text-white {% endif %}" href="{% url 'dashboard' %}">
+          <i class="bi bi-grid {% if nav == 'dashboard' %} text-white {% endif %}"></i>
+          <span>Dashboard</span>
+        </a>
+      </li><!-- End Dashboard Nav -->
+
+     
+
+      <li class="nav-item">
+        <a class="nav-link {% if nav == 'client_records' or nav == 'client_records_under_review' or nav == 'business_records' %} active {% endif %}" data-bs-target="#bets-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-menu-button-wide"></i><span>My Records</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="bets-nav" class="nav-content collapse {% if nav == 'client_records' or nav == 'client_records_under_review' or nav == 'business_records' %} show {% endif %}" data-bs-parent="#sidebar-nav">
+          
+          <li>
+            <a class="nav-link {% if nav == 'client_records' %} active bg-primary text-white {% endif %}" href="{% url 'client_records' %}">
+              <i class="bi bi-circle"></i><span>My Client Records</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link {% if nav == 'business_records' %} active bg-primary text-white {% endif %}" href="{% url 'business_records' %}">
+              <i class="bi bi-circle"></i><span>My Business Records</span>
+            </a>
+          </li>
+
+          <li>
+            <a class="nav-link {% if nav == 'client_records_under_review' %} active bg-primary text-white {% endif %}" href="{% url 'client_records_under_review' %}">
+              <i class="bi bi-circle"></i><span>Records Under Review</span>
+            </a>
+          </li>
+          
+          
+        </ul>
+      </li><!-- End Components Nav -->
+
+      <li class="nav-item">
+        <a class="nav-link {% if nav == 'database_overview' or nav == 'client_records_dcc'  or nav == 'business_records_dcc' %} active {% endif %}" data-bs-target="#credits-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-gem"></i><span>Database</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="credits-nav" class="nav-content collapse {% if nav == 'client_records_dcc' or nav == 'business_records_dcc' or nav == 'database_overview' %} show {% endif %}" data-bs-parent="#sidebar-nav">
+          <li>
+            <a class="nav-link {% if nav == 'database_overview' %} active bg-primary text-white {% endif %}" href="{% url 'database_overview' %}">
+              <i class="bi bi-circle"></i><span>Overview</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link {% if nav == 'client_records_dcc' %} active bg-primary text-white {% endif %}" href="{% url 'client_records_dcc' %}">
+              <i class="bi bi-circle"></i><span>Client Records</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-link {% if nav == 'business_records_dcc' %} active bg-primary text-white {% endif %}" href="{% url 'business_records_dcc' %}">
+              <i class="bi bi-circle"></i><span>Business Records</span>
+            </a>
+          </li>
+          
+        </ul>
+      </li><!-- End Icons Nav -->
+
+      
+
+      
+
+      <li class="nav-heading">Pages</li>
+
+      <li class="nav-item">
+        <a class="nav-link {% if nav == 'upload_records' %} active bg-primary text-white {% endif %}" href="{% url 'upload_records' %}">
+          <i class="bi bi-person {% if nav == 'upload_records' %} text-white {% endif %}"></i>
+          <span>Upload Records</span>
+        </a>
+      </li><!-- End Profile Page Nav -->
+
+      <li class="nav-item">
+        <a class="nav-link {% if nav == 'profile' %} active bg-primary text-white {% endif %}" href="{% url 'profile' %}">
+          <i class="bi bi-person {% if nav == 'profile' %} text-white {% endif %}"></i>
+          <span>Profile</span>
+        </a>
+      </li><!-- End Profile Page Nav -->
+
+      
+
+      
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'logout_user' %}">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>Logout</span>
+        </a>
+      </li><!-- End Logout Page Nav -->
+
+      
+
+    </ul>
+
+  </aside><!-- End Sidebar-->
+
+
+
+  <main id="main" class="main">
+    
+    <!-- MEssages display start -->
+    
+      {% if messages %}
+          {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible text-dark mt-3" role="alert">
+                  <span class="text-md">{{ message }}</span>
+                  <button type="button" class="btn-close text-lg py-3 opacity-10" data-bs-dismiss="alert" aria-label="Close">
+                  
+                  </button>
+              </div>
+          {% endfor %}
+      {% endif %}
+
+      {% if swal == 'swal' %}
+          {% if messages %}
+          <!-- SWEET ALERT -->
+          <script src="{% static 'js/sweetalert2.min.js' %}"></script>
+          {% for message in messages %} 
+              {% if message.tags == 'success' %}
+              <script>
+              Swal.fire({
+                  icon: "success",
+                  text: "{{ message }}",
+              });
+              </script>
+              {% elif message.tags == 'error'%}
+              <script>
+              Swal.fire({
+                  icon: "error",
+                  text: "{{ message }}",
+              });
+              </script>
+              {% elif message.tags == 'info'%}
+              <script>
+              Swal.fire({
+                  icon: "info",
+                  text: "{{ message }}",
+              });
+              </script>
+              {% elif message.tags == 'warning'%}
+              <script>
+              Swal.fire({
+                  icon: "warning",
+                  text: "{{ message }}",
+              });
+              </script>
+              {% endif %} 
+          {% endfor %}
+          {% endif %} 
+      {% endif %}
+    <!-- Messages End -->
+    
+    
+   
+    
+
+    <div class="pagetitle">
+      <h1>{% block dashboard_title %} {% endblock %}</h1>
+      <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="#">{% block breadcrumb %} {% endblock %}</a></li>
+          <li class="breadcrumb-item active">{% block breadcrumb_active %} {% endblock %}</li>
+        </ol>
+      </nav>
+    </div><!-- End Page Title -->
+
+    
+
+    <section class="section dashboard">
+      <!-- Content must be in a row in the template -->
+      {% block content %} {% endblock %}
+      
+    </section>
+
+  </main><!-- End #main -->
+
+  <!-- ======= Footer ======= -->
+  <footer id="footer" class="footer">
+    <div class="copyright">
+      &copy; Copyright <strong><span>{{sn|sitename }}</span></strong>. All Rights Reserved
+    </div>
+    <div class="credits">
+      <!-- All the links in the footer should remain intact. -->
+     Designed by <a href="https://webmasta.com.pg/">WEBMASTA</a>
+    </div>
+  </footer><!-- End Footer -->
+
+  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Vendor JS Files -->
+  <script src="{% static 'admin/assets/vendor/apexcharts/apexcharts.min.js' %}"></script>
+  <script src="{% static 'admin/assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'admin/assets/vendor/chart.js/chart.umd.js' %}"></script>
+  <script src="{% static 'admin/assets/vendor/echarts/echarts.min.js' %}"></script>
+  <script src="{% static 'admin/assets/vendor/quill/quill.min.js' %}"></script>
+  <script src="{% static 'admin/assets/vendor/simple-datatables/simple-datatables.js' %}"></script>
+  <script src="{% static 'admin/assets/vendor/tinymce/tinymce.min.js' %}"></script>
+  <script src="{% static 'admin/assets/vendor/php-email-form/validate.js' %}"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Template Main JS File -->
+  <script src="{% static 'admin/assets/js/main.js' %}"></script>
+
+  {% block scripts %}
+  {% endblock %}
+
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+

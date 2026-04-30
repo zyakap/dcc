@@ -1,0 +1,95 @@
+{% extends 'website/website_base.html' %}
+{% load static %}
+
+{% block title %} DCC | Submit Defaults List {% endblock %}
+{% block css %}
+<link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %} 
+
+<!-- ======= Hero Section ======= -->
+<section id="hero" class="d-flex align-items-center bg-secondary" style="background-image: url('{% static 'web/img/header_bg1.png' %}');">
+    <div class="container my-3 py-3">
+      <div class="row">
+        <div class="col-lg-12 d-flex flex-column justify-content-center pt-4 pt-lg-0 order-2 order-lg-1" data-aos="fade-up" data-aos-delay="200">
+          <h1 class="text-center py-3"><u>SUBMIT DEFAULTS LIST</u></h1>
+          <h5 class="text-center">Submit your defaults list for us to list them here. This is a list of people who owe you money, 
+            and never repaid.</h5>
+        
+        </div>
+      </div>
+    </div>
+</section><!-- End Hero -->
+
+<!-- ======= Clients Section ======= -->
+<section id="listings" class="listings my-3">
+    <div class="container">
+        <h4 class="p-3">Please download this Excel Spreadsheet template:<br>
+        <a href="{% static 'website/files/DCC_Default_Upload_Template.xlsx' %}" class="btn btn-primary btn-sm py-1 my-0">
+            <i class="bi bi-download"></i> <i class="bi bi-filetype-xlsx"></i> Download Excel Template</a>
+        </h4>
+        <p class="py-3">Please fill in the template and upload in the form below.</p>
+
+        </h4>
+        <div class="row">
+            <div class="col-lg-12 d-flex flex-column justify-content-center pt-4 pt-lg-0 order-2 order-lg-1" data-aos="fade-up" data-aos-delay="200">
+                <div class="card p-3">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="business_name">Name of Business</label>
+                            <input type="text" class="form-control" id="business_name" name="business_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Full Name of Contact Person</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="email">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="phone">Phone Number</label>
+                            <input type="text" class="form-control" id="phone" name="phone">
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="address">Address</label>
+                            <textarea class="form-control" id="address" name="address"></textarea>
+                        </div>
+                        <div class="form-group mt-2">
+                            <label for="mobile">Upload excel file:</label>
+                            <input type="file" class="form-control" id="defaults_list" name="defaults_list" required>
+                        </div>
+
+                        <div class="form-group mt-2">
+                            <label for="comments">Any comments?</label>
+                            <textarea class="form-control" id="comments" name="comments"></textarea>
+                        </div>
+                        <div class="text-end text-right">
+                            <button type="submit" class="btn btn-primary mt-3">Submit</button>
+                        </div>
+
+                        
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section><!-- End Clients Section -->
+
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#myTable').DataTable();
+    });
+</script>
+
+{% endblock %}

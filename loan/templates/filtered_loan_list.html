@@ -1,0 +1,72 @@
+<!-- add_Client.html -->
+{% extends "dashboard_base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %} Loan Records{% endblock %}
+
+
+
+{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Records {% endblock %}
+{% block dashboard_title %} Loan Records {% endblock %}
+
+
+{% block content %}
+  <!-- Content Ends Here -->
+
+  
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card bg-secondary">
+          <div class="card-body pt-3">
+                <h2 class="text-light">{{ count }} {{ descriptor }}</h2>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  
+    <div class="row">
+        <div class="col-lg-12">
+          
+          <div class="card">
+            <div class="card-body">
+              
+               <!-- Table with stripped rows -->
+               <table class="table datatable">
+                <thead>
+                  <tr>
+                    <th>Borrower</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                   
+                    <th>Status</th>
+                    <th>Total Outstanding</th>
+                    
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for loan in loans %}
+                    <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                        <td>{{ loan.owner.first_name }} {{ loan.owner.last_name }}</td>
+                        <td>{{ loan.date }}</td>
+                        <td>{{ loan.amount }}</td>
+                        <td>{{ loan.status }}</td>
+                        <td>{{ client.total_outstanding }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+              </table>
+              <!-- End Table with stripped rows -->
+
+            </div>
+          </div>
+
+        </div>
+    </div>
+   
+
+{% endblock %}
+
+

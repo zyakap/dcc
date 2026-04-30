@@ -1,0 +1,156 @@
+<!-- add_business.html -->
+{% extends "dashboard_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %} Client Record{% endblock %}
+
+
+
+{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Client Record {% endblock %}
+{% block dashboard_title %} View Client Record {% endblock %}
+
+
+
+{% block content %}
+  <!-- Content Ends Here -->
+
+  
+    <h3 class="text-primary">{{ client.first_name }} {{ client.last_name }}</h3>
+    <hr>
+    <div class="row">
+        <div class="col-4">
+            <div class="card p-2 {% if client.credit_status == 'GOOD' %}bg-success{% else %} bg-danger {% endif %}">
+                <span class="text-light">Credit Status:</span> <strong class="text-warning">{{ client.public_category }}</strong>
+            </div>
+            
+        </div>
+        <div class="col-4">
+            <div class="card p-2">
+            Credit Rating: <strong class="text-primary">{{ client.credit_rating }}/100</strong>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card p-2">
+            Updated at: <strong class="text-primary">{{ client.updated_at }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card p-2">
+                <div class="card-header">Listed By:</div>
+                <p class="m-0 p-1"><span class="text-primary">Name of Organisation:</span> {{ client.user_profile.organisation }}</p>
+                <p class="m-0 p-1"><span class="text-primary">Phone:</span> {{ client.user_profile.mobile }}</p>
+                <p class="m-0 p-1"><span class="text-primary">Email:</span> {{ client.user_profile.email }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-4">
+            <div class="card">
+                <div class="card-header">Client Details</div>
+                <div class="card-body pt-2">
+                    <p class="m-0 py-1 px-0">First Name: <strong>{{ client.first_name }}</strong></p>
+                    <p class="m-0 py-1 px-0">Last Name: <strong>{{ client.last_name }}</strong></p>
+                    <p class="m-0 py-1 px-0">Gender: <strong>{{ client.gender }}</strong></p>
+                    <p class="m-0 py-1 px-0">Date of Birth: <strong>{{ client.date_of_birth }}</strong></p>
+                    <p class="m-0 py-1 px-0">NID Number: <strong>{{ client.id_number }}</strong></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card">
+                <div class="card-header">Contact Details</div>
+                <div class="card-body pt-2">
+                    <p class="m-0 py-1 px-0">Mobile : <strong>{{ client.mobile }}</strong></p>
+                    <p class="m-0 py-1 px-0">Email : <strong>{{ client.email  }}</strong></p>
+                    
+                    {% for contact in client.client_contact.all %}
+                    
+                    <p class="m-0 py-1 px-0">Mobile 1: <strong>{{ contact.mobile1 }}</strong></p>
+                    <p class="m-0 py-1 px-0">Mobile 2: <strong>{{ contact.mobile1  }}</strong></p>
+                    <p class="m-0 py-1 px-0">Email 1: <strong>{{ contact.email1 }}</strong></p>
+                    <p class="m-0 py-1 px-0">Email 2: <strong>{{ contact.email2 }}</strong></p>
+                    {% endfor %}
+                    {% for address in client.client_address.all %}
+                    <p class="m-0 py-1 px-0">Residential Address: <strong>{{ address.residential_address }}</strong></p>
+                    {% endfor %}
+                </div>  
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card">
+                <div class="card-header">Employment Details</div>
+                <div class="card-body pt-2">
+                     {% for employer in client.client_employer.all %}
+                    <p class="m-0 py-1 px-0">Employer: <strong>{{ employer.sector }}</strong></p>
+                    <p class="m-0 py-1 px-0">Occupation: <strong>{{ employer.job_title }}</strong></p>
+                    
+                    <p class="m-0 py-1 px-0">Employer: <strong>{{ employer.employer }}</strong></p>
+
+                    <p class="m-0 py-1 px-0">Office: <strong>{{ employer.office }}</strong></p>
+                    <p class="m-0 py-1 px-0">Work Phone: <strong>{{ employer.work_phone }}</strong></p>
+                    <p class="m-0 py-1 px-0">Work Email: <strong>{{ employer.work_email }}</strong></p>
+                    {% endfor %}
+                    
+                    
+                   
+                </div>
+        </div>
+    </div>
+
+    
+
+    <h4 class="section-title">Loan Records</h4>
+    <table border="1" class="table table-striped">
+        <thead>
+            <tr>
+                <th>Loan Ref</th>
+                <th>Status</th>
+                <th>Company</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Term</th>
+                <th>Repayment</th>
+                <th>Paid</th>
+                <th>Outstanding</th>
+                
+                
+                <th>Legal Status</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+            
+                <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                    <td>{{ loan.ref }}</td>
+                    <td>{{ loan.status }}</td>
+                    <td>{{ loan.lender.organisation }}</td>
+                    <td>{{ loan.amount }}</td>
+                    <td>{{ loan.date }}</td>
+                    <td>{{ loan.term }}</td>
+                    <td>{{ loan.repayment }}</td>
+                    <td>{{ loan.paid }}</td>
+                    <td>{{ loan.total_outstanding }}</td>
+                    <td>{{ loan.legal_status }}</td>
+                    <td>{{ loan.notes }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    
+    
+    <h4 class="section-title text-dark mt-3">Public Notices</h4>
+    <p>No public notices have been recorded in the system.</p>
+
+    <h4 class="section-title text-dark mt-3">General Information</h4>
+    <p>No general information has been recorded in the system.</p>
+
+
+
+{% endblock %}

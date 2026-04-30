@@ -1,0 +1,42 @@
+<!-- add_business.html -->
+{% extends "admin_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %} Upload Client Record {% endblock %}
+
+{% block breadcrumb %} <a href="{% url 'admin_dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Client {% endblock %}
+{% block dashboard_title %} Upload Records {% endblock %}
+
+
+{% block content %}
+
+    
+    <p>Select .xlsx file to upload. If you do not have the file yet, <a href="#">click to download excel template.</a></p>
+    <hr>
+    <div class="card p-3">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <h2>Upload Excel File</h2>
+        <div class="form-group mb-3">
+          <label for="userprofile_luid">Enter User LUID:</label>
+          <input type="text" class="form-control" id="userprofile_luid" name="userprofile_luid">
+        </div>
+        <div class="form-group mb-3">
+          <label for="recordsexceldata">Select .xlsx file with data:</label>
+          <input type="file" class="form-control" id="recordsexceldata" name="recordsexceldata">
+        </div>
+        <div class="text-end">
+          <a href="#" class="btn btn-secondary">CANCEL</a>
+          <button type="submit" class="btn btn-primary px-4">UPLOAD</button>
+        </div>
+      </form>
+    </div>
+
+  <!-- Content Ends Here -->
+
+{% endblock %}
+
+
+
+

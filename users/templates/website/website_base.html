@@ -1,0 +1,274 @@
+{% load static %}
+<!Doctype html>
+<html class="no-js" lang="zxx">
+    <head>
+        <!-- Meta Tags -->
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="keywords" content="Site keywords here">
+		<meta name="description" content="">
+		<meta name='copyright' content=''>
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		
+		<!-- Title -->
+        <title>{% block title %}{% endblock %}</title>
+		
+		<!-- Favicon -->
+        <link rel="icon" href="{% static 'web/img/favicon.png' %}">
+		
+		<!-- Google Fonts -->
+		<link href="https://fonts.googleapis.com/css?family=Poppins:200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i&display=swap" rel="stylesheet">
+
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="{% static 'web/css/bootstrap.min.css' %}">
+		<!-- Nice Select CSS -->
+		<link rel="stylesheet" href="{% static 'web/css/nice-select.css' %}">
+		<!-- Font Awesome CSS -->
+        <link rel="stylesheet" href="{% static 'web/css/font-awesome.min.css' %}">
+		<!-- icofont CSS -->
+        <link rel="stylesheet" href="{% static 'web/css/icofont.css' %}">
+		<!-- Slicknav -->
+		<link rel="stylesheet" href="{% static 'web/css/slicknav.min.css' %}">
+		<!-- Owl Carousel CSS -->
+        <link rel="stylesheet" href="{% static 'web/css/owl-carousel.css' %}">
+		<!-- Datepicker CSS -->
+		<link rel="stylesheet" href="{% static 'web/css/datepicker.css' %}">
+		<!-- Animate CSS -->
+        <link rel="stylesheet" href="{% static 'web/css/animate.min.css' %}">
+		<!-- Magnific Popup CSS -->
+        <link rel="stylesheet" href="{% static 'web/css/magnific-popup.css' %}">
+		
+		<!-- Medipro CSS -->
+        <link rel="stylesheet" href="{% static 'web/css/normalize.css' %}">
+        <link rel="stylesheet" href="{% static 'web/style.css' %}">
+        <link rel="stylesheet" href="{% static 'web/css/responsive.css' %}">
+		
+        <style>
+            .logoimg{
+                max-height: 50px;
+            }
+        </style>
+
+        {% block css %}
+        {% endblock %}
+		
+    </head>
+    <body>
+	
+		<!-- Preloader -->
+		<div class="preloader" style="background-color: black; opacity: 0.8;">
+			<div class="loader">
+				<img src="{% static 'web/img/logo.png' %}" class="logoimg" alt="Preloader Logo">
+			</div>
+		</div>
+		<!-- End Preloader -->
+		
+		
+	
+		<!-- Header Area -->
+		<header class="header" >
+			<!-- Topbar -->
+			<div class="topbar">
+				<div class="container">
+					<div class="row">
+						<div class="col-lg-6 col-md-5 col-12">
+							<!-- Contact -->
+							<ul class="top-link">
+								<li><a href="#">Terms & Conditions</a></li>
+								<li><a href="#">Privacy Policy</a></li>
+								<li><a href="#">FAQ</a></li>
+							</ul>
+							<!-- End Contact -->
+						</div>
+						<div class="col-lg-6 col-md-7 col-12">
+							<!-- Top Contact -->
+							<ul class="top-contact">
+								<li><i class="fa fa-phone"></i>+675 78222774</li>
+								<li><i class="fa fa-envelope"></i><a href="mailto:info@dc.com.pg">info@dc.com.pg</a></li>
+							</ul>
+							<!-- End Top Contact -->
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- End Topbar -->
+			<!-- Header Inner -->
+			<div class="header-inner">
+				<div class="container">
+					<div class="inner">
+						<div class="row">
+							<div class="col-lg-3 col-md-3 col-12">
+								<!-- Start Logo -->
+								<div class="logo">
+									<a href="{% url 'home' %}"><img src="{% static 'web/img/logo.png' %}" class="logoimg" alt="#"></a>
+								</div>
+								<!-- End Logo -->
+								<!-- Mobile Nav -->
+								<div class="mobile-nav"></div>
+								<!-- End Mobile Nav -->
+							</div>
+							<div class="col-lg-7 col-md-9 col-12">
+								<!-- Main Menu -->
+								<div class="main-menu">
+									<nav class="navigation">
+										<ul class="nav menu">
+											<li class="{% if nav == 'home' %}active{% endif %}"><a href="{% url 'home' %}">Home <i class="icofont-rounded-down"></i></a></li>
+											<li class="{% if nav == 'front_search' %}active{% endif %}"><a href="{% url 'front_search' %}">Search</a></li>
+											<li class="{% if nav == 'public_listing' %}active{% endif %}"><a href="{% url 'public_listing' %}">Defaults List</a></li>
+                                            <li class="{% if nav == 'submit_default_list' %}active{% endif %}"><a href="{% url 'submit_default_list' %}">Submit Defaults</a></li>
+											<li class="{% if nav == 'request_delist' %}active{% endif %}"><a href="{% url 'request_delist' %}">Delist</a></li>
+										</ul>
+									</nav>
+								</div>
+								<!--/ End Main Menu -->
+							</div>
+							<div class="col-lg-2 col-12">
+								
+								<div class="get-quote">
+									<a href="{% url 'login_user' %}" class="btn">Login</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/ End Header Inner -->
+		</header>
+		<!-- End Header Area -->
+		
+		{% block content %}
+        {% endblock %}
+		
+		<!-- Footer Area -->
+		<footer id="footer" class="footer ">
+			<!-- Footer Top -->
+			<div class="footer-top">
+				<div class="container">
+					<div class="row">
+						<div class="col-lg-3 col-md-6 col-12">
+							<div class="single-footer">
+								<h2>About Us</h2>
+								<p>We are credit rating and credit data management agency</p>
+								<!-- Social -->
+								<ul class="social">
+									<li><a href="#"><i class="icofont-facebook"></i></a></li>
+									<li><a href="#"><i class="icofont-google-plus"></i></a></li>
+									<li><a href="#"><i class="icofont-twitter"></i></a></li>
+									<li><a href="#"><i class="icofont-vimeo"></i></a></li>
+									<li><a href="#"><i class="icofont-pinterest"></i></a></li>
+								</ul>
+								<!-- End Social -->
+							</div>
+						</div>
+						<div class="col-lg-3 col-md-6 col-12">
+							<div class="single-footer f-link">
+								<h2>Quick Links</h2>
+								
+										<ul>
+											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Consulting</a></li>
+											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Finance Management</a></li>
+											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Debt Recovery</a></li>
+											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Credit Rating</a></li>
+											</ul>
+								
+							</div>
+						</div>
+						<div class="col-lg-3 col-md-6 col-12">
+							<div class="single-footer">
+								<h2>Open Hours</h2>
+								<p>We are online 24/7 but if you wish to visit in person, our opening hours are:</p>
+								<ul class="time-sidual">
+									
+									<li class="day">Monday-Friday <span>9.00-4.00</span></li>
+									<li class="day">Saturday-Sunday <span>CLOSED</span></li>
+								</ul>
+							</div>
+						</div>
+						<div class="col-lg-3 col-md-6 col-12">
+							<div class="single-footer f-link">
+								
+								<h2>Important Links</h2>
+								
+								<ul>
+									<li><a href="{% url 'submit_default_list' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Submit Defaults</a></li>
+									<li><a href="{% url 'request_delist' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Request Delist</a></li>
+									<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Terms and Conditions</a></li>
+									<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Privacy Policy</a></li>	
+								</ul>
+								
+
+
+
+
+
+
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/ End Footer Top -->
+			<!-- Copyright -->
+			<div class="copyright">
+				<div class="container">
+					<div class="row">
+						<div class="col-lg-12 col-md-12 col-12">
+							<div class="copyright-content">
+								<p>© Copyright 2023  |  All Rights Reserved by <a href="{% url 'home' %}" target="_blank">Dinau Control</a>. Developed by <a href="https://www.webmasta.com.pg" target="_blank">WEBMASTA.</a></p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--/ End Copyright -->
+		</footer>
+		<!--/ End Footer Area -->
+		
+		<!-- jquery Min JS -->
+        <script src="{% static 'web/js/jquery.min.js' %}"></script>
+		<!-- jquery Migrate JS -->
+		<script src="{% static 'web/js/jquery-migrate-3.0.0.js' %}"></script>
+		<!-- jquery Ui JS -->
+		<script src="{% static 'web/js/jquery-ui.min.js' %}"></script>
+		<!-- Easing JS -->
+        <script src="{% static 'web/js/easing.js' %}"></script>
+		<!-- Color JS -->
+		<script src="{% static 'web/js/colors.js' %}"></script>
+		<!-- Popper JS -->
+		<script src="{% static 'web/js/popper.min.js' %}"></script>
+		<!-- Bootstrap Datepicker JS -->
+		<script src="{% static 'web/js/bootstrap-datepicker.js' %}"></script>
+		<!-- Jquery Nav JS -->
+        <script src="{% static 'web/js/jquery.nav.js' %}"></script>
+		<!-- Slicknav JS -->
+		<script src="{% static 'web/js/slicknav.min.js' %}"></script>
+		<!-- ScrollUp JS -->
+        <script src="{% static 'web/js/jquery.scrollUp.min.js' %}"></script>
+		<!-- Niceselect JS -->
+		<script src="{% static 'web/js/niceselect.js' %}"></script>
+		<!-- Tilt Jquery JS -->
+		<script src="{% static 'web/js/tilt.jquery.min.js' %}"></script>
+		<!-- Owl Carousel JS -->
+        <script src="{% static 'web/js/owl-carousel.js' %}"></script>
+		<!-- counterup JS -->
+		<script src="{% static 'web/js/jquery.counterup.min.js' %}"></script>
+		<!-- Steller JS -->
+		<script src="{% static 'web/js/steller.js' %}"></script>
+		<!-- Wow JS -->
+		<script src="{% static 'web/js/wow.min.js' %}"></script>
+		<!-- Magnific Popup JS -->
+		<script src="{% static 'web/js/jquery.magnific-popup.min.js' %}"></script>
+		<!-- Counter Up CDN JS -->
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/waypoints/2.0.3/waypoints.min.js' %}"></script>
+		<!-- Bootstrap JS -->
+		<script src="{% static 'web/js/bootstrap.min.js' %}"></script>
+		<!-- Main JS -->
+		<script src="{% static 'web/js/main.js' %}"></script>
+
+		
+        
+        {% block scripts %}
+        {% endblock %}
+
+    </body>
+</html>

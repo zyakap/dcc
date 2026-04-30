@@ -1,0 +1,327 @@
+<!-- add_business.html -->
+{% extends "dashboard_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %} New Client Record {% endblock %}
+
+{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Client {% endblock %}
+{% block dashboard_title %} New Client {% endblock %}
+
+
+{% block content %}
+
+    <h2>+ Add Record</h2>
+    <p>Fill in any relevant information about the client. You can always add more detail(s) later.</p>
+    <hr>
+    <div class="card p-3">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <h4 class="mt-3 text-primary">Basic Information</h4>
+        <div class="form-group mb-3">
+          <label for="first_name">First Name</label>
+          <input type="text" class="form-control" id="first_name" name="first_name" required>
+        </div>
+        <div class="form-group mb-3">
+          <label for="middle_name">Middle Name</label>
+          <input type="text" class="form-control" id="middle_name" name="middle_name">
+        </div>
+        <div class="form-group mb-3">
+          <label for="last_name">Last Name</label>
+          <input type="text" class="form-control" id="last_name" name="last_name" required>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="nick_name">Nick Name</label>
+          <input type="text" class="form-control" id="nick_name" name="nick_name">
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="other_names">Other Name(s)</label>
+          <input type="text" class="form-control" id="other_names" name="other_names">
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="gender">Gender</label>
+          <select class="form-select" id="gender" name="gender">
+            <option value="MALE">Male</option>
+            <option value="FEMALE">Female</option>
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label for="date_of_birth">Date of Birth</label>
+          <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+        </div>
+        <div class="form-group mb-3">
+          <label for="address">Marital Status</label>
+
+          <select class="form-select" id="marital_status" name="marital_status">
+            <option value="SINGLE">Single</option>
+            <option value="MARRIED">Married</option>
+            <option value="DIVORCED">Divorced</option>
+            <option value="De-Facto">De-Facto</option>
+            <option value="WIDOWED">Widowed</option>
+          </select>
+        </div>
+
+        <h4 class="mt-3 text-primary">Contact Information</h4>
+
+        <div class="form-group mb-3">
+          <label for="email">Email</label>
+          <input type="email" class="form-control" id="email" name="email">
+        </div>
+        <div class="form-group mb-3">
+          <label for="email1">Email 1</label>
+          <input type="email1" class="form-control" id="email1" name="email1">
+        </div>
+        <div class="form-group mb-3">
+          <label for="mobile1">Mobile 1</label>
+          <input type="text" class="form-control" id="mobile1" name="mobile1">
+        </div>
+        <div class="form-group mb-3">
+          <label for="mobile2">Mobile 2</label>
+          <input type="text" class="form-control" id="mobile2" name="mobile2">
+        </div>
+        
+        <h4 class="mt-3 text-primary">Personal Information</h4>
+        
+        <div class="form-group mb-3">
+          <label for="place_of_origin">Place of Origin</label>
+          <input type="text" class="form-control" id="place_of_origin" name="place_of_origin">
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="province_of_origin">Province of Origin</label>
+          <select class="form-select" id="province_of_origin" name="province_of_origin">
+          {% for province in provinces %}
+            <option value="{{ province.0 }}">{{ province.1 }}</option>
+          {% endfor %}
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label for="address_type">Address Type</label>
+          <select class="form-select" id="address_type" name="address_type">
+            {% for address_type in address_types %}
+              <option value="{{ address_type.0 }}">{{ address_type.1 }}</option>
+            {% endfor %}
+          </select>
+        <div class="form-group mb-3">
+          <label for="address">Address</label>
+          <input type="text" class="form-control" id="address" name="address">
+        </div>
+        <div class="form-group mb-3">
+          <label for="residential_province">Residential Province</label>
+          <select class="form-select" id="residential_province" name="residential_province">
+          {% for province in provinces %}
+            <option value="{{ province.0 }}">{{ province.1 }}</option>
+          {% endfor %}  
+          </select>
+        </div>
+      
+        <div class="form-group mb-3">
+          <label for="resident_owner">Resident Owner</label>
+          <select class="form-select" id="resident_owner" name="resident_owner">
+            <option value="SELF">Self</option>
+            <option value="RELATIVES">Parents</option>
+            <option value="RENTED">Rented</option>
+            <option value="WORK-HOUSE">WORK-HOUSE</option>
+            <option value="OTHERS">Others</option>
+          </select>
+        </div>
+
+        
+    <h2>Personal ID</h2>
+    <div class="form-group mb-3">
+      <label for="nid_number">NID Number</label>
+      <input type="text" class="form-control" id="nid_number" name="nid_number">
+    </div>
+    <div class="form-group mb-3">
+      <label for="nid">NID</label>
+      <input type="file" class="form-control" id="nid" name="nid">
+    </div>
+    <div class="form-group mb-3">
+      <label for="passport_number">Passport Number</label>
+      <input type="text" class="form-control" id="passport_number" name="passport_number">
+    </div>
+    <div class="form-group mb-3">
+      <label for="passport">Passport</label>
+      <input type="file" class="form-control" id="passport" name="passport">
+    </div>
+    <div class="form-group mb-3">
+      <label for="drivers_license_number">Drivers License Number</label>
+      <input type="text" class="form-control" id="drivers_license_number" name="drivers_license_number">
+    </div>
+    <div class="form-group mb-3">
+      <label for="drivers_license">Drivers License</label>
+      <input type="file" class="form-control" id="drivers_license" name="drivers_license">
+    </div>
+    <div class="form-group mb-3">
+      <label for="super_member_code">Super Member Code</label>
+      <input type="text" class="form-control" id="super_member_code" name="super_member_code">
+    </div>
+    <div class="form-group mb-3">
+      <label for="super_id">Super ID</label>
+      <input type="file" class="form-control" id="super_id" name="super_id">
+    </div>
+    
+    
+
+    <h4 class="mt-3 text-primary">Employer Information</h4>
+
+        <div class="form-group mb-3">
+          <label for="employer">Employer Name</label>
+          <input type="text" class="form-control" id="employer" name="employer">
+        </div>
+        
+        <div class="form-group mb-3">
+          <label for="sector">Sector</label>
+          <select class="form-select" id="sector" name="sector">
+            <option value="PRIVATE">Private</option>
+            <option value="PUBLIC">Public</option>
+            <option value="NGO">NGO</option>
+            <option value="OTHERS">Others</option>
+            </select>
+        </div>
+
+      <div class="form-group mb-3">
+
+        <label for="job_title">Job Title</label>
+        <input type="text" class="form-control" id="job_title" name="job_title">
+      </div>
+      <div class="form-group mb-3">
+        <label for="office_address">Office Address</label>
+        <input type="text" class="form-control" id="office_address" name="office_address">
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="start_date">Start Date</label>
+        <input type="date" class="form-control" id="start_date" name="start_date">
+      </div>
+      <div class="form-group mb-3">
+        <label for="pay_frequency">Pay Frequency</label>
+        <select class="form-select" id="pay_frequency" name="pay_frequency">
+          <option value="FN">FORTNIGHTLY</option>
+          <option value="MN">MONTHLY</option>
+        </select>
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="last_paydate">Last Pay Date</label>
+        <input type="date" class="form-control" id="last_paydate" name="last_paydate">
+      </div>
+      <div class="form-group mb-3">
+        <label for="gross_pay">Gross Pay</label>
+        <input type="text" class="form-control" id="gross_pay" name="gross_pay">
+      </div>
+      <div class="form-group mb-3">
+        <label for="work_id_number">Work ID Number</label>
+        <input type="text" class="form-control" id="work_id_number" name="work_id_number">
+      </div>
+      <div class="form-group mb-3">
+          <label for="work_id">Work ID</label>
+          <input type="file" class="form-control" id="work_id" name="work_id">
+      </div>
+
+      <h4 class="mt-3 text-primary">Bank Account Information</h4>
+
+      <div class="form-group mb-3">
+        <label for="bank">Bank</label>
+        <select class="form-select" id="bank" name="bank">
+          <option value="BSP">BSP</option>
+          <option value="KINA">KINA</option>
+          <option value="WESTPAC">WESTPAC</option>
+          <option value="CREDIT BANK">CREDIT BANK</option>
+          <option value="TISA BANK">TISA BANK</option>
+        </select>
+      </div>
+      <div class="form-group mb-3">
+        <label for="bank_account_name">Bank Account Name</label>
+        <input type="text" class="form-control" id="bank_account_name" name="bank_account_name">
+      </div>
+      <div class="form-group mb-3">
+        <label for="bank_account_number">Bank Account Number</label>
+        <input type="text" class="form-control" id="bank_account_number" name="bank_account_number">
+      </div>
+      <div class="form-group mb-3">
+        <label for="bank_branch_bsb">Bank Branch BSB</label>
+        <input type="text" class="form-control" id="bank_branch_bsb" name="bank_branch_bsb">
+      </div>
+      <div class="form-group mb-3">
+        <label for="bank_branch_name">Bank Branch Name</label>
+        <input type="text" class="form-control" id="bank_branch_name" name="bank_branch_name">
+      </div>
+
+
+      <h4 class="mt-3 text-primary">Credit Checks</h4>
+      <div class="form-group mb-3">
+        <label for="has_loan">Has Loan</label>
+        <input type="checkbox" class="form-check-input" id="has_loan" name="has_loan">
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="number_of_loans">Number of Loans</label>
+        <input type="number" class="form-control" id="number_of_loans" name="number_of_loans">
+      </div>
+      
+      <div class="form-group mb-3">
+        <label for="default_flagged">DCC Flagged</label>
+        <input type="checkbox" class="form-check-input" id="default_flagged" name="default_flagged">  
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="dcc_status">DCC Status</label>
+        <select class="form-select" name="dcc_status" id="dcc_status">
+          <option value="SELECT">SELECT STATUS</option>
+          {% for dcc_status in dcc_statuses %}
+            <option value="{{ dcc_status.0 }}">{{ dcc_status.1 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="form-group mb-3">
+        <label for="public_listing">Public Listing</label>
+        <input type="checkbox" class="form-check-input" id="public_listing" name="public_listing">
+      </div>
+    
+    <h4 class="mt-3 text-primary">Optional Information</h4>
+    <div class="form-group mb-3">
+      <label for="credit_rating">Credit Rating</label>
+        <input type="number" step="1" min="0" max="100" class="form-control" id="credit_rating" name="credit_rating">
+    </div>
+    
+    <div class="form-group mb-3">
+      <label for="repayment_limit">Repayment Limit</label>
+      <input type="number" step="1" class="form-control" id="repayment_limit" name="repayment_limit">
+    </div>
+
+    
+      <div class="form-group mb-3">
+        <label for="dcc_comment">DCC Comment</label>
+        <textarea class="form-control" id="dcc_comment" name="dcc_comment"></textarea>
+      </div>
+      <div class="form-group mb-3">
+        <label for="cdb_comment">CDB Comment</label>
+
+        <textarea class="form-control" id="cdb_comment" name="cdb_comment"></textarea>
+      </div>
+      <div class="form-group mb-3">
+        <label for="notes">Notes</label>
+
+        <textarea class="form-control" id="notes" name="notes"></textarea>
+      </div>
+
+
+        <div class="text-end">
+        <a href="#" class="btn btn-secondary">CANCEL</a>
+        <button type="submit" class="btn btn-primary px-4">CREATE</button>
+      </div>
+      </form>
+    </div>
+
+  <!-- Content Ends Here -->
+
+{% endblock %}
+
+
+
+

@@ -1,0 +1,112 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+{% load site_filter %}
+{% block title %} All Contacts {% endblock %}
+
+{% block css %}
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap");
+
+
+    body{
+      background-color: #eee;
+      font-family: "Poppins", sans-serif;
+      font-weight: 300;
+    }
+  .container{
+      height:10vh;
+  }
+
+  .progresses{
+      display: flex;
+          align-items: center;
+    }
+
+    .line{
+
+      width: 2rem;
+      height: 1rem;
+      background: #63d19e;
+    }
+    .steps{
+
+      display: flex;
+      background-color: #63d19e;
+      color: #fff;
+      font-size: 14px;
+      width: 6rem;
+      height: 3rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+
+    }
+</style>
+
+{% endblock %}
+
+{% block dashboard_title %} All Contacts {% endblock %}
+{% block breadcrumb %} Users {% endblock %}
+{% block breadcrumb_active %} Contacts {% endblock %}
+
+
+{% block content %}
+
+  <!-- Content Goes Here -->
+  <!-- Your HTML code -->
+    <div class="row">
+        <div class="card">
+            <div class="card-body p-2">
+                <div class="table-responsive">
+                    <table id="userProfileTable" class="display">
+                        <thead>
+                            <tr>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Phone</th>
+                                <th>Ward</th>
+                                <th>LLG</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Table body will be dynamically populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+
+<!-- Include jQuery and DataTables libraries -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+
+
+<script>
+    $(document).ready(function () {
+        // Initialize DataTable
+        var userProfileTable = $('#userProfileTable').DataTable({
+            ajax: {
+                url: '/users/get_user_profiles/',  // Replace with the actual URL
+                dataSrc: 'data'
+            },
+            columns: [
+                { data: 'first_name' },
+                { data: 'last_name' },
+                { data: 'mobile1' },
+                { data: 'ward__ward_name' },
+                { data: 'ward__llg__llg_name' }
+            ]
+        });
+    });
+</script>
+
+{% endblock %}
+

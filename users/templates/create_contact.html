@@ -1,0 +1,185 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+{% load site_filter %}
+{% block title %} Create Contact {% endblock %}
+
+{% block css %}
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap");
+
+
+    body{
+      background-color: #eee;
+      font-family: "Poppins", sans-serif;
+      font-weight: 300;
+    }
+  .container{
+      height:10vh;
+  }
+
+  .progresses{
+      display: flex;
+          align-items: center;
+    }
+
+    .line{
+
+      width: 2rem;
+      height: 1rem;
+      background: #63d19e;
+    }
+    .steps{
+
+      display: flex;
+      background-color: #63d19e;
+      color: #fff;
+      font-size: 14px;
+      width: 6rem;
+      height: 3rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+
+    }
+</style>
+
+{% endblock %}
+
+{% block dashboard_title %} Create Contact {% endblock %}
+{% block breadcrumb %} Users {% endblock %}
+{% block breadcrumb_active %} Create Contact {% endblock %}
+
+
+{% block content %}
+
+  <!-- Content Goes Here -->
+  <div class="row">
+    <div class="col-lg-6">
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Add New Contact</h5>
+
+          <!-- General Form Elements -->
+          <form id="createcontactform" method="POST">
+            {% csrf_token %}
+            <div class="row mb-3">
+              <label for="inputText" class="col-sm-2 col-form-label">First Name</label>
+              <div class="col-sm-10">
+                <input type="text" name="firstname" class="form-control">
+              </div>
+            </div>
+            <div class="row mb-3">
+                <label for="inputText2" class="col-sm-2 col-form-label">Last Name</label>
+                <div class="col-sm-10">
+                  <input type="text" name="lastname" class="form-control">
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+              <label for="inputNumber" class="col-sm-2 col-form-label">Number</label>
+              <div class="col-sm-10">
+                <input type="number" name="number" class="form-control">
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <label for="inputTextArea" class="col-sm-2 col-form-label">Notes</label>
+              <div class="col-sm-10">
+                <textarea class="form-control" name="notes" style="height: 100px"></textarea>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Select LLG</label>
+                <div class="col-sm-10">
+                  <select id="selectLLG" class="form-select" aria-label="Default select example">
+                    <option value="mulitaka" name="mulitaka">MULITAKA</option>
+                    <option value="porgera" name="porgera">PORGERA</option>
+                    <option value="paiela" name="paiela">PAIELA</option>
+                    <option value="paiela" name="porgera urban">PORGERA URBAN</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <label class="col-sm-2 col-form-label">Select WARD</label>
+                <div class="col-sm-10">
+                  <select id="selectWard" name="ward" class="form-select" aria-label="Default select example">
+                    <!-- Wards will be dynamically populated here -->
+                  </select>
+                </div>
+              </div>
+
+            <div class="row mb-3">
+              <label class="col-sm-2 col-form-label"></label>
+              <div class="col-sm-10">
+                <button type="submit" class="btn btn-primary">+ Add Contact</button>
+              </div>
+            </div>
+
+          </form><!-- End General Form Elements -->
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-lg-6">
+
+      
+
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+
+<script>
+
+// Event listener for LLG selection change
+$('#selectLLG').change(function () {
+    var selectedLLG = $(this).val();
+
+    // AJAX request to fetch wards for the selected LLG
+    $.ajax({
+        type: 'GET',
+        url: '/location/ward-json/' + selectedLLG + '/',
+        success: function (data) {
+            // Clear existing options
+            $('#selectWard').empty();
+
+            // Populate the select with new ward options
+            $.each(data.data, function (index, ward) {
+                $('#selectWard').append('<option value="' + ward.ward_name + '">' + ward.ward_name + '</option>');
+            });
+        },
+        error: function (xhr, status, error) {
+            console.error('Error fetching wards: ' + error);
+        }
+    });
+});
+
+// You don't need the AJAX request for form submission anymore
+
+// Optionally, you can keep the form submission logic if you want to log FormData
+$('#createcontactform').submit(function (e) {
+    // Create FormData object
+    var formData = new FormData(this);
+
+    // Log FormData for debugging
+    for (var pair of formData.entries()) {
+        console.log(pair[0] + ', ' + pair[1]);
+    }
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+        .section-title {
+            background-color: #f2f2f2;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Consumer Report</h1>
+        <p>Report for: <strong>{{ client.first_name }} {{ client.last_name }}</strong></p>
+        <p>Date of report: <strong>{{ report_date }}</strong></p>
+        <p>Enquiry Number: <strong>{{ enquiry_number }}</strong></p>
+
+        <div class="section-title">Details</div>
+        <table>
+            <tr>
+                <th>Product Type</th>
+                <th>Amount</th>
+                <th>Guarantor(s)</th>
+                <th>Client Reference</th>
+            </tr>
+            <tr>
+                <td>{{ details.product_type }}</td>
+                <td>{{ details.amount }}</td>
+                <td>{{ details.guarantors }}</td>
+                <td>{{ details.client_reference }}</td>
+            </tr>
+        </table>
+
+        <div class="section-title">Summary</div>
+        <table>
+            <tr>
+                <th>Previous Queries</th>
+                <th>Additional Names</th>
+                <th>Defaults</th>
+                <th>Public Notices</th>
+                <th>Guarantorships</th>
+            </tr>
+            <tr>
+                <td>{{ summary.previous_queries }}</td>
+                <td>{{ summary.additional_names }}</td>
+                <td>{{ summary.defaults }}</td>
+                <td>{{ summary.public_notices }}</td>
+                <td>{{ summary.guarantorships }}</td>
+            </tr>
+        </table>
+
+        <div class="section-title">Identification</div>
+        <table>
+            <tr>
+                <th>Date Loaded</th>
+                <th>ID Type</th>
+                <th>ID Code</th>
+            </tr>
+            {% for id in identification %}
+            <tr>
+                <td>{{ id.date_loaded }}</td>
+                <td>{{ id.id_type }}</td>
+                <td>{{ id.id_code }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="section-title">Addresses</div>
+        <table>
+            <tr>
+                <th>Date Loaded</th>
+                <th>Type</th>
+                <th>Address</th>
+            </tr>
+            {% for address in addresses %}
+            <tr>
+                <td>{{ address.date_loaded }}</td>
+                <td>{{ address.type }}</td>
+                <td>{{ address.address }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="section-title">Employment</div>
+        <table>
+            <tr>
+                <th>Date Loaded</th>
+                <th>Occupation</th>
+                <th>Employer</th>
+            </tr>
+            {% for job in employment %}
+            <tr>
+                <td>{{ job.date_loaded }}</td>
+                <td>{{ job.occupation }}</td>
+                <td>{{ job.employer }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="section-title">Contacts</div>
+        <table>
+            <tr>
+                <th>Date Loaded</th>
+                <th>Contact Type</th>
+                <th>Contact Number</th>
+            </tr>
+            {% for contact in contacts %}
+            <tr>
+                <td>{{ contact.date_loaded }}</td>
+                <td>{{ contact.contact_type }}</td>
+                <td>{{ contact.contact_number }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="section-title">Additional Names</div>
+        <table>
+            <tr>
+                <th>Date Loaded</th>
+                <th>Name</th>
+            </tr>
+            {% for name in additional_names %}
+            <tr>
+                <td>{{ name.date_loaded }}</td>
+                <td>{{ name.name }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="section-title">Previous Queries</div>
+        <table>
+            <tr>
+                <th>Date Loaded</th>
+                <th>Enquirer</th>
+                <th>Guarantor(s)</th>
+                <th>Product Type</th>
+                <th>Amount</th>
+            </tr>
+            {% for query in previous_queries %}
+            <tr>
+                <td>{{ query.date_loaded }}</td>
+                <td>{{ query.enquirer }}</td>
+                <td>{{ query.guarantors }}</td>
+                <td>{{ query.product_type }}</td>
+                <td>{{ query.amount }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="section-title">Defaults</div>
+        <table>
+            <tr>
+                <th>Default Date</th>
+                <th>Creditor</th>
+                <th>Product Type</th>
+                <th>Status</th>
+                <th>Status Date</th>
+                <th>Amount</th>
+                <th>Balance</th>
+                <th>Previous Status</th>
+            </tr>
+            {% for default in defaults %}
+            <tr>
+                <td>{{ default.default_date }}</td>
+                <td>{{ default.creditor }}</td>
+                <td>{{ default.product_type }}</td>
+                <td>{{ default.status }}</td>
+                <td>{{ default.status_date }}</td>
+                <td>{{ default.amount }}</td>
+                <td>{{ default.balance }}</td>
+                <td>{{ default.previous_status }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="section-title">Public Notices</div>
+        <p>No public notices have been recorded in the system.</p>
+
+        <div class="section-title">General Information</div>
+        <p>No general information has been recorded in the system.</p>
+    </div>
+</body>
+</html>

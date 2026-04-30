@@ -1,0 +1,31 @@
+
+<div class="row">
+    <div class="card">
+        <div class="card-body p-2">
+            <div class="table-responsive">
+                <table id="userProfileTable" class="display">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Ref</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                       
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table body will be dynamically populated here -->
+                        {% for client in clients %}
+                        <tr>
+                            <td>{{ client.uid }}</td>
+                            <td>{{ client.first_name }}</td>
+                            <td>{{ client.last_name }}</td>
+                            <td>{{ client.gender }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

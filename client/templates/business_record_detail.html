@@ -1,0 +1,130 @@
+<!-- add_business.html -->
+{% extends "dashboard_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %} Business Record{% endblock %}
+
+
+
+{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Business Record {% endblock %}
+{% block dashboard_title %} View Business Record {% endblock %}
+
+
+
+{% block content %}
+  <!-- Content Ends Here -->
+
+  
+    <h3 class="text-primary">{{ business.trading_name }} ({{ business.registered_name }})</h3>
+    <hr>
+    <div class="row">
+        <div class="col-4">
+            <div class="card p-2 bg-danger">
+                <span class="text-light">Credit Status:</span> <strong class="text-warning">DEFAULTED</strong>
+            </div>
+            
+        </div>
+        <div class="col-4">
+            <div class="card p-2">
+            Credit Rating: <strong class="text-primary">67/100</strong>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card p-2">
+            Updated at: <strong class="text-primary">12/01/2025</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-4">
+            <div class="card">
+                <div class="card-header">Business Details</div>
+                <div class="card-body pt-2">
+                    <p class="m-0 py-1 px-0">Trading Name: <strong>{{ business.trading_name }}</strong></p>
+                    <p class="m-0 py-1 px-0">Registration Name: <strong>{{ business.registration_name }}</strong></p>
+                    <p class="m-0 py-1 px-0">IPA #: <strong>{{ business.ipa_registration_number }}</strong></p>
+                    <p class="m-0 py-1 px-0">TIN #: <strong>{{ business.tin_number }}</strong></p>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card">
+                <div class="card-header">Contact Details</div>
+                <div class="card-body pt-2">
+                    <p class="m-0 py-1 px-0">Website: <strong>{{ business.website }}</strong></p>
+                    <p class="m-0 py-1 px-0">Phone: <strong>{{ business.phone }}</strong></p>
+                    <p class="m-0 py-1 px-0">Email: <strong>{{ business.email }}</strong></p>
+                    <p class="m-0 py-1 px-0">Office Address: <strong>{{ business.address }}</strong></p>
+                    <p class="m-0 py-1 px-0">Social Media: <strong>{{ business.phone }}</strong></p>
+                </div>  
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card">
+                <div class="card-header">Owner Information</div>
+                <div class="card-body pt-2">
+                    <p class="m-0 py-1 px-0">Name: <strong>{{ business.client.first_name }} {{ business.client.last_name }}</strong></p>
+                    <p class="m-0 py-1 px-0">Employer: <strong>{{ business.client.employer }}</strong></p>
+                    <p class="m-0 py-1 px-0">Office: <strong>{{ business.client.office }}</strong></p>
+                    <p class="m-0 py-1 px-0">Phone: <strong>{{ business.client.work_phone }}</strong></p>
+                    <p class="m-0 py-1 px-0">Email: <strong>{{ business.client.work_email }}</strong></p>
+                </div>
+        </div>
+    </div>
+
+    <h4 class="section-title">Business Loan Records</h4>
+    <table border="1" class="table table-striped datatable">
+        <thead>
+            <tr>
+                <th>Loan Ref</th>
+                <th>Status</th>
+                <th>Company</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Term</th>
+                <th>Repayment</th>
+                <th>Paid</th>
+                <th>Outstanding</th>
+                <th>Arrears</th>
+                <th>Default</th>
+                <th>Write Off</th>
+                <th>Legal Status</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+                <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                    <td>{{ loan.ref }}</td>
+                    <td>{{ loan.status }}</td>
+                    <td>{{ loan.luid }}</td>
+                    <td>{{ loan.amount }}</td>
+                    <td>{{ loan.date }}</td>
+                    <td>{{ loan.term }}</td>
+                    <td>{{ loan.repayment }}</td>
+                    <td>{{ loan.paid }}</td>
+                    <td>{{ loan.outstanding }}</td>
+                    <td>{{ loan.arrears }}</td>
+                    <td>{{ loan.default }}</td>
+                    <td>{{ loan.write_off }}</td>
+                    <td>{{ loan.legal_status }}</td>
+                    <td>{{ loan.notes }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    
+    
+    <h4 class="section-title text-dark mt-3">Public Notices</h4>
+    <p>No public notices have been recorded in the system.</p>
+
+    <h4 class="section-title text-dark mt-3">General Information</h4>
+    <p>No general information has been recorded in the system.</p>
+
+
+
+{% endblock %}

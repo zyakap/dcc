@@ -1,0 +1,58 @@
+{% extends 'website/website_base.html' %}
+{% load static %}
+
+{% block title %} DCC | Request Delist {% endblock %}
+{% block css %}
+<link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %} 
+
+<!-- ======= Hero Section ======= -->
+<section id="hero" class="d-flex align-items-center bg-secondary" style="background-image: url('{% static 'web/img/header_bg1.png' %}');">
+    <div class="container my-3 py-3">
+      <div class="row">
+        <div class="col-lg-12 d-flex flex-column justify-content-center pt-4 pt-lg-0 order-2 order-lg-1" data-aos="fade-up" data-aos-delay="200">
+          <h1 class="text-center py-3"><u>REQUEST TO REMOVE NAME</u></h1>
+          <h4 class="text-center text-primary">Request Received</h4> 
+           
+            
+            
+        </div>
+      </div>
+    </div>
+</section><!-- End Hero -->
+
+<!-- ======= Clients Section ======= -->
+<section id="listings" class="listings my-3">
+    <div class="container">
+        
+        <div class="row">
+            <div class="col-lg-12 d-flex flex-column justify-content-center pt-4 pt-lg-0 order-2 order-lg-1" data-aos="fade-up" data-aos-delay="200">
+                <div class="card p-3">
+                   
+                    <p class="text-center">Your request has been received. We will get back to you soon.</p>
+            
+                    <h1 class="p-5">The only sure way to remove your name is to settle your debt(s)</h1>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section><!-- End Clients Section -->
+
+
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#myTable').DataTable();
+    });
+</script>
+
+{% endblock %}

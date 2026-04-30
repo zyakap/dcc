@@ -1,0 +1,81 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+
+
+
+
+{% block title %} Login {% endblock %}
+
+{% block custom_css %}
+<style>
+
+  label {
+    margin-top: 10px;
+  
+    display: block;
+    width: 100%;
+   
+  }
+
+  .btn {
+    margin-top: 10px;
+  }
+    
+</style>
+
+{% endblock custom_css %}
+
+{% block page_title %} Login {% endblock %}
+{% block breadcrumb %}Home{% endblock %}
+{% block breadcrumb_active %} Login {% endblock %}
+
+
+{% block content %}
+
+<div class="row mt-1">
+  <div class="col-lg-6 mb-3">
+    <div class="card">
+        <div class="card-header">
+          <h5 class="m-0">LOGIN</h5>
+        </div>
+        <div class="card-body">
+
+          <form method="post">
+            {% csrf_token %}
+            
+            {{ form }}
+            
+            
+            <br>
+            <button type="submit" class="btn btn-success btn-sm">LOGIN</button>
+          </form>
+          <br>
+          <p>Forgot your password? <a href="{% url 'reset_password' %}">Reset Password</a>
+          <br>
+          <p>Not registered yet? <a href="{% url 'register' %}">REGISTER</a>
+            
+
+        </div>
+      </div>
+  </div>
+  <!-- /.col-md-6 -->
+  <div class="col-lg-6 mb-3">
+    <div class="card card-primary card-outline">
+      <div class="card-header">
+        <h5 class="m-0">INSTRUCTIONS</h5>
+      </div>
+      <div class="card-body">
+        <p class="card-text">Once you login, you can update your profile, you can apply for a loan, or you can view your deduction history or you can even download your own statements.</p>
+      </div>
+    </div>
+  </div>
+  <!-- /.col-md-6 -->
+</div>
+{% endblock %}
+
+
+{% block javascript %}
+
+
+
+{% endblock %}

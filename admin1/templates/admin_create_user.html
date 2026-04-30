@@ -1,0 +1,72 @@
+<!-- add_business.html -->
+{% extends "admin_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %} Create User {% endblock %}
+
+{% block breadcrumb %} <a href="{% url 'admin_dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} UserProfiles {% endblock %}
+{% block dashboard_title %} Create User {% endblock %}
+
+
+{% block content %}
+
+    
+    
+    <div class="card p-3">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="col-12 mb-3">
+            <label for="yourName" class="form-label">Your Organisation Name</label>
+            <input type="text" name="organisation" class="form-control" id="yourOrganisationName" required>
+            <div class="invalid-feedback">Please, enter organisation name!</div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <label for="LUID" class="form-label">LUID</label>
+            <input type="text" name="LUID" class="form-control" id="LUID" required>
+            <div class="invalid-feedback">Please, enter organisation LUID!</div>
+          </div>
+
+
+          <div class="col-12 mb-3">
+            <label for="yourName" class="form-label">Contact Full Name</label>
+            <input type="text" name="name" class="form-control" id="yourFullName" required>
+            <div class="invalid-feedback">Please, enter last name!</div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <label for="yourEmail" class="form-label">Email address</label>
+            <input type="email" name="email" class="form-control" id="yourEmail" required>
+            <div class="invalid-feedback">Please enter a valid Email adddress!</div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <label for="yourUsername" class="form-label">Username</label>
+            <div class="input-group has-validation">
+              <span class="input-group-text" id="inputGroupPrepend">@</span>
+              <input type="text" name="username" class="form-control" id="yourUsername" required>
+              <div class="invalid-feedback">Please choose a username.</div>
+            </div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <label for="yourPassword" class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" id="yourPassword" required>
+            <div class="invalid-feedback">Please enter your password!</div>
+          </div>
+
+        <div class="text-end">
+          <a href="#" class="btn btn-secondary">CANCEL</a>
+          <button type="submit" class="btn btn-primary px-4">CREATE USER</button>
+        </div>
+      </form>
+    </div>
+
+  <!-- Content Ends Here -->
+
+{% endblock %}
+
+
+
+

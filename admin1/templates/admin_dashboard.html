@@ -1,0 +1,439 @@
+{% extends "admin_base.html" %}
+{% load static %}
+{% load site_filter %}
+{% block title %} Dashboard {% endblock %}
+
+{% block css %}
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap");
+
+
+    body{
+      background-color: #eee;
+      font-family: "Poppins", sans-serif;
+      font-weight: 300;
+    }
+  .container{
+      height:10vh;
+  }
+
+  .progresses{
+      display: flex;
+          align-items: center;
+    }
+
+    .line{
+
+      width: 2rem;
+      height: 1rem;
+      background: #63d19e;
+    }
+    .steps{
+
+      display: flex;
+      background-color: #63d19e;
+      color: #fff;
+      font-size: 14px;
+      width: 6rem;
+      height: 3rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+
+    }
+</style>
+
+{% endblock %}
+
+{% block breadcrumb %} Dashboard {% endblock %}
+{% block breadcrumb_active %} Overview {% endblock %}
+{% block dashboard_title %} My Dashboard {% endblock %}
+
+{% block content %}
+
+  <!-- Content Goes Here -->
+
+  <div class="row bg-light p-3 my-2">
+    <div class="col-md-6">
+      
+      <div class="py-2">
+        <a href="{% url 'client_records' %}"><button class="btn btn-dark"><i class="bi bi-person-bounding-box"></i> View Records</button></a>
+        <a href="{% url 'upload_records' %}"><button class="btn btn-primary"><i class="bi bi-person-up"></i> Upload Records</button></a>
+        <a href="{% url 'add_client' %}"><button class="btn btn-success"><i class="bi bi-person-fill-add"></i> Add Records</button></a>
+        <hr class="p-0 m-1">
+        <a href="{% url 'client_records' %}"><button class="btn btn-dark"><i class="bi bi-person-bounding-box"></i> View Records</button></a>
+        <a href="{% url 'upload_records' %}"><button class="btn btn-primary"><i class="bi bi-person-up"></i> Upload Records</button></a>
+        <a href="{% url 'add_client' %}"><button class="btn btn-success"><i class="bi bi-person-fill-add"></i> Add Records</button></a>
+
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="my-1">
+        <p class="m-0 p-0 text-left">Search any piece of Information...</hp>
+      </div>
+      <form method="POST">
+        {% csrf_token %}
+      <div class="d-flex flex-row">
+        
+          <div class="p-1">
+            <input type="text" name="search_string" class="form-control" placeholder="Search Records" width="100">
+          </div>
+          <div class="p-1">
+            <button class="btn btn-primary">Search</button>
+          </div>
+        
+      </div>
+    </form>
+    </div>
+  </div>
+
+  <!-- Content Goes Here -->
+  <h3 class="pt-2">Activity</h3>
+  <hr class="p-0 my-3" style="border: 1px solid #0cf; width:100%;">
+  <div class="row">
+    <!-- col 1 -->
+    <div class="col-md-3">
+
+      <div class="card info-card sales-card">
+
+        <div class="filter">
+          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+              <h6>Filter</h6>
+            </li>
+
+            <li><a class="dropdown-item" href="#">Today</a></li>
+            <li><a class="dropdown-item" href="#">This Month</a></li>
+            <li><a class="dropdown-item" href="#">This Year</a></li>
+          </ul>
+        </div>
+        <div class="card-header py-2">
+          <h5 class="card-title py-2 m-0">New Records <span>| Today</span></h5>
+        </div>
+        <div class="card-body py-3">
+
+          <div class="d-flex align-items-center">
+            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-fill-add"></i>
+            </div>
+
+            <div class="ps-3">
+              <h6 style="display: inline-block;">{{ your_records_today_count }}</h6> 
+              <a href="{% url 'filtered_client_records_your_records_today' %}" style="display: inline-block;"> View Records</a>
+              <br>
+              <span class="text-{% if your_records_percentage_change < 0 %}danger{% elif your_records_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ your_records_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if your_records_percentage_change < 0 %}decrease{% elif your_records_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!--endcol1-->
+    <!-- col 1 -->
+    <div class="col-md-3">
+
+      <div class="card info-card sales-card">
+
+        <div class="filter">
+          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+              <h6>Filter</h6>
+            </li>
+
+            <li><a class="dropdown-item" href="#">Today</a></li>
+            <li><a class="dropdown-item" href="#">This Month</a></li>
+            <li><a class="dropdown-item" href="#">This Year</a></li>
+          </ul>
+        </div>
+        <div class="card-header py-2">
+          <h5 class="card-title py-2 m-0">Records Updated <span>| Today</span></h5>
+        </div>
+        <div class="card-body py-3">
+
+          <div class="d-flex align-items-center">
+            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-up"></i>
+            </div>
+
+            <div class="ps-3">
+              <h6 style="display: inline-block;">{{ your_updated_today_count }}</h6> 
+              <a href="{% url 'filtered_client_records_your_updated_today' %}" style="display: inline-block;"> View Records</a>
+              <br>
+              <span class="text-{% if your_updated_percentage_change < 0 %}danger{% elif your_updated_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ your_updated_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if your_updated_percentage_change < 0 %}decrease{% elif your_updated_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!--endcol1-->
+    <!-- col 1 -->
+    <div class="col-md-3">
+
+      <div class="card info-card sales-card">
+
+        <div class="filter">
+          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+              <h6>Filter</h6>
+            </li>
+
+            <li><a class="dropdown-item" href="#">Today</a></li>
+            <li><a class="dropdown-item" href="#">This Month</a></li>
+            <li><a class="dropdown-item" href="#">This Year</a></li>
+          </ul>
+        </div>
+        <div class="card-header py-2">
+          <h5 class="card-title py-2 m-0">Business Updated <span>| Today</span></h5>
+        </div>
+        <div class="card-body py-3">
+
+          <div class="d-flex align-items-center">
+            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-check"></i>
+            </div>
+
+            <div class="ps-3">
+              <h6 style="display: inline-block;">{{ your_business_today_count }}</h6> 
+              <a href="{% url 'filtered_records_your_business_today' %}" style="display: inline-block;"> View Records</a>
+              <br>
+              <span class="text-{% if your_business_percentage_change < 0 %}danger{% elif your_business_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ your_business_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if your_business_percentage_change < 0 %}decrease{% elif your_business_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!--endcol1-->
+
+    <!-- col 1 -->
+    <div class="col-md-3">
+
+      <div class="card info-card sales-card">
+
+        <div class="filter">
+          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+              <h6>Filter</h6>
+            </li>
+
+            <li><a class="dropdown-item" href="#">Today</a></li>
+            <li><a class="dropdown-item" href="#">This Month</a></li>
+            <li><a class="dropdown-item" href="#">This Year</a></li>
+          </ul>
+        </div>
+        <div class="card-header py-2">
+          <h5 class="card-title py-2 m-0">Business Updated <span>| Today</span></h5>
+        </div>
+        <div class="card-body py-3">
+
+          <div class="d-flex align-items-center">
+            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-check"></i>
+            </div>
+
+            <div class="ps-3">
+              <h6 style="display: inline-block;">{{ your_business_today_count }}</h6> 
+              <a href="{% url 'filtered_records_your_business_today' %}" style="display: inline-block;"> View Records</a>
+              <br>
+              <span class="text-{% if your_business_percentage_change < 0 %}danger{% elif your_business_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ your_business_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if your_business_percentage_change < 0 %}decrease{% elif your_business_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!--endcol1-->
+
+  </div><!-- end row -->
+
+  <h3 class="">Database Records</h3>
+  <hr class="p-0 my-3" style="border: 1px solid #0cf; width:100%;">
+
+  <div class="row">
+    <!-- col 1 -->
+    <div class="col-md-4">
+
+      <div class="card info-card sales-card">
+
+        <div class="filter">
+          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+              <h6>Filter</h6>
+            </li>
+
+            <li><a class="dropdown-item" href="#">Today</a></li>
+            <li><a class="dropdown-item" href="#">This Month</a></li>
+            <li><a class="dropdown-item" href="#">This Year</a></li>
+          </ul>
+        </div>
+        <div class="card-header py-2">
+          <h5 class="card-title py-2 m-0">New Records <span>| Today</span></h5>
+        </div>
+        <div class="card-body py-3">
+
+          <div class="d-flex align-items-center">
+            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-fill-add"></i>
+            </div>
+
+            <div class="ps-3">
+              <h6 style="display: inline-block;">{{ dcc_records_today_count }}</h6> 
+              <a href="{% url 'filtered_client_records_dcc_records_today' %}" style="display: inline-block;"> View Records</a>
+              <br>
+              <span class="text-{% if dcc_records_percentage_change < 0 %}danger{% elif dcc_records_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_records_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_records_percentage_change < 0 %}decrease{% elif dcc_records_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!--endcol1-->
+    <!-- col 1 -->
+    <div class="col-md-4">
+
+      <div class="card info-card sales-card">
+
+        <div class="filter">
+          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+              <h6>Filter</h6>
+            </li>
+
+            <li><a class="dropdown-item" href="#">Today</a></li>
+            <li><a class="dropdown-item" href="#">This Month</a></li>
+            <li><a class="dropdown-item" href="#">This Year</a></li>
+          </ul>
+        </div>
+        <div class="card-header py-2">
+          <h5 class="card-title py-2 m-0">Records Updated <span>| Today</span></h5>
+        </div>
+        <div class="card-body py-3">
+
+          <div class="d-flex align-items-center">
+            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-up"></i>
+            </div>
+
+            <div class="ps-3">
+              <h6 style="display: inline-block;">{{ dcc_updated_today_count }}</h6> 
+              <a href="{% url 'filtered_client_records_dcc_updated_today' %}" style="display: inline-block;"> View Records</a>
+              <br>
+              <span class="text-{% if dcc_updated_percentage_change < 0 %}danger{% elif dcc_updated_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_updated_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_updated_percentage_change < 0 %}decrease{% elif dcc_updated_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!--endcol1-->
+    <!-- col 1 -->
+    <div class="col-md-4">
+
+      <div class="card info-card sales-card">
+
+        <div class="filter">
+          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <li class="dropdown-header text-start">
+              <h6>Filter</h6>
+            </li>
+
+            <li><a class="dropdown-item" href="#">Today</a></li>
+            <li><a class="dropdown-item" href="#">This Month</a></li>
+            <li><a class="dropdown-item" href="#">This Year</a></li>
+          </ul>
+        </div>
+        <div class="card-header py-2">
+          <h5 class="card-title py-2 m-0">Business Updated <span>| Today</span></h5>
+        </div>
+        <div class="card-body py-3">
+
+          <div class="d-flex align-items-center">
+            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-check"></i>
+            </div>
+
+            <div class="ps-3">
+              <h6 style="display: inline-block;">{{ dcc_business_today_count }}</h6> 
+              <a href="{% url 'filtered_business_records_dcc_today' %}" style="display: inline-block;"> View Records</a>
+              <br>
+              <span class="text-{% if dcc_business_percentage_change < 0 %}danger{% elif dcc_business_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_business_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_business_percentage_change < 0 %}decrease{% elif dcc_business_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!--endcol1-->
+  </div><!-- end row -->
+
+  <h3 class="">Snapshots</h3>
+  <hr class="p-0 my-3" style="border: 1px solid #0cf; width:100%;">
+    <div class="row">
+      <div class="col-lg-4">
+        <div class="card bg-secondary">
+          <h2 class="px-3 pt-3 pb-0 m-0 text-light">In Arrears</h2>
+          <hr class="p-0 my-3" style="border: 1px solid #ceff09; width:100%;">
+          <div class="card-body">
+                <h2 class="text-light">K {{ dcc_total_arrears }}</h2>
+                <p class="text-light">from <span class="text-light">{{ dcc_arrears_count }}</span> Records | <a href="{% url 'filtered_loan_records_dcc_arrears' %}" class="text-light"><u>View Records</u></a></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card bg-warning">
+          <h2 class="px-3 pt-3 pb-0 m-0 text-light">In Defaults</h2>
+          <hr class="p-0 my-3" style="border: 1px solid #07223f; width:100%;">
+          <div class="card-body">
+                <h2 class="text-light">K {{ dcc_total_defaults }}</h2>
+                <p class="text-light">from <span class="text-light">{{ dcc_defaults_count }}</span> Records | <a href="{% url 'filtered_loan_records_dcc_defaults' %}" class="text-light"><u>View Records</u></a></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card bg-danger">
+          <h2 class="px-3 pt-3 pb-0 m-0 text-light">In Recovery</h2>
+          <hr class="p-0 my-3" style="border: 1px solid #a9c2b7; width:100%;">
+          <div class="card-body">
+                <h2 class="text-light">K {{ dcc_total_recovery}}</h2>
+                <p class="text-light">from <span class="text-light">{{ dcc_recovery_count }}</span> Records | <a href="{% url 'filtered_loan_records_dcc_recovery' %}" class="text-light"><u>View Records</u></a></p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  
+
+  <!-- Content Ends Here -->
+
+{% endblock %}
+
+{% block scripts %}
+
+
+
+{% endblock %}

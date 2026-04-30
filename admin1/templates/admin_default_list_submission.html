@@ -1,0 +1,122 @@
+{% extends "admin_base.html" %}
+{% load static %}
+{% load site_filter %}
+{% block title %} Default List Submission {% endblock %}
+
+{% block css %}
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap");
+
+
+    body{
+      background-color: #eee;
+      font-family: "Poppins", sans-serif;
+      font-weight: 300;
+    }
+  .container{
+      height:10vh;
+  }
+
+  .progresses{
+      display: flex;
+          align-items: center;
+    }
+
+    .line{
+
+      width: 2rem;
+      height: 1rem;
+      background: #63d19e;
+    }
+    .steps{
+
+      display: flex;
+      background-color: #63d19e;
+      color: #fff;
+      font-size: 14px;
+      width: 6rem;
+      height: 3rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+
+    }
+</style>
+
+{% endblock %}
+
+{% block breadcrumb %} Dashboard {% endblock %}
+{% block breadcrumb_active %} Overview {% endblock %}
+{% block dashboard_title %} Default List Submission {% endblock %}
+
+{% block content %}
+
+  <!-- Content Goes Here -->
+<div class="row">
+  <div class="col-12">
+  <div class="card-body px-0 p-1">
+    <div class="table-responsive p-1">
+      <table id="collectionStatement" class="table table-striped table-hover align-items-center justify-content-center mb-0">
+        <thead>
+          <tr>
+            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Business Name</th>
+            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 ps-2">Contact Person</th>
+            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 ps-2">Phone</th>
+            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 ps-2">Email</th>
+            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 ps-2">Business Address</th>
+            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 ps-2">File URL</th>
+
+           
+
+            
+          </tr>
+        </thead>
+        <tbody>
+          {% for submission in submissions %}
+
+            <tr>
+              <td>
+                <h6 class="text-sm">{{ submission.business_name }}</h6>
+              </td>
+              <td>
+                <h6 class="text-sm">{{ submission.contact_person }}</h6>
+              </td>
+              <td>
+                <h6 class="text-sm">{{ submission.phone }}</h6>
+              </td>
+              <td>
+                <h6 class="text-sm">{{ submission.email }}</h6>
+              </td>
+              <td class="text-sm">
+                <h6 class="text-sm">{{ submission.business_address }}</h6>
+              </td>
+              <td class="text-sm">
+                <a href="{{submission.submission_spreadsheet_url}}">
+                <h6 class="text-sm">Download File</h6>
+              </a>
+              </td>
+
+             
+              
+              
+            </tr>
+          {% endfor %} 
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+  
+
+  <!-- Content Ends Here -->
+
+{% endblock %}
+
+{% block scripts %}
+
+
+
+{% endblock %}

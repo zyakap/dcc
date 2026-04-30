@@ -1,0 +1,78 @@
+{% extends "acc_allpagebase.html" %}
+
+{% load static %}
+
+
+{% block title %} REGISTER {% endblock %}
+
+
+
+{% block custom_css %}
+<style>
+
+  label {
+    margin-top: 10px;
+ 
+    display: block;
+    width: 100%;
+   
+  }
+
+  .btn {
+    margin-top: 10px;
+  }
+    
+</style>
+
+{% endblock custom_css %}
+
+{% block page_title %} Register {% endblock %}
+{% block breadcrumb %}Home{% endblock %}
+{% block breadcrumb_active %} Register {% endblock %}
+
+{% block content %}
+
+
+<div class="row mt-1">
+  <div class="col-lg-6 mb-3">
+    <div class="card">
+        <div class="card-header">
+          <h5 class="m-0">REGISTER</h5>
+        </div>
+        <div class="card-body">
+
+          <form method="post">
+            {% csrf_token %}
+            
+            {{ form }}
+
+            <br>
+            <button type="submit" class="btn btn-success btn-sm">REGISTER</button>
+          </form>
+          <br>
+          <p>Already registered? <a href="{% url 'login_user' %}">LOGIN</a>
+
+        </div>
+      </div>
+  </div>
+  <!-- /.col-md-6 -->
+  <div class="col-lg-6 mb-3">
+    <div class="card card-primary card-outline">
+      <div class="card-header">
+        <h5 class="m-0">INSTRUCTIONS</h5>
+      </div>
+      <div class="card-body">
+        <p class="card-text">Once you click register, an <em>Activation Link</em> will be sent to your email address. Please check your email and click on the link to complete your registration.</p>
+        <p>Once this process is completed, your account will be active and you will login to your dashboard.</p>
+      </div>
+    </div>
+  </div>
+  <!-- /.col-md-6 -->
+</div>
+{% endblock %}
+
+
+{% block javascript %}
+
+
+{% endblock %}

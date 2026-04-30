@@ -1,0 +1,109 @@
+<!-- add_business.html -->
+{% extends "dashboard_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %} New Business Record {% endblock %}
+
+{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
+{% block breadcrumb_active %} Business Records {% endblock %}
+{% block dashboard_title %} New Business Record {% endblock %}
+
+ 
+
+{% block content %}
+
+
+
+  <!-- Content Goes Here -->
+
+  <h3>+ Add Record</h3>
+  <p>Fill in any relevant information about the business. You can always add more detail(s) later.</p>
+  <hr>
+
+  <div class="card p-3">
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <div class="form-group mb-3">
+        <label for="business_owner">Business Owner</label>
+        <select name="business_owner" class="form-select">
+          {% for client in clients %}
+          <option value="{{ client.id }}" class="form-control">{{ client.first_name }} {{ client.last_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group mb-3">
+        <label for="category">Category</label>
+        <select name="category" class="form-select">
+          <option value="SOLE TRADER" class="form-control">SOLE TRADER</option>
+          <option value="SME" class="form-control">SME</option>
+          <option value="MSME" class="form-control">MSME</option>
+          <option value="COMPANY" class="form-control">COMPANY</option>
+          </select>
+      </div>
+      <div class="form-group mb-3">
+        <label for="trading_name">Trading Name</label>
+        <input type="text" name="trading_name" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="registered_name">Registered Name</label>
+        <input type="text" name="registered_name" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="business_address">Business Address</label>
+        <input type="text" name="business_address" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="email">Email</label>
+        <input type="email" name="email" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="phone">Phone</label>
+        <input type="text" name="phone" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="website">Website</label>
+        <input type="text" name="website" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="ipa_registration_number">IPA Registration Number</label>
+        <input type="text" name="ipa_registration_number" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="tin_number">TIN Number</label>
+        <input type="text" name="tin_number" class="form-control">
+      </div>
+      <hr>
+      <div class="form-group mb-3">
+        <label for="business_amount">Amount</label>
+        <input name="business_amount" class="form-control">
+      </div>
+      <div class="form-group mb-3">
+        <label for="date_of_committment">Date of Committment</label>
+        <input type="date" name="date_of_committment" class="form-control">
+      </div>
+
+      <div class="form-group mb-3">
+        <label for="public_listing">Public Listing</label>
+        <input type="checkbox" class="form-check-input" id="public_listing" name="public_listing">
+      </div>
+      
+      <br>
+      <button type="submit" class="btn btn-primary">CREATE</button>
+    </form>
+  </div>
+ 
+  
+
+
+
+
+  <!-- Content Ends Here -->
+  
+
+ 
+{% endblock %}
+
+
+
+

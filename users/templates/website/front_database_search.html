@@ -1,0 +1,308 @@
+{% extends "website/website_base.html" %}
+{% load static %}
+{% load site_filter %}
+{% block title %} Search Database | DCC {% endblock %}
+
+{% block css %}
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap");
+
+
+    body{
+      background-color: #eee;
+      font-family: "Poppins", sans-serif;
+      font-weight: 300;
+    }
+  
+  .progresses{
+      display: flex;
+          align-items: center;
+    }
+
+    .line{
+
+      width: 2rem;
+      height: 1rem;
+      background: #63d19e;
+    }
+    .steps{
+
+      display: flex;
+      background-color: #63d19e;
+      color: #fff;
+      font-size: 14px;
+      width: 6rem;
+      height: 3rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+
+    }
+</style>
+
+{% endblock %}
+
+{% block breadcrumb %} Dashboard {% endblock %}
+{% block breadcrumb_active %} Database {% endblock %}
+{% block dashboard_title %} Search {% endblock %}
+
+{% block content %}
+
+<!-- ======= Hero Section ======= -->
+<section id="hero" class="d-flex align-items-center bg-secondary" style="background-image: url('{% static 'web/img/header_bg1.png' %}');">
+    <div class="container my-3 py-3">
+      <div class="row">
+        <div class="col-lg-12 d-flex flex-column justify-content-center pt-4 pt-lg-0 order-2 order-lg-1" data-aos="fade-up" data-aos-delay="200">
+          <h1 class="text-center py-2"><u>Search for any piece of Information</u></h1>
+            <p class="text-center py-1">Enter any information: Name, ID Number, Account number, Phone number, Address, etc</p>
+        </div>
+      </div>
+    </div>
+</section><!-- End Hero -->
+  <!-- Content Goes Here -->
+   <!-- ======= Clients Section ======= -->
+<section id="listings" class="mb-5 pb-5">
+    <div class="container mb-5 pb-5">
+        <div class="row mt-3">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" action="{% url 'front_search' %}" class="d-flex">
+                    <input type="text" class="form-control me-2" name="qf" value="{{ query }}" style="width: 100%;" class="px-1 py-2 mb-3">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div class="row m-0 mt-3">
+            <h3>Search Results</h3>
+            <hr class="p-0 my-3" style="border: 1px solid #63d19e; width:100%;">
+        </div>
+
+        <div class="card p-3"><!-- card start -->
+
+            {% if client_results %}
+            <h2 class="mt-4 mb-3"><span class="text-primary">Client</span> Records</h2>
+                <table border="1" class="table table-striped datatable">
+                    <thead>
+                        
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Mobile</th>
+                            
+                            
+                            
+                            <th>Loan Details</th>
+                            <th>Credit Rating</th>
+                            <th>STATUS</th>
+                        </tr>
+                       
+                    </thead>
+                    <tbody>
+                        {% for client in client_results %}
+                        
+                        <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                                <td>{{ client.first_name }}</td>
+                                <td>{{ client.last_name }}</td>
+                                <td>Login to view</td>
+                                <td>Login to view</td>
+                                <td>Login to View</td>
+                                
+                                <td>Login to View</td>
+
+                                <td class="{% if client.public_category == 'BLACKLISTED' %}bg-danger text-white {% endif %}">{{ client.public_category }}</td>
+                               
+                            </tr>
+                        
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        
+            {% if sme_results %}
+            <h2 class="mt-4 mb-3"><span class="text-primary">Business</span> Records</h2>
+                <table border="1" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Trading Name</th>
+                            <th>Registered Name</th>
+                            
+                            
+                            
+                            <th>Business Details</th>
+                            <th>Credit Rating</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sme in sme_results %}
+                            <tr onclick="window.location.href='{% url 'client_record_detail' sme.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                                <td>{{ sme.trading_name }}</td>
+                                <td>{{ sme.registered_name }}</td>
+                                <td>Login to View</td>
+                                <td>Login to View</td>
+                                <td class="{% if sme.client.public_category == 'BLACKLISTED' %}bg-danger text-white {% endif %}">{{ sme.client.public_category }}</td>
+                                
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        
+            {% if address_results %}
+            <h2 class="mt-4 mb-3"><span class="text-primary">Address</span> Records</h2>
+                <table border="1" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            
+                            
+                            <th>Address Details</th>
+                            
+                            <th>Credit Rating</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for address in address_results %}
+                            <tr onclick="window.location.href='{% url 'client_record_detail' address.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                                <td>{{ address.client }}</td>
+                                <td>Login to View</td>
+                                <td>Login to View</td>
+                                <td class="{% if address.client.public_category == 'BLACKLISTED' %}bg-danger text-white {% endif %}">{{ address.client.public_category }}</td>
+                                
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        
+        
+            {% if contact_results %}
+            <h2 class="mt-4 mb-3"><span class="text-primary">Contact</span> Records</h2>
+                <table border="1" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Contact Details</th>
+                            <th>Credit Rating</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in contact_results %}
+                            <tr onclick="window.location.href='{% url 'client_record_detail' contact.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                                <td>{{ contact.client }}</td>
+                                <td>Login to View</td>
+                                <td>Login to View</td>
+                                <td class="{% if contact.client.public_category == 'BLACKLISTED' %}bg-danger text-white {% endif %}">{{ contact.client.public_category }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        
+            {% if employer_results %}
+            <h2 class="mt-4 mb-3"><span class="text-primary">Employment</span> Records</h2>
+                <table border="1" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Employer</th>
+                            <th>Employment Details</th>
+                            <th>Credit Rating</th>
+                            <th>STATUS</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for employer in employer_results %}
+                            <tr onclick="window.location.href='{% url 'client_record_detail' employer.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                                <td>{{ employer.client }}</td>
+                                <td>{{ employer.employer }}</td>
+                                
+                                <td>Login to View</td>
+                                <td>Login to View</td>
+                                <td class="{% if employer.client.public_category == 'BLACKLISTED' %}bg-danger text-white {% endif %}">{{ employer.client.public_category }}</td>
+                                
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        
+            {% if bank_results %}
+            <h2 class="mt-4 mb-3"><span class="text-primary">Bank Account</span> Records</h2>
+                <table border="1" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Bank</th>
+                            <th>Account Details</th>
+                            <th>Credit Rating</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bank in bank_results %}
+                            <tr onclick="window.location.href='{% url 'client_record_detail' bank.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                                <td>{{ bank.client }}</td>
+                                <td>{{ bank.bank }}</td>
+                                <td>Login to View</td>
+                                <td>Login to View</td>
+                                <td class="{% if bank.client.public_category == 'BLACKLISTED' %}bg-danger text-white {% endif %}">{{ bank.client.public_category }}</td>
+                                
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+        
+            {% endif %}
+        
+            {% if upload_results %}
+            <h2 class="mt-4 mb-3"><span class="text-primary">Client Upload</span> Records</h2>
+                <table border="1" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>File</th>
+                            <th>Upload Date</th>
+                            
+                            
+                            
+                            <th>View Upload</th>
+                            <th>Credit Rating</th>
+                            <th>STATUS</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for upload in upload_results %}
+                            <tr onclick="window.location.href='{% url 'client_record_detail' upload.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                                <td>{{ upload.client }}</td>
+                                <td>{{ upload.file }}</td>
+                                <td>{{ upload.upload_date }}</td>
+                                <td>Login to View</td>
+                                <td>Login to View</td>
+                                <td class="{% if upload.client.public_category == 'BLACKLISTED' %}bg-danger text-white {% endif %}">{{ upload.client.public_category }}</td>
+                                
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+        
+            {% endif %}
+        
+            {% if display_message %}
+                <p class="m-0 p-0">{{ display_message }}</p>
+            {% endif %}
+        </div><!-- card end -->
+    </div>
+</section>
+<!-- Content Ends Here -->
+{% endblock %}
