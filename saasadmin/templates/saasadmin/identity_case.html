@@ -1,0 +1,116 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Identity Case — {{ case.display_name }}{% endblock %}
+{% block topbar_title %}Identity Case{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">{{ case.display_name|default:"Identity case" }}</h1>
+    <div class="sa-page-sub">
+      {{ member_rows|length }} profile(s) &middot;
+      {% if case.kind == 'AUTO' %}auto-linked cluster{% else %}ambiguous group — matcher did not merge{% endif %}
+      &middot; status: <strong>{{ case.get_status_display }}</strong>
+      {% if case.resolved_by %} by {{ case.resolved_by }} on {{ case.resolved_at|date:"Y-m-d H:i" }}{% endif %}
+    </div>
+  </div>
+  <a href="{% url 'sa_identity' %}" class="sa-btn sa-btn-outline"><i class="bi bi-arrow-left"></i> Back to Queue</a>
+</div>
+
+{% if cross_tenant %}
+<div class="sa-card mb-3" style="border-left: 4px solid #d29922;">
+  <div style="padding: 10px 16px; font-size: 13px;">
+    <i class="bi bi-exclamation-triangle" style="color:#d29922;"></i>
+    These profiles come from <strong>different tenants</strong>. Merging deletes the other tenant's copy and
+    the next feed sync will recreate it — for cross-tenant profiles of the same person, choose
+    <strong>Same person</strong> instead of Merge.
+  </div>
+</div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="sa-card mb-4">
+    <div class="sa-card-header"><i class="bi bi-people"></i> Side-by-side comparison</div>
+    <div style="overflow-x:auto;">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>{% if case.status == 'PENDING' %}Keep{% else %}Primary{% endif %}</th>
+            <th>Name</th>
+            <th>Tenant (LUID)</th>
+            <th>CUID</th>
+            <th>DOB</th>
+            <th>NID</th>
+            <th>Passport</th>
+            <th>Mobile</th>
+            <th class="text-end">Loans</th>
+            <th class="text-end">History</th>
+            <th class="text-end">Emp/Bank/Docs</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in member_rows %}
+          <tr>
+            <td>
+              <input type="radio" name="primary_id" value="{{ row.profile.id }}"
+                     {% if case.primary_id == row.profile.id %}checked{% elif forloop.first and not case.primary_id %}checked{% endif %}
+                     {% if case.status != 'PENDING' %}disabled{% endif %}>
+            </td>
+            <td><strong>{{ row.profile.first_name }} {{ row.profile.middle_name|default:"" }} {{ row.profile.last_name }}</strong></td>
+            <td>{{ row.tenant.organisation|default:row.profile.LUID|default:"—" }}</td>
+            <td><code>{{ row.profile.CUID|default:"—" }}</code></td>
+            <td>{{ row.profile.date_of_birth|date:"Y-m-d"|default:"—" }}</td>
+            <td>{{ row.profile.nid_number|default:"—" }}</td>
+            <td>{{ row.profile.passport_number|default:"—" }}</td>
+            <td>{{ row.profile.mobile1|default:"—" }}</td>
+            <td class="text-end">{{ row.loans }}</td>
+            <td class="text-end">{{ row.history }}</td>
+            <td class="text-end">{{ row.employers }}/{{ row.banks }}/{{ row.uploads }}</td>
+            <td>
+              {% if row.profile.dcc_flagged %}<span class="sa-badge sa-badge-red">{{ row.profile.dcc_status }}</span>
+              {% else %}<span class="sa-badge sa-badge-green">{{ row.profile.dcc_status|default:"CLEAR" }}</span>{% endif %}
+            </td>
+            <td>{{ row.profile.updated_at|date:"Y-m-d" }}</td>
+            <td><a href="/appadmin/client/clientprofile/{{ row.profile.id }}/change/" target="_blank" class="sa-btn sa-btn-outline sa-btn-sm">Open</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if case.status == 'PENDING' %}
+  <div class="sa-card">
+    <div class="sa-card-header"><i class="bi bi-check2-square"></i> Resolution</div>
+    <div style="padding: 14px 16px;">
+      <div class="mb-3">
+        <label class="sa-form-label">Note (optional)</label>
+        <input type="text" name="note" maxlength="255" class="sa-form-control" placeholder="Why this decision was made">
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="submit" name="action" value="merge" class="sa-btn sa-btn-primary"
+                onclick="return confirm('Merge all duplicates into the selected profile? Their loans, history and documents will be moved and the duplicates deleted.');">
+          <i class="bi bi-union"></i> Merge — keep selected profile
+        </button>
+        <button type="submit" name="action" value="link" class="sa-btn sa-btn-outline">
+          <i class="bi bi-link-45deg"></i> Same person — keep per-tenant profiles
+        </button>
+        <button type="submit" name="action" value="dismiss" class="sa-btn sa-btn-outline"
+                onclick="return confirm('Record these as DIFFERENT people? The matcher will never merge them again.');">
+          <i class="bi bi-x-circle"></i> Different people
+        </button>
+      </div>
+      <p style="color:var(--sa-muted); font-size:12px;" class="mt-2 mb-0">
+        Merge = true duplicates (everything folds into the selected profile, others are deleted).
+        Same person = the rating engine keeps aggregating them as one person; each tenant keeps its copy.
+        Different people = a permanent exclusion, e.g. two Peter Johns with different birthdays.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}

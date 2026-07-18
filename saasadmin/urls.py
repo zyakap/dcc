@@ -14,7 +14,12 @@ urlpatterns = [
 
     # Billing & Pricing
     path('billing/', views.sa_billing, name='sa_billing'),
+    path('billing/tenant/<int:tenant_id>/', views.sa_tenant_usage, name='sa_tenant_usage'),
     path('pricing/', views.sa_pricing, name='sa_pricing'),
+    path('invoices/', views.sa_invoices, name='sa_invoices'),
+    path('rating-calculation/', views.sa_rating_rules, name='sa_rating_rules'),
+    path('identity/', views.sa_identity, name='sa_identity'),
+    path('identity/<int:case_id>/', views.sa_identity_case, name='sa_identity_case'),
 
     # Users
     path('users/', views.sa_users, name='sa_users'),

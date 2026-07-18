@@ -1,0 +1,82 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Rating Calculation{% endblock %}
+{% block topbar_title %}Rating Calculation{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Rating Calculation</h1>
+    <div class="sa-page-sub">
+      How the benchmark credit score (0&ndash;1000) is computed. Each action a client
+      accumulates adds or removes the points set here. {{ scored_clients }} client(s) currently scored.
+    </div>
+  </div>
+  <form method="post" onsubmit="return confirm('Reset all rating weights to the built-in defaults?');">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="reset_defaults">
+    <button type="submit" class="sa-btn sa-btn-outline"><i class="bi bi-arrow-counterclockwise"></i> Reset to Defaults</button>
+  </form>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="sa-card">
+    <div class="sa-card-header"><i class="bi bi-sliders"></i> Scoring Actions</div>
+    <div style="overflow-x:auto;">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Effect</th>
+            <th class="text-end">Points</th>
+            <th class="text-end">Cap (max points)</th>
+            <th>Enabled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rule in rules %}
+          <tr>
+            <td>
+              <strong>{{ rule.label }}</strong><br>
+              <span style="color:var(--sa-muted); font-size:12px;">{{ rule.help_text }}</span>
+            </td>
+            <td>
+              <select name="direction__{{ rule.action }}" class="sa-form-select" style="min-width:150px;">
+                <option value="INCREASE" {% if rule.direction == 'INCREASE' %}selected{% endif %}>Increase rating</option>
+                <option value="REDUCE" {% if rule.direction == 'REDUCE' %}selected{% endif %}>Reduce rating</option>
+              </select>
+            </td>
+            <td class="text-end">
+              <input type="number" name="points__{{ rule.action }}" value="{{ rule.points }}" min="0" max="1000" class="sa-form-control" style="width:100px; text-align:right;">
+            </td>
+            <td class="text-end">
+              <input type="number" name="cap__{{ rule.action }}" value="{{ rule.cap|default_if_none:'' }}" min="0" max="1000" placeholder="none" class="sa-form-control" style="width:100px; text-align:right;">
+            </td>
+            <td>
+              <input type="checkbox" name="enabled__{{ rule.action }}" {% if rule.enabled %}checked{% endif %}>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="mt-3">
+    <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-save"></i> Save Rating Calculation</button>
+  </div>
+</form>
+
+<div class="sa-card mt-4">
+  <div class="sa-card-header"><i class="bi bi-info-circle"></i> How it works</div>
+  <div style="padding: 12px 16px; color: var(--sa-muted); font-size: 13px;">
+    <p>Every client starts at the <strong>Starting score</strong>. For each action, the engine multiplies its
+    points by the number of occurrences found across <em>all</em> tenants reporting the client — loans,
+    repayment transactions, and the full profile history (identity changes and past default/recovery
+    episodes are counted even after they are cleared). The <strong>Cap</strong> limits the total points one
+    factor can contribute. The final score is clamped to 0&ndash;1000 and its /10 value (0&ndash;100) is
+    written back to every matched client profile.</p>
+    <p class="mb-0">Changes apply on the next recompute: nightly for the whole database, or immediately
+    for a client whenever a tenant pays to view their report.</p>
+  </div>
+</div>
+{% endblock %}

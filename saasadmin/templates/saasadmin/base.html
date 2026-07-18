@@ -404,10 +404,19 @@
     <a href="{% url 'sa_pricing' %}" class="{% if nav == 'sa_billing' and request.resolver_match.url_name == 'sa_pricing' %}active{% endif %}">
       <i class="bi bi-tag"></i> Pricing
     </a>
+    <a href="{% url 'sa_invoices' %}" class="{% if nav == 'sa_invoices' %}active{% endif %}">
+      <i class="bi bi-envelope-paper"></i> Invoices
+    </a>
 
     <div class="sa-section-label">Analytics</div>
     <a href="{% url 'sa_dcc_report' %}" class="{% if nav == 'sa_dcc_report' %}active{% endif %}">
       <i class="bi bi-bar-chart-line"></i> DCC Report
+    </a>
+    <a href="{% url 'sa_rating_rules' %}" class="{% if nav == 'sa_rating_rules' %}active{% endif %}">
+      <i class="bi bi-sliders"></i> Rating Calculation
+    </a>
+    <a href="{% url 'sa_identity' %}" class="{% if nav == 'sa_identity' %}active{% endif %}">
+      <i class="bi bi-people"></i> Identity Resolution
     </a>
 
     <div class="sa-section-label">System</div>

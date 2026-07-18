@@ -18,6 +18,46 @@
   <a href="{% url 'client_records' %}" class="btn btn-outline-dark btn-sm"><i class="bi bi-arrow-left"></i> Back to Records</a>
 </div>
 
+{% if locked_page %}
+<!-- PAY-PER-VIEW TEASER: another lender's client, no paid access window -->
+<div class="card mb-3">
+  <div class="card-body p-0">
+    <div style="position: relative; min-height: 360px; overflow: hidden;">
+      <div aria-hidden="true" style="filter: blur(7px); user-select: none; pointer-events: none; padding: 24px;">
+        <h5>Credit Summary</h5>
+        <p>Benchmark Score: &#9608;&#9608;&#9608;/1000 &nbsp; Grade: &#9608;&#9608; &nbsp; Rating: &#9608;&#9608;/100</p>
+        <p>Status: &#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &nbsp; Loans on record: &#9608;&#9608; &nbsp; Outstanding: K&#9608;,&#9608;&#9608;&#9608;.&#9608;&#9608;</p>
+        <p>Personal, contact and employment details, plus the full cross-lender loan and repayment
+           history, are included in the unlocked record.</p>
+      </div>
+      <div style="position: absolute; inset: 0; background: rgba(33,37,41,.55); display: flex; align-items: center; justify-content: center;">
+        <div class="text-center bg-white p-4" style="border-radius: 12px; max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,.35);">
+          <i class="bi bi-lock" style="font-size: 1.6rem;"></i>
+          <h5 class="mt-2 mb-1">Credit data available</h5>
+          <p class="text-muted mb-1" style="font-size:.9rem;">
+            A DCC record exists for <strong>{{ client.first_name }} {{ client.last_name }}</strong>.
+            Viewing is billed per view.
+          </p>
+          <p class="text-muted mb-3" style="font-size:.85rem;">
+            {% if price_per_view %}Price: <strong>{{ currency }} {{ price_per_view }}</strong> &middot;{% endif %}
+            access stays open for <strong>{{ tenant.credit_check_window_hours|default:12 }} hours</strong> after unlocking.
+          </p>
+          {% if dcc_enabled %}
+          <form method="post" action="{% url 'dcc_credit_check_access' client.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-eye"></i>&nbsp; View Data</button>
+          </form>
+          {% else %}
+          <p class="text-danger mb-0" style="font-size:.85rem;">Credit checks are not enabled for your DCC account.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+
 <!-- Status summary -->
 <div class="row g-2 mb-3">
   <div class="col-md-3">
@@ -126,10 +166,14 @@
   </div>
   <div class="card-body">
     {% if not dcc_access_valid %}
-    <p class="mb-2 text-muted">Unlock the full DCC credit profile for this client. Access is valid for {{ tenant.credit_check_window_hours|default:12 }} hours and will be billed to your account.</p>
+    <p class="mb-2 text-muted">
+      Unlock the full cross-lender DCC credit profile for this client.
+      {% if price_per_view %}Billed at <strong>{{ currency }} {{ price_per_view }}</strong> per view;{% else %}Billed per view;{% endif %}
+      access stays open for {{ tenant.credit_check_window_hours|default:12 }} hours.
+    </p>
     <form method="post" action="{% url 'dcc_credit_check_access' client.id %}">
       {% csrf_token %}
-      <button type="submit" class="btn btn-primary"><i class="bi bi-unlock"></i> Unlock DCC Credit Data</button>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-eye"></i> View Data</button>
     </form>
     {% else %}
     {% if dcc_data %}
@@ -254,5 +298,7 @@
     </div>
   </div>
 </div>
+
+{% endif %}{# locked_page #}
 
 {% endblock %}

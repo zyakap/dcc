@@ -1,0 +1,165 @@
+{% extends "dashboard_base.html" %}
+{% load humanize %}
+
+{% block title %} Billing & Usage {% endblock %}
+{% block dashboard_title %} Billing &amp; Usage {% endblock %}
+{% block breadcrumb %} Home {% endblock %}
+{% block breadcrumb_active %} Billing &amp; Usage {% endblock %}
+
+{% block content %}
+<section class="section">
+
+  <div class="card">
+    <div class="card-body pt-3">
+      <form method="get" class="row g-2 align-items-end mb-3">
+        <div class="col-auto">
+          <label class="form-label mb-0">Month</label>
+          <select name="month" class="form-select form-select-sm">
+            {% for m, name in months %}
+              <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <label class="form-label mb-0">Year</label>
+          <select name="year" class="form-select form-select-sm">
+            {% for y in years %}
+              <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-sm btn-primary">Show</button>
+        </div>
+      </form>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card info-card sales-card">
+            <div class="card-body">
+              <h5 class="card-title">Total this period</h5>
+              <h3>{{ summary.currency }} {{ summary.total|floatformat:2|intcomma }}</h3>
+              <span class="text-muted small">includes base fee {{ summary.currency }} {{ summary.base_fee|floatformat:2 }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card info-card revenue-card">
+            <div class="card-body">
+              <h5 class="card-title">Paid views</h5>
+              <h3>{{ views_count }}</h3>
+              <span class="text-muted small">each view stays open for {{ window_hours }} hour{{ window_hours|pluralize }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h5 class="mt-2">Usage by service</h5>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th class="text-end">Units</th>
+              <th class="text-end">Unit price ({{ summary.currency }})</th>
+              <th class="text-end">Cost ({{ summary.currency }})</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in summary.rows %}
+            <tr>
+              <td>{{ row.label }}</td>
+              <td class="text-end">{{ row.units|intcomma }}</td>
+              <td class="text-end">{{ row.unit_price|floatformat:4 }}</td>
+              <td class="text-end">{{ row.cost|floatformat:2|intcomma }}</td>
+            </tr>
+            {% endfor %}
+            <tr>
+              <td><strong>Monthly base fee</strong></td>
+              <td></td><td></td>
+              <td class="text-end"><strong>{{ summary.base_fee|floatformat:2|intcomma }}</strong></td>
+            </tr>
+            <tr class="table-primary">
+              <td><strong>Total</strong></td>
+              <td></td><td></td>
+              <td class="text-end"><strong>{{ summary.total|floatformat:2|intcomma }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body pt-3">
+      <h5 class="card-title">Invoices</h5>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr><th>Number</th><th>Period</th><th class="text-end">Total</th><th>Status</th><th>Sent</th></tr>
+          </thead>
+          <tbody>
+            {% for invoice in invoices %}
+            <tr>
+              <td><code>{{ invoice.number }}</code></td>
+              <td>{{ invoice.period_label }}</td>
+              <td class="text-end">{{ invoice.currency }} {{ invoice.total|floatformat:2|intcomma }}</td>
+              <td>
+                {% if invoice.status == 'PAID' %}<span class="badge bg-success">PAID</span>
+                {% elif invoice.status == 'SENT' %}<span class="badge bg-primary">SENT</span>
+                {% else %}<span class="badge bg-secondary">DRAFT</span>{% endif %}
+              </td>
+              <td>{{ invoice.sent_at|date:"Y-m-d"|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted">No invoices yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body pt-3">
+      <h5 class="card-title">Pay-per-view log ({{ views_count }})</h5>
+      <p class="text-muted small mb-2">
+        Each row is one paid credit-report view. Access to that client's data
+        remains open until the window expires; a new view after expiry is billed again.
+      </p>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>CUID</th>
+              <th>Viewed at</th>
+              <th>Access until</th>
+              <th class="text-end">Charge ({{ summary.currency }})</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in view_rows %}
+            <tr>
+              <td>{% if row.client %}{{ row.client.first_name }} {{ row.client.last_name }}{% else %}—{% endif %}</td>
+              <td><code>{{ row.access.client_cuid }}</code></td>
+              <td>{{ row.access.accessed_at|date:"Y-m-d H:i" }}</td>
+              <td>{{ row.access.expires_at|date:"Y-m-d H:i" }}</td>
+              <td class="text-end">{{ row.price|floatformat:2 }}</td>
+              <td>
+                {% if row.active %}<span class="badge bg-success">OPEN</span>
+                {% else %}<span class="badge bg-secondary">EXPIRED</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No paid views in this period.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</section>
+{% endblock %}

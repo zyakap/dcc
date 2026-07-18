@@ -83,7 +83,11 @@
               {{ row.tenant.organisation|default:row.tenant }}
             </a>
           </td>
-          <td class="text-end">{{ row.credit_checks }}</td>
+          <td class="text-end">
+            <a href="{% url 'sa_tenant_usage' row.tenant.id %}?year={{ year }}&month={{ month }}" style="color:#58a6ff; text-decoration:none;" title="Pay-per-view log">
+              {{ row.credit_checks }}
+            </a>
+          </td>
           <td class="text-end">{{ row.profile_lookups }}</td>
           <td class="text-end">{{ row.feed_records }}</td>
           <td class="text-end">{{ row.base_fee|floatformat:2 }}</td>

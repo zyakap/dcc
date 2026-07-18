@@ -230,6 +230,13 @@
       </li><!-- End Profile Page Nav -->
 
       <li class="nav-item">
+        <a class="nav-link {% if nav == 'my_billing' %} active bg-primary text-white {% endif %}" href="{% url 'my_billing' %}">
+          <i class="bi bi-credit-card {% if nav == 'my_billing' %} text-white {% endif %}"></i>
+          <span>Billing &amp; Usage</span>
+        </a>
+      </li><!-- End Billing Page Nav -->
+
+      <li class="nav-item">
         <a class="nav-link {% if nav == 'profile' %} active bg-primary text-white {% endif %}" href="{% url 'profile' %}">
           <i class="bi bi-person {% if nav == 'profile' %} text-white {% endif %}"></i>
           <span>Profile</span>

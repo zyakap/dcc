@@ -72,86 +72,97 @@ def get_clientprofiles(request, endpoint_url):
 
 @login_check
 def client_record_detail(request, client_id):
+    """One client's record, pay-per-view gated exactly like the tenant LMS
+    channel:
+
+    - a tenant viewing ITS OWN client (same LUID) sees the data it supplied
+      for free, with the cross-lender DCC section behind the unlock;
+    - viewing anyone else's client shows only a teaser (name + record exists)
+      behind the View Data overlay until a paid access window is open;
+    - a paid window unlocks everything: full profile, all lenders' loans,
+      the benchmark score and matched profiles."""
     from django.utils import timezone
     from django.db.models import Q, Sum
-    from api.models import CreditCheckAccess
+    from api.models import CreditCheckAccess, PricingSettings
     from loan.models import Loan
+    from .models import matched_profiles
 
     client = get_object_or_404(ClientProfile, id=client_id)
-    # Match by FK where set, AND fall back to CUID/LUID string match to cover
-    # cases where the loan was synced but owner FK wasn't linked (e.g. ordering issues).
-    from django.db.models import Q as _Q
-    loan_q = _Q(owner=client)
-    if client.CUID:
-        loan_q |= _Q(UID=client.CUID)
-        if client.LUID:
-            loan_q |= _Q(UID=client.CUID, LUID=client.LUID)
-    loans = Loan.objects.filter(loan_q).distinct().select_related('lender')
-
     try:
         tenant = request.user.userprofile
     except Exception:
         tenant = None
 
+    own_record = bool(tenant and client.LUID and client.LUID == tenant.LUID)
     dcc_enabled = bool(tenant and tenant.credit_check_enabled)
-    dcc_access_valid = False
-    dcc_expires_at = None
-    dcc_data = None
-    credit_score = None
 
-    if dcc_enabled and client.CUID:
+    access = None
+    if tenant and client.CUID:
         access = CreditCheckAccess.objects.filter(
             tenant=tenant,
             client_cuid=client.CUID,
             expires_at__gt=timezone.now(),
         ).order_by('-expires_at').first()
+    dcc_access_valid = access is not None
+    # Someone else's client + no paid window = teaser page only
+    locked_page = not own_record and not dcc_access_valid
 
-        if access:
-            dcc_access_valid = True
-            dcc_expires_at = access.expires_at
+    pricing = PricingSettings.current()
 
-            match_q = Q()
-            if client.nid_number:
-                match_q |= Q(nid_number=client.nid_number)
-            if client.first_name and client.last_name:
-                match_q |= Q(first_name__iexact=client.first_name,
-                             last_name__iexact=client.last_name)
-            other_profiles = ClientProfile.objects.filter(match_q).exclude(pk=client.pk) \
-                             .select_related('user_profile').order_by('-updated_at') if match_q else ClientProfile.objects.none()
+    loans = Loan.objects.none()
+    dcc_data = None
+    credit_score = None
 
-            all_loans = Loan.objects.filter(owner__in=list(other_profiles) + [client]) \
-                            .select_related('lender', 'owner__user_profile').order_by('-created_at')
-            loan_summary = all_loans.aggregate(
-                total_borrowed=Sum('amount'),
-                total_outstanding=Sum('total_outstanding'),
-                total_arrears=Sum('total_arrears'),
-            )
-            credit_score_obj, _ = ClientCreditScore.objects.get_or_create(client=client)
-            credit_score = credit_score_obj
-            dcc_data = {
-                'other_profiles': other_profiles,
-                'all_loans': all_loans,
-                'loan_summary': loan_summary,
-            }
+    if not locked_page:
+        loan_q = Q(owner=client)
+        if client.CUID:
+            loan_q |= Q(UID=client.CUID, LUID=client.LUID)
+        loans = Loan.objects.filter(loan_q).distinct().select_related('lender')
+
+    if dcc_access_valid:
+        profiles = matched_profiles(ClientProfile.objects.filter(pk=client.pk))
+        other_profiles = [p for p in profiles if p.pk != client.pk]
+        all_q = Q(owner__in=profiles)
+        for p in profiles:
+            if p.CUID:
+                all_q |= Q(UID=p.CUID, LUID=p.LUID)
+        all_loans = (Loan.objects.filter(all_q).distinct()
+                     .select_related('lender', 'owner__user_profile').order_by('-created_at'))
+        loan_summary = all_loans.aggregate(
+            total_borrowed=Sum('amount'),
+            total_outstanding=Sum('total_outstanding'),
+            total_arrears=Sum('total_arrears'),
+        )
+        credit_score = ClientCreditScore.ensure(client, profiles=profiles)
+        dcc_data = {
+            'other_profiles': other_profiles,
+            'all_loans': all_loans,
+            'loan_summary': loan_summary,
+        }
 
     return render(request, 'client_record_detail.html', {
         'nav': 'client_record_detail',
         'client': client,
         'loans': loans,
+        'own_record': own_record,
+        'locked_page': locked_page,
         'dcc_enabled': dcc_enabled,
         'dcc_access_valid': dcc_access_valid,
-        'dcc_expires_at': dcc_expires_at,
+        'dcc_expires_at': access.expires_at if access else None,
         'dcc_data': dcc_data,
         'credit_score': credit_score,
         'tenant': tenant,
+        'price_per_view': pricing.price_per_credit_check,
+        'currency': pricing.currency,
     })
 
 
 def dcc_credit_check_access(request, client_id):
-    """POST: unlock DCC credit view for this client, bill the tenant, redirect back."""
-    import datetime as _dt
-    from django.utils import timezone
-    from api.models import CreditCheckAccess, log_usage
+    """POST: the web-channel 'View Data' trigger — unlocks (and bills) this
+    client's DCC credit data through the same open_access service the tenant
+    API uses, so both channels monetise identically."""
+    from api.models import open_access
+    from .models import matched_profiles
 
     if request.method != 'POST':
         return redirect('client_record_detail', client_id=client_id)
@@ -171,27 +182,21 @@ def dcc_credit_check_access(request, client_id):
         messages.warning(request, 'Client has no CUID — DCC access cannot be logged.', extra_tags='warning')
         return redirect('client_record_detail', client_id=client_id)
 
-    existing = CreditCheckAccess.objects.filter(
-        tenant=tenant, client_cuid=client.CUID, expires_at__gt=timezone.now(),
-    ).order_by('-expires_at').first()
-
-    if existing:
-        messages.info(request, f'DCC access already active until {existing.expires_at:%d %b %Y %H:%M}.', extra_tags='info')
-    else:
-        window_hours = tenant.credit_check_window_hours or 12
-        expires_at = timezone.now() + _dt.timedelta(hours=window_hours)
-        CreditCheckAccess.objects.create(tenant=tenant, client_cuid=client.CUID, expires_at=expires_at)
-        log_usage(tenant, 'CREDIT_CHECK', detail=client.CUID)
+    access, created = open_access(tenant, client.CUID)
+    if created:
         try:
-            score_obj, _ = ClientCreditScore.objects.get_or_create(client=client)
-            score_obj.recompute()
+            profiles = matched_profiles(ClientProfile.objects.filter(pk=client.pk))
+            ClientCreditScore.ensure(client, profiles=profiles)
         except Exception:
             pass
+        window_hours = tenant.credit_check_window_hours or 12
         messages.success(
             request,
-            f'DCC Credit data unlocked for {window_hours}h (until {expires_at:%d %b %Y %H:%M}). Billed.',
+            f'DCC Credit data unlocked for {window_hours}h (until {access.expires_at:%d %b %Y %H:%M}). Billed.',
             extra_tags='info',
         )
+    else:
+        messages.info(request, f'DCC access already active until {access.expires_at:%d %b %Y %H:%M}.', extra_tags='info')
     return redirect('client_record_detail', client_id=client_id)
 
 def client_record_detail_sample(request):
@@ -360,7 +365,7 @@ def add_client(request):
         
         if request.POST.get('dcc_flagged'):
             client_profile.dcc_flagged = True
-        if request.POST.get('dcc_Status') is not 'SELECT STATUS':
+        if request.POST.get('dcc_Status') and request.POST.get('dcc_Status') != 'SELECT STATUS':
             client_profile.dcc_status = request.POST.get('dcc_Status')
         if request.POST.get('public_listing'):
             client_profile.public_listing = True

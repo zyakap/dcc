@@ -239,7 +239,20 @@ CELERY_BEAT_SCHEDULE = {
     'sync_tenant_feeds': {
         'task': 'api.tasks.sync_tenant_feeds',
         'schedule': crontab(minute=0),  # hourly, on the hour
-    }
+    },
+
+    # Nightly benchmark credit-score recompute across the whole database.
+    'recompute_credit_scores': {
+        'task': 'api.tasks.recompute_credit_scores',
+        'schedule': crontab(hour=2, minute=30),
+    },
+
+    # Daily check — fires the monthly invoice email run on the configured
+    # send day when auto-send is enabled (SaaS Admin -> Invoices).
+    'auto_send_invoices': {
+        'task': 'api.tasks.auto_send_invoices',
+        'schedule': crontab(hour=7, minute=0),
+    },
 
 }
 

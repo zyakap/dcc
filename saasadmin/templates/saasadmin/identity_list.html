@@ -1,0 +1,98 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Identity Resolution{% endblock %}
+{% block topbar_title %}Identity Resolution{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Identity Resolution</h1>
+    <div class="sa-page-sub">
+      Clusters of profiles that may belong to the same person. One real person must end up with
+      exactly one credit rating. {{ pending_count }} case(s) pending.
+    </div>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="scan">
+    <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-search"></i> Scan Database</button>
+  </form>
+</div>
+
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+    <div style="min-width:200px;">
+      <label class="sa-form-label">Status</label>
+      <select name="status" class="sa-form-select">
+        <option value="PENDING" {% if status == 'PENDING' %}selected{% endif %}>Pending</option>
+        {% for value, label in statuses %}
+          {% if value != 'PENDING' %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endif %}
+        {% endfor %}
+        <option value="ALL" {% if status == 'ALL' %}selected{% endif %}>All</option>
+      </select>
+    </div>
+    <button type="submit" class="sa-btn sa-btn-outline">Filter</button>
+  </form>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-people"></i> Cases</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Person</th>
+          <th>Type</th>
+          <th class="text-end">Profiles</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Resolved By</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td><strong>{{ row.case.display_name|default:"—" }}</strong></td>
+          <td>
+            {% if row.case.kind == 'AUTO' %}
+            <span class="sa-badge sa-badge-green">AUTO-LINKED</span>
+            {% else %}
+            <span class="sa-badge">NEEDS REVIEW</span>
+            {% endif %}
+          </td>
+          <td class="text-end">{{ row.count }}</td>
+          <td>{{ row.case.get_status_display }}</td>
+          <td>{{ row.case.created_at|date:"Y-m-d" }}</td>
+          <td>{{ row.case.resolved_by|default:"—" }}</td>
+          <td>
+            <a href="{% url 'sa_identity_case' row.case.id %}" class="sa-btn sa-btn-outline sa-btn-sm">
+              {% if row.case.status == 'PENDING' %}Review{% else %}View{% endif %}
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center; color:var(--sa-muted); padding:24px;">
+          No cases with this status. Run <em>Scan Database</em> to refresh the queue.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sa-card mt-4">
+  <div class="sa-card-header"><i class="bi bi-info-circle"></i> How resolution works</div>
+  <div style="padding: 12px 16px; color: var(--sa-muted); font-size: 13px;">
+    <p><strong>Auto-linked</strong> clusters share a hard identifier (NID / passport / licence) or full
+    name + date of birth — the rating engine already treats them as one person; confirming just
+    records the decision. <strong>Needs review</strong> groups share a name but the matcher could not
+    prove they are one person (missing or different DOB, no shared ID) — only you can decide.</p>
+    <p class="mb-0">Three outcomes: <strong>Merge</strong> keeps one profile and folds everything into it
+    (for true duplicates, ideally same tenant); <strong>Same person</strong> keeps one profile per tenant but
+    confirms a single shared rating; <strong>Different people</strong> permanently stops the matcher from
+    ever merging them.</p>
+  </div>
+</div>
+{% endblock %}

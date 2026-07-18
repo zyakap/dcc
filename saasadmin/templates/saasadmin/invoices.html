@@ -1,0 +1,124 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block topbar_title %}Invoices{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Invoices</h1>
+    <div class="sa-page-sub">Monthly tenant invoices, generated from metered usage with price snapshots.</div>
+  </div>
+</div>
+
+<!-- Auto-send settings -->
+<div class="sa-card mb-4">
+  <div class="sa-card-header"><i class="bi bi-gear"></i> Auto-Send Settings</div>
+  <form method="post" style="padding: 14px 16px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_settings">
+    <div class="d-flex gap-3 flex-wrap align-items-end">
+      <div>
+        <label class="sa-form-label" style="display:block;">Auto-send monthly invoices</label>
+        <label style="font-size:14px;">
+          <input type="checkbox" name="auto_send_enabled" {% if billing.auto_send_enabled %}checked{% endif %}>
+          Enabled — email each tenant last month's invoice automatically
+        </label>
+      </div>
+      <div style="min-width:120px;">
+        <label class="sa-form-label">Send on day</label>
+        <input type="number" name="send_day" value="{{ billing.send_day }}" min="1" max="28" class="sa-form-control">
+      </div>
+      <div style="min-width:260px;">
+        <label class="sa-form-label">CC email (optional)</label>
+        <input type="email" name="cc_email" value="{{ billing.cc_email }}" class="sa-form-control" placeholder="accounts@yourcompany.com">
+      </div>
+      <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-save"></i> Save</button>
+    </div>
+  </form>
+</div>
+
+<!-- Period + generate -->
+<div class="sa-card mb-4">
+  <div class="d-flex gap-2 flex-wrap align-items-end" style="padding: 0;">
+    <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+      <div style="min-width:130px;">
+        <label class="sa-form-label">Month</label>
+        <select name="month" class="sa-form-select">
+          {% for m_num, m_name in months %}
+          <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="min-width:100px;">
+        <label class="sa-form-label">Year</label>
+        <select name="year" class="sa-form-select">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="sa-btn sa-btn-outline">Show</button>
+    </form>
+    <form method="post" class="ms-auto">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="generate_all">
+      <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-file-earmark-plus"></i> Generate for {{ month }}/{{ year }}</button>
+    </form>
+  </div>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-envelope-paper"></i> Invoices — {{ month }}/{{ year }}
+    <span style="float:right; color:#3fb950;">Total: {{ total|floatformat:2 }}</span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Number</th>
+          <th>Tenant</th>
+          <th class="text-end">Total</th>
+          <th>Status</th>
+          <th>Sent</th>
+          <th>Paid</th>
+          <th style="min-width:220px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in invoices %}
+        <tr>
+          <td><code>{{ invoice.number }}</code></td>
+          <td>{{ invoice.tenant.organisation|default:invoice.tenant }}</td>
+          <td class="text-end"><strong>{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</strong></td>
+          <td>
+            {% if invoice.status == 'PAID' %}<span class="sa-badge sa-badge-green">PAID</span>
+            {% elif invoice.status == 'SENT' %}<span class="sa-badge">SENT</span>
+            {% else %}<span class="sa-badge">DRAFT</span>{% endif %}
+          </td>
+          <td>{{ invoice.sent_at|date:"Y-m-d H:i"|default:"—" }}</td>
+          <td>{{ invoice.paid_at|date:"Y-m-d"|default:"—" }}</td>
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="invoice_id" value="{{ invoice.id }}">
+              <button type="submit" name="action" value="send" class="sa-btn sa-btn-outline sa-btn-sm">
+                <i class="bi bi-envelope"></i> {% if invoice.sent_at %}Resend{% else %}Send{% endif %}
+              </button>
+              {% if invoice.status != 'PAID' %}
+              <button type="submit" name="action" value="mark_paid" class="sa-btn sa-btn-outline sa-btn-sm">
+                <i class="bi bi-check2"></i> Mark Paid
+              </button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center; color:var(--sa-muted); padding:24px;">
+          No invoices for this period yet — click <em>Generate</em>.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

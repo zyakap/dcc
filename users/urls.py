@@ -34,6 +34,7 @@ urlpatterns = [
     path('activate/<slug:uidb64>/<slug:token>/', views.activate, name='activate'),
     path('invalid/', views.activation_invalid, name="activation_invalid"),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('billing/', views.my_billing, name='my_billing'),
     path('reset_password/', views.reset_password, name='reset_password'),
     path('reset_link_sent/', views.reset_link_sent, name='reset_link_sent'),
     path('password_reset/<slug:uidb64>/<slug:token>/', views.password_reset, name='password_reset'),

@@ -1,0 +1,120 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Tenant Usage — {{ tenant }}{% endblock %}
+{% block topbar_title %}Tenant Usage{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">{{ tenant.organisation|default:tenant }} — Usage &amp; Pay-Per-View</h1>
+    <div class="sa-page-sub">LUID <code>{{ tenant.LUID }}</code> &middot; plan {{ tenant.plan }} &middot; view window {{ tenant.credit_check_window_hours }}h</div>
+  </div>
+  <a href="{% url 'sa_billing' %}?year={{ year }}&month={{ month }}" class="sa-btn sa-btn-outline"><i class="bi bi-arrow-left"></i> All Tenants</a>
+</div>
+
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+    <div style="min-width:130px;">
+      <label class="sa-form-label">Month</label>
+      <select name="month" class="sa-form-select">
+        {% for m_num, m_name in months %}
+        <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="min-width:100px;">
+      <label class="sa-form-label">Year</label>
+      <select name="year" class="sa-form-select">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="sa-btn sa-btn-primary">Apply</button>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Total ({{ summary.currency }})</div>
+      <div class="sa-stat-value" style="color:#3fb950;">{{ summary.total|floatformat:2 }}</div>
+      <div class="sa-stat-sub">incl. base fee {{ summary.base_fee|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Paid Views</div>
+      <div class="sa-stat-value">{{ views_count }}</div>
+      <div class="sa-stat-sub">credit reports unlocked this month</div>
+    </div>
+  </div>
+</div>
+
+<div class="sa-card mb-4">
+  <div class="sa-card-header"><i class="bi bi-table"></i> Usage by Service</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th class="text-end">Units</th>
+          <th class="text-end">Unit Price</th>
+          <th class="text-end">Cost ({{ summary.currency }})</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary.rows %}
+        <tr>
+          <td>{{ row.label }}</td>
+          <td class="text-end">{{ row.units }}</td>
+          <td class="text-end">{{ row.unit_price|floatformat:4 }}</td>
+          <td class="text-end">{{ row.cost|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="border-top: 2px solid var(--sa-border); font-weight:700;">
+          <td>TOTAL (incl. base fee)</td>
+          <td></td><td></td>
+          <td class="text-end" style="color:#3fb950;">{{ summary.total|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-eye"></i> Pay-Per-View Log ({{ views_count }})</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>CUID</th>
+          <th>Viewed At</th>
+          <th>Access Until</th>
+          <th class="text-end">Charge ({{ summary.currency }})</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in view_rows %}
+        <tr>
+          <td>{% if row.client %}{{ row.client.first_name }} {{ row.client.last_name }}{% else %}&mdash;{% endif %}</td>
+          <td><code>{{ row.access.client_cuid }}</code></td>
+          <td>{{ row.access.accessed_at|date:"Y-m-d H:i" }}</td>
+          <td>{{ row.access.expires_at|date:"Y-m-d H:i" }}</td>
+          <td class="text-end">{{ row.price|floatformat:2 }}</td>
+          <td>
+            {% if row.active %}<span class="sa-badge sa-badge-green">OPEN</span>
+            {% else %}<span class="sa-badge">EXPIRED</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center; color:var(--sa-muted); padding:24px;">No paid views in this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

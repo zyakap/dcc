@@ -1161,8 +1161,10 @@ def my_records(request):
 
 @login_check
 def client_detail(request, client_id):
-    client = get_object_or_404(ClientProfile, id=client_id)
-    return render(request, 'dcc_client_detail.html', {'client': client})
+    """Legacy route — the old page showed full client data without the
+    pay-per-view gate. All detail viewing now goes through the gated
+    client_record_detail screen."""
+    return redirect('client_record_detail', client_id=client_id)
 
 @login_check
 def database_search(request):
@@ -1348,3 +1350,61 @@ def database_search_redirect(request, search_string):
 
 
 
+
+
+##############
+##  BILLING & USAGE (tenant-facing)
+##############
+
+@login_check
+def my_billing(request):
+    """This tenant's DCC bill: month selector, per-action usage with unit
+    prices, and the pay-per-view log — every credit report unlocked, when,
+    and until when the access window runs."""
+    from api.models import ApiUsageLog, CreditCheckAccess, Invoice, usage_summary
+    from client.models import ClientProfile
+
+    user_profile = UserProfile.objects.get(user_id=request.user.id)
+
+    today = datetime.date.today()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+
+    summary = usage_summary(user_profile, year, month)
+
+    views_qs = (CreditCheckAccess.objects
+                .filter(tenant=user_profile,
+                        accessed_at__year=year, accessed_at__month=month)
+                .order_by('-accessed_at'))
+    from django.utils import timezone as _tz
+    per_view_price = summary['pricing'].price_per_credit_check
+    now = _tz.now()
+    view_rows = []
+    for access in views_qs[:200]:
+        client = ClientProfile.objects.filter(
+            LUID=user_profile.LUID, CUID=access.client_cuid).first() \
+            or ClientProfile.objects.filter(CUID=access.client_cuid).first()
+        view_rows.append({
+            'access': access,
+            'client': client,
+            'price': per_view_price,
+            'active': access.expires_at > now,
+        })
+
+    context = {
+        'nav': 'my_billing',
+        'user': user_profile,
+        'summary': summary,
+        'view_rows': view_rows,
+        'views_count': views_qs.count(),
+        'invoices': Invoice.objects.filter(tenant=user_profile)[:24],
+        'window_hours': user_profile.credit_check_window_hours,
+        'year': year,
+        'month': month,
+        'months': [(m, datetime.date(2000, m, 1).strftime('%B')) for m in range(1, 13)],
+        'years': list(range(today.year - 3, today.year + 1)),
+    }
+    return render(request, 'my_billing.html', context)
