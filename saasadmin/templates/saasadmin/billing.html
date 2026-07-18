@@ -1,0 +1,108 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Usage & Billing{% endblock %}
+{% block topbar_title %}Usage & Billing{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Usage & Billing</h1>
+    <div class="sa-page-sub">Metered API usage and cost summary per tenant</div>
+  </div>
+  <a href="{% url 'sa_pricing' %}" class="sa-btn sa-btn-outline">
+    <i class="bi bi-tag"></i> Edit Pricing
+  </a>
+</div>
+
+<!-- Month filter -->
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+    <div style="min-width:130px;">
+      <label class="sa-form-label">Month</label>
+      <select name="month" class="sa-form-select">
+        {% for m_num, m_name in months %}
+        <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="min-width:100px;">
+      <label class="sa-form-label">Year</label>
+      <select name="year" class="sa-form-select">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="sa-btn sa-btn-primary">Apply</button>
+  </form>
+</div>
+
+<!-- Summary tiles -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Total Billed</div>
+      <div class="sa-stat-value" style="color:#3fb950;">{{ pricing.currency }} {{ grand_total|floatformat:2 }}</div>
+      <div class="sa-stat-sub">All tenants, selected month</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Base Fee / Tenant</div>
+      <div class="sa-stat-value" style="font-size:18px;">{{ pricing.currency }} {{ pricing.monthly_base_fee|floatformat:2 }}</div>
+      <div class="sa-stat-sub">Flat monthly fee</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Per Credit Check</div>
+      <div class="sa-stat-value" style="font-size:18px;">{{ pricing.currency }} {{ pricing.price_per_credit_check|floatformat:2 }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Per-tenant table -->
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-table"></i> Tenant Breakdown</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th class="text-end">Credit Checks</th>
+          <th class="text-end">Profile Lookups</th>
+          <th class="text-end">Feed Records</th>
+          <th class="text-end">Base Fee</th>
+          <th class="text-end">Total ({{ pricing.currency }})</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>
+            <a href="{% url 'sa_tenant_detail' row.tenant.id %}" style="color: #58a6ff; text-decoration:none;">
+              {{ row.tenant.organisation|default:row.tenant }}
+            </a>
+          </td>
+          <td class="text-end">{{ row.credit_checks }}</td>
+          <td class="text-end">{{ row.profile_lookups }}</td>
+          <td class="text-end">{{ row.feed_records }}</td>
+          <td class="text-end">{{ row.base_fee|floatformat:2 }}</td>
+          <td class="text-end"><strong>{{ row.cost|floatformat:2 }}</strong></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center; color:var(--sa-muted); padding:24px;">No billing data for this period.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if rows %}
+      <tfoot>
+        <tr style="border-top: 2px solid var(--sa-border); font-weight:700;">
+          <td>TOTAL</td>
+          <td></td><td></td><td></td><td></td>
+          <td class="text-end" style="color:#3fb950;">{{ pricing.currency }} {{ grand_total|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

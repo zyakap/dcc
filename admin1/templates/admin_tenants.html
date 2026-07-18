@@ -1,0 +1,60 @@
+{% extends "admin_base.html" %}
+{% load static %}
+{% block title %} Tenants {% endblock %}
+
+{% block breadcrumb %} Admin {% endblock %}
+{% block breadcrumb_active %} Tenants {% endblock %}
+{% block dashboard_title %} Tenant LMS Integrations {% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Connected Tenants</h5>
+          <a href="{% url 'admin_usage_metrics' %}" class="btn btn-sm btn-outline-primary">Usage &amp; Billing</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th>LUID</th>
+                <th>Endpoint</th>
+                <th>Feed</th>
+                <th>API Key</th>
+                <th>Records</th>
+                <th>Last Sync</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in tenants %}
+              <tr>
+                <td>{{ t }}</td>
+                <td><code>{{ t.LUID }}</code></td>
+                <td>{{ t.endpoint }}</td>
+                <td>
+                  {% if t.feed_enabled %}<span class="badge bg-success">ENABLED</span>
+                  {% else %}<span class="badge bg-secondary">OFF</span>{% endif %}
+                </td>
+                <td>
+                  {% if t.api_key %}<span class="badge bg-success">SET</span>
+                  {% else %}<span class="badge bg-danger">MISSING</span>{% endif %}
+                </td>
+                <td>{{ t.record_count }}</td>
+                <td><small>{{ t.last_sync_status|default:"never" }}</small></td>
+                <td><a class="btn btn-sm btn-primary" href="{% url 'admin_tenant_config' t.id %}">Configure</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" class="text-center text-muted">No tenants yet. Create one under Users, then configure it here.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

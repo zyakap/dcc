@@ -1,0 +1,185 @@
+{% extends "admin_base.html" %}
+{% load static %}
+
+{% block title %}Loan {{ loan.ref }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'admin_dashboard' %}">Dashboard</a> / <a href="{% url 'admin_loans' %}">Loans</a>{% endblock %}
+{% block breadcrumb_active %}{{ loan.ref }}{% endblock %}
+{% block dashboard_title %}Loan Record{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div>
+    <h3 class="mb-0 text-primary">{{ loan.ref }}</h3>
+    <small class="text-muted">
+      {{ loan.lender.organisation|default:"—" }} &nbsp;·&nbsp;
+      <span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">
+        {{ loan.status|default:"—" }}
+      </span>
+      &nbsp;
+      <span class="badge {% if loan.funded_category == 'ACTIVE' %}bg-primary{% elif loan.funded_category == 'RECOVERY' %}bg-danger{% elif loan.funded_category == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">
+        {{ loan.funded_category|default:"—" }}
+      </span>
+    </small>
+  </div>
+  <a href="{% url 'admin_loans' %}" class="btn btn-outline-dark btn-sm">
+    <i class="bi bi-arrow-left"></i> Back to Loans
+  </a>
+</div>
+
+<!-- Summary stat cards -->
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card p-2 text-center">
+      <small class="text-muted">Loan Amount</small>
+      <strong class="fs-5">K {{ loan.amount|default:"0" }}</strong>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-2 text-center">
+      <small class="text-muted">Total Outstanding</small>
+      <strong class="fs-5 {% if loan.total_outstanding > 0 %}text-warning{% endif %}">K {{ loan.total_outstanding|default:"0" }}</strong>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-2 text-center">
+      <small class="text-muted">Total Arrears</small>
+      <strong class="fs-5 {% if loan.total_arrears > 0 %}text-danger{% endif %}">K {{ loan.total_arrears|default:"0" }}</strong>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-2 text-center">
+      <small class="text-muted">Repayment</small>
+      <strong class="fs-5">K {{ loan.repayment_amount|default:"0" }}</strong>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Left: loan details -->
+  <div class="col-lg-5">
+
+    <!-- Borrower -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-person"></i> Borrower</div>
+      <div class="card-body">
+        {% if loan.owner %}
+        <p class="mb-1">Name: <strong>{{ loan.owner.first_name }} {{ loan.owner.last_name }}</strong></p>
+        <p class="mb-1">CUID: <code>{{ loan.owner.CUID|default:"—" }}</code></p>
+        <p class="mb-1">Mobile: <strong>{{ loan.owner.mobile1|default:"—" }}</strong></p>
+        <p class="mb-0">DCC Status:
+          <span class="badge {% if loan.owner.dcc_flagged %}bg-danger{% else %}bg-success{% endif %}">
+            {{ loan.owner.dcc_status|default:"CLEAR" }}
+          </span>
+        </p>
+        <div class="mt-2">
+          <a href="{% url 'admin_view_client' loan.owner.id %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-person-badge"></i> View Client Record
+          </a>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No borrower linked.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Loan terms -->
+    <div class="card mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-file-text"></i> Loan Terms</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><th>Ref</th><td><code>{{ loan.ref|default:"—" }}</code></td></tr>
+          <tr><th>UID</th><td><code>{{ loan.UID|default:"—" }}</code></td></tr>
+          <tr><th>LUID</th><td><code>{{ loan.LUID|default:"—" }}</code></td></tr>
+          <tr><th>Lender</th><td>{{ loan.lender.organisation|default:"—" }}</td></tr>
+          <tr><th>Type</th><td>{{ loan.loan_type|default:"—" }}</td></tr>
+          <tr><th>Classification</th><td>{{ loan.classification|default:"—" }}</td></tr>
+          <tr><th>Amount</th><td>K {{ loan.amount|default:"0" }}</td></tr>
+          <tr><th>Interest</th><td>K {{ loan.interest|default:"0" }}</td></tr>
+          <tr><th>Processing Fee</th><td>K {{ loan.processing_fee|default:"0" }}</td></tr>
+          <tr><th>Total Loan</th><td>K {{ loan.total_loan_amount|default:"0" }}</td></tr>
+          <tr><th>Repayment</th><td>K {{ loan.repayment_amount|default:"0" }} ({{ loan.repayment_frequency|default:"—" }})</td></tr>
+          <tr><th>Term</th><td>{{ loan.number_of_fortnights|default:"—" }} fortnights</td></tr>
+          <tr><th>Funding Date</th><td>{{ loan.funding_date|default:"—" }}</td></tr>
+          <tr><th>Repayment Start</th><td>{{ loan.repayment_start_date|default:"—" }}</td></tr>
+          <tr><th>Expected End</th><td>{{ loan.expected_end_date|default:"—" }}</td></tr>
+          <tr><th>Next Payment</th><td>{{ loan.next_payment_date|default:"—" }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Repayment performance -->
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-graph-down-arrow"></i> Performance</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><th>Repayments Made</th><td>{{ loan.number_of_repayments|default:"0" }}</td></tr>
+          <tr><th>Total Paid</th><td>K {{ loan.total_paid|default:"0" }}</td></tr>
+          <tr><th>Last Payment</th><td>{{ loan.last_repayment_date|default:"—" }} (K {{ loan.last_repayment_amount|default:"0" }})</td></tr>
+          <tr><th>Defaults</th><td>{{ loan.number_of_defaults|default:"0" }}</td></tr>
+          <tr><th>Days in Default</th><td>{{ loan.days_in_default|default:"0" }}</td></tr>
+          <tr><th>Last Default</th><td>{{ loan.last_default_date|default:"—" }} (K {{ loan.last_default_amount|default:"0" }})</td></tr>
+          <tr><th>Arrears</th><td class="{% if loan.total_arrears > 0 %}text-danger fw-bold{% endif %}">K {{ loan.total_arrears|default:"0" }}</td></tr>
+          <tr><th>Outstanding</th><td>K {{ loan.total_outstanding|default:"0" }}</td></tr>
+          <tr><th>Principal Receivable</th><td>K {{ loan.principal_loan_receivable|default:"0" }}</td></tr>
+          <tr><th>Aging Category</th><td>{{ loan.aging_category|default:"—" }}</td></tr>
+          {% if loan.notes %}
+          <tr><th>Notes</th><td>{{ loan.notes }}</td></tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: transaction history -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-list-ul"></i> Transaction / Statement History
+        <span class="badge bg-secondary float-end">{{ transactions|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Statement</th>
+                <th class="text-end">Credit</th>
+                <th class="text-end">Debit</th>
+                <th class="text-end">Arrears</th>
+                <th class="text-end">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for txn in transactions %}
+              <tr>
+                <td><small>{{ txn.date|date:"Y-m-d" }}</small></td>
+                <td>
+                  <span class="badge {% if txn.type == 'PAYMENT' %}bg-success{% elif txn.type == 'DEFAULT' %}bg-danger{% else %}bg-secondary{% endif %}">
+                    {{ txn.type|default:"—" }}
+                  </span>
+                </td>
+                <td style="font-size:12px;">{{ txn.statement|default:"—" }}</td>
+                <td class="text-end text-success">{{ txn.credit|default:"" }}</td>
+                <td class="text-end text-danger">{{ txn.debit|default:"" }}</td>
+                <td class="text-end {% if txn.arrears > 0 %}text-warning{% endif %}">{{ txn.arrears|default:"" }}</td>
+                <td class="text-end fw-semibold">{{ txn.balance|default:"" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">No transactions recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

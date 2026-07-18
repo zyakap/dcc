@@ -17,10 +17,12 @@ urlpatterns = [
     re_path(r'terms-and-conditions/', terms_conditions, name='terms_conditions'),
     path('users/', include('users.urls')),
     path('api/', include('api.urls')),
+    path('API/', include('api.urls')),  # tenant LMS clients call the uppercase form
     path('client/', include('client.urls')),
     path('loan/', include('loan.urls')),
     path('transaction/', include('transaction.urls')),
     path('admin/', include('admin1.urls')),
+    path('saasadmin/', include('saasadmin.urls')),
     path('about/', about, name='about'),
     path('contact/', contact, name='contact'),
     path('public-listing/', public_listing, name='public_listing'),

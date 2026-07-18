@@ -1,0 +1,201 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}{{ tenant }} — Tenant Detail{% endblock %}
+{% block topbar_title %}Tenant: {{ tenant }}{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">{{ tenant.organisation|default:tenant }}</h1>
+    <div class="sa-page-sub">LUID: {{ tenant.LUID|default:"—" }} &nbsp;·&nbsp; {{ tenant.endpoint }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <form method="post" action="{% url 'sa_tenant_toggle_active' tenant.id %}"
+          onsubmit="return confirm('Toggle active status?');">
+      {% csrf_token %}
+      {% if tenant.user.active %}
+        <button type="submit" class="sa-btn sa-btn-danger"><i class="bi bi-pause-circle"></i> Suspend</button>
+      {% else %}
+        <button type="submit" class="sa-btn sa-btn-success"><i class="bi bi-play-circle"></i> Activate</button>
+      {% endif %}
+    </form>
+    <form method="post" action="{% url 'sa_tenant_delete' tenant.id %}"
+          onsubmit="return confirm('Permanently delete this tenant and all associated data? This cannot be undone.');">
+      {% csrf_token %}
+      <button type="submit" class="sa-btn sa-btn-danger"><i class="bi bi-trash"></i> Delete</button>
+    </form>
+    <a href="{% url 'sa_tenants' %}" class="sa-btn sa-btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- Stat row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Status</div>
+      <div class="sa-stat-value" style="font-size:16px; margin-top:4px;">
+        {% if tenant.user.active %}
+          <span class="sa-badge sa-badge-green">Active</span>
+        {% else %}
+          <span class="sa-badge sa-badge-red">Suspended</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Clients</div>
+      <div class="sa-stat-value">{{ client_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Loans</div>
+      <div class="sa-stat-value">{{ loan_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Credit Checks (month)</div>
+      <div class="sa-stat-value">{{ month_checks }}</div>
+      <div class="sa-stat-sub">{{ pricing.currency }} {{ month_cost|floatformat:2 }} billed</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Config form -->
+  <div class="col-lg-7">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-sliders"></i> Configuration</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="sa-form-label">Organisation Name</label>
+            <input type="text" name="organisation" value="{{ tenant.organisation|default:'' }}" class="sa-form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">LUID</label>
+            <input type="text" name="LUID" value="{{ tenant.LUID|default:'' }}" class="sa-form-control">
+          </div>
+          <div class="col-12">
+            <label class="sa-form-label">LMS Endpoint URL</label>
+            <input type="text" name="endpoint" value="{{ tenant.endpoint|default:'' }}" class="sa-form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Subscription Plan</label>
+            <select name="plan" class="sa-form-select">
+              {% for code, label in plan_choices %}
+              <option value="{{ code }}" {% if tenant.plan == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Credit Check Window (hours)</label>
+            <input type="number" name="credit_check_window_hours" value="{{ tenant.credit_check_window_hours }}" min="1" max="720" class="sa-form-control">
+          </div>
+
+          <div class="col-12">
+            <div class="sa-card" style="background: var(--sa-bg); padding: 14px;">
+              <div style="font-size:12px; font-weight:600; color:var(--sa-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.06em;">Feature Toggles</div>
+              <div class="d-flex flex-column gap-2">
+                <label class="sa-switch">
+                  <input type="checkbox" name="feed_enabled" {% if tenant.feed_enabled %}checked{% endif %}>
+                  <span class="sa-slider"></span>
+                  <span style="font-size:13px;">Feed Sync Enabled</span>
+                </label>
+                <label class="sa-switch">
+                  <input type="checkbox" name="credit_check_enabled" {% if tenant.credit_check_enabled %}checked{% endif %}>
+                  <span class="sa-slider"></span>
+                  <span style="font-size:13px;">DCC Credit Checks Enabled</span>
+                </label>
+                <label class="sa-switch">
+                  <input type="checkbox" name="can_view_loans" {% if tenant.can_view_loans %}checked{% endif %}>
+                  <span class="sa-slider"></span>
+                  <span style="font-size:13px;">Can View Loans (cross-tenant)</span>
+                </label>
+                <label class="sa-switch">
+                  <input type="checkbox" name="can_view_transactions" {% if tenant.can_view_transactions %}checked{% endif %}>
+                  <span class="sa-slider"></span>
+                  <span style="font-size:13px;">Can View Transactions</span>
+                </label>
+                <label class="sa-switch">
+                  <input type="checkbox" name="can_view_uploads" {% if tenant.can_view_uploads %}checked{% endif %}>
+                  <span class="sa-slider"></span>
+                  <span style="font-size:13px;">Can View Documents/Uploads</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="sa-btn sa-btn-primary">
+              <i class="bi bi-check-lg"></i> Save Changes
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="col-lg-5">
+    <!-- API key -->
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-key"></i> API Key</div>
+      {% if tenant.api_key %}
+        <code style="word-break:break-all; font-size:12px; display:block; margin-bottom:10px;">{{ tenant.api_key }}</code>
+      {% else %}
+        <div style="color:var(--sa-muted); font-size:13px; margin-bottom:10px;">No API key set.</div>
+      {% endif %}
+      <form method="post" onsubmit="return confirm('Regenerate API key? The existing key will stop working immediately.');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="regen_key">
+        <button type="submit" class="sa-btn sa-btn-outline sa-btn-sm">
+          <i class="bi bi-arrow-repeat"></i> Regenerate Key
+        </button>
+      </form>
+    </div>
+
+    <!-- Contact info -->
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-person"></i> Contact</div>
+      <div style="font-size: 13px; line-height: 2;">
+        <div><span style="color:var(--sa-muted);">Name:</span> {{ tenant.first_name }} {{ tenant.middle_name|default:"" }} {{ tenant.last_name|default:"" }}</div>
+        <div><span style="color:var(--sa-muted);">Role:</span> {{ tenant.role|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted);">Email:</span> {{ tenant.email|default:tenant.work_email|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted);">Mobile:</span> {{ tenant.mobile1|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted);">Login:</span> {{ tenant.user.email }}</div>
+        <div><span style="color:var(--sa-muted);">Joined:</span> {{ tenant.date_joined|date:"Y-m-d" }}</div>
+        <div>
+          <span style="color:var(--sa-muted);">Last Sync:</span>
+          {{ tenant.last_sync_at|date:"Y-m-d H:i"|default:"Never" }}
+          {% if tenant.last_sync_status %}
+            <span class="sa-badge sa-badge-gray ms-1" style="font-size:10px;">{{ tenant.last_sync_status }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick links -->
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-arrow-right-circle"></i> View Data</div>
+      <div class="d-flex flex-column gap-2">
+        <a href="{% url 'sa_clients' %}?tenant={{ tenant.id }}" class="sa-btn sa-btn-outline sa-btn-sm">
+          <i class="bi bi-person-vcard"></i> Client Records ({{ client_count }})
+        </a>
+        <a href="{% url 'sa_loans' %}?tenant={{ tenant.id }}" class="sa-btn sa-btn-outline sa-btn-sm">
+          <i class="bi bi-cash-coin"></i> Loan Records ({{ loan_count }})
+        </a>
+        <a href="{% url 'sa_billing' %}?year={{ today.year }}&month={{ today.month }}" class="sa-btn sa-btn-outline sa-btn-sm">
+          <i class="bi bi-receipt"></i> Billing Report
+        </a>
+        <a href="{% url 'admin_tenant_config' tenant.id %}" class="sa-btn sa-btn-outline sa-btn-sm">
+          <i class="bi bi-gear"></i> Tenant Admin Panel
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Tenants{% endblock %}
+{% block topbar_title %}Tenant Management{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Tenants</h1>
+    <div class="sa-page-sub">All subscriber organisations on the DCC platform</div>
+  </div>
+  <a href="{% url 'sa_tenant_create' %}" class="sa-btn sa-btn-primary">
+    <i class="bi bi-plus-lg"></i> New Tenant
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+    <div style="flex:1; min-width:200px;">
+      <label class="sa-form-label">Search</label>
+      <input type="text" name="q" value="{{ query }}" class="sa-form-control"
+             placeholder="Organisation, LUID, email, endpoint…">
+    </div>
+    <div style="min-width:140px;">
+      <label class="sa-form-label">Plan</label>
+      <select name="plan" class="sa-form-select">
+        <option value="">All Plans</option>
+        {% for code, label in plan_choices %}
+        <option value="{{ code }}" {% if plan_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <button type="submit" class="sa-btn sa-btn-primary">Filter</button>
+      <a href="{% url 'sa_tenants' %}" class="sa-btn sa-btn-outline ms-1">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header">
+    <i class="bi bi-building"></i> {{ tenants.count }} Tenant{{ tenants.count|pluralize }}
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Organisation</th>
+          <th>LUID</th>
+          <th>Endpoint</th>
+          <th>Plan</th>
+          <th>DCC</th>
+          <th>Feed</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tenants %}
+        <tr>
+          <td>
+            <div><strong>{{ t.organisation|default:"—" }}</strong></div>
+            <div style="font-size:11px; color:var(--sa-muted);">{{ t.first_name }} {{ t.last_name }}</div>
+          </td>
+          <td><code>{{ t.LUID|default:"—" }}</code></td>
+          <td style="font-size:12px; color:var(--sa-muted);">{{ t.endpoint|default:"—" }}</td>
+          <td>
+            <span class="sa-badge {% if t.plan == 'PREMIUM' %}sa-badge-blue{% elif t.plan == 'STANDARD' %}sa-badge-yellow{% else %}sa-badge-gray{% endif %}">
+              {{ t.plan }}
+            </span>
+          </td>
+          <td>
+            {% if t.credit_check_enabled %}
+              <span class="sa-badge sa-badge-green">ON</span>
+            {% else %}
+              <span class="sa-badge sa-badge-gray">OFF</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if t.feed_enabled %}
+              <span class="sa-badge sa-badge-blue">ON</span>
+            {% else %}
+              <span class="sa-badge sa-badge-gray">OFF</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if t.user.active %}
+              <span class="sa-badge sa-badge-green"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Active</span>
+            {% else %}
+              <span class="sa-badge sa-badge-red"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Suspended</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'sa_tenant_detail' t.id %}" class="sa-btn sa-btn-outline sa-btn-sm">Manage</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center; color:var(--sa-muted); padding:24px;">No tenants found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

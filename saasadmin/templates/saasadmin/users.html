@@ -1,0 +1,86 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Users{% endblock %}
+{% block topbar_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Users</h1>
+    <div class="sa-page-sub">All platform user accounts</div>
+  </div>
+</div>
+
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 align-items-end flex-wrap">
+    <div style="flex:1; min-width:200px;">
+      <label class="sa-form-label">Search</label>
+      <input type="text" name="q" value="{{ query }}" class="sa-form-control" placeholder="Email, username, organisation…">
+    </div>
+    <button type="submit" class="sa-btn sa-btn-primary">Search</button>
+    <a href="{% url 'sa_users' %}" class="sa-btn sa-btn-outline">Clear</a>
+  </form>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-people"></i> {{ users.count }} User{{ users.count|pluralize }}</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Username</th>
+          <th>Organisation</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.email }}</td>
+          <td><code>{{ u.username }}</code></td>
+          <td>
+            {% if u.userprofile.organisation %}
+              <a href="{% url 'sa_tenant_detail' u.userprofile.id %}" style="color:#58a6ff; text-decoration:none;">
+                {{ u.userprofile.organisation }}
+              </a>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if u.is_superuser %}
+              <span class="sa-badge sa-badge-red">Superuser</span>
+            {% elif u.staff %}
+              <span class="sa-badge sa-badge-blue">Staff</span>
+            {% else %}
+              <span class="sa-badge sa-badge-gray">User</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.active %}
+              <span class="sa-badge sa-badge-green">Active</span>
+            {% else %}
+              <span class="sa-badge sa-badge-red">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px; color:var(--sa-muted);">{{ u.date_joined|date:"Y-m-d" }}</td>
+          <td>
+            {% if not u.is_superuser %}
+            <form method="post" action="{% url 'sa_user_toggle_active' u.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="sa-btn sa-btn-outline sa-btn-sm">
+                {% if u.active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center; color:var(--sa-muted); padding:24px;">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

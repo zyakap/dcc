@@ -51,7 +51,7 @@ class Loan(models.Model):
    
     category = models.CharField(max_length=30, blank=True, null=True,choices=[('PENDING','PENDING'),('FUNDED','FUNDED')])
     funded_category = models.CharField(max_length=30, blank=True, null=True,choices=[('ACTIVE','ACTIVE'), ('RECOVERY', 'RECOVERY'), ('BAD','BAD'), ('WOFF','WOFF'), ('COMPLETED','COMPLETED'), ('ARCHIVED','ARCHIVED')])
-    status = models.CharField(max_length=30, blank=True, null=True,choices=[('AWAITING T&C', 'AWAITING T&C'),('UNDER REVIEW','UNDER REVIEW'),('ON HOLD','ON HOLD'),('APPROVED','APPROVED'),('RUNNING','RUNNING'),('DEFAULTED','DEFAULTED'),('COMPLETED','COMPLETED')])
+    status = models.CharField(max_length=30, blank=True, null=True,choices=[('AWAITING T&C', 'AWAITING T&C'),('UNDER REVIEW','UNDER REVIEW'),('ON HOLD','ON HOLD'),('APPROVED','APPROVED'),('REJECTED','REJECTED'),('RUNNING','RUNNING'),('DEFAULTED','DEFAULTED'),('COMPLETED','COMPLETED')])
     
     tc_agreement = models.CharField(max_length=3, blank=True, null=True, choices=[('YES', 'YES'),('NO', 'NO')])
     tc_agreement_timestamp = models.DateTimeField(blank=True, null=True)

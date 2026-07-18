@@ -1,8 +1,8 @@
 from django.contrib import admin
 
 from .models import (
-    ClientProfile, BusinessProfile, UserProfileUpload, 
-    ClientUpload, ClientAddress, ClientContact, 
+    ClientProfile, ClientProfileHistory, BusinessProfile, UserProfileUpload,
+    ClientUpload, ClientAddress, ClientContact,
     ClientEmployer, ClientBankAccount
 )
 
@@ -56,7 +56,21 @@ class ClientEmployerAdmin(admin.ModelAdmin):
 
 @admin.register(ClientBankAccount)
 class ClientBankAccountAdmin(admin.ModelAdmin):
-    list_display = ('client', 'bank_name', 'account_number')
+    list_display = ('client', 'bank', 'account_number')
     search_fields = ('client__first_name', 'client__last_name', 'account_number')
-    list_filter = ('bank_name',)
+    list_filter = ('bank',)
     readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(ClientProfileHistory)
+class ClientProfileHistoryAdmin(admin.ModelAdmin):
+    list_display = ('client', 'field_name', 'old_value', 'new_value', 'source', 'changed_at')
+    search_fields = ('client__first_name', 'client__last_name', 'client__CUID', 'client__LUID', 'field_name')
+    list_filter = ('source', 'field_name')
+    readonly_fields = ('client', 'field_name', 'old_value', 'new_value', 'source', 'changed_at')
+    ordering = ('-changed_at',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

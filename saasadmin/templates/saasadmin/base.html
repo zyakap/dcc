@@ -1,0 +1,463 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}DCC SaaS Admin{% endblock %} | DCC Platform</title>
+  <link rel="icon" href="{% static 'clientimgs/favicon.png' %}">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 -->
+  <link href="{% static 'admin/assets/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="{% static 'admin/assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+
+  <style>
+    :root {
+      --sa-bg:       #0d1117;
+      --sa-sidebar:  #161b22;
+      --sa-border:   #21262d;
+      --sa-accent:   #238636;
+      --sa-accent2:  #1f6feb;
+      --sa-text:     #c9d1d9;
+      --sa-muted:    #8b949e;
+      --sa-card:     #161b22;
+      --sa-hover:    #1c2128;
+      --sa-sidebar-w: 240px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--sa-bg);
+      color: var(--sa-text);
+      min-height: 100vh;
+    }
+
+    /* ---- Sidebar ---- */
+    #sa-sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sa-sidebar-w);
+      background: var(--sa-sidebar);
+      border-right: 1px solid var(--sa-border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .sa-logo {
+      padding: 20px 16px;
+      border-bottom: 1px solid var(--sa-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .sa-logo-icon {
+      width: 32px; height: 32px;
+      background: var(--sa-accent2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #fff;
+      flex-shrink: 0;
+    }
+    .sa-logo-text {
+      font-size: 13px; font-weight: 700;
+      color: var(--sa-text);
+      line-height: 1.2;
+    }
+    .sa-logo-text small {
+      display: block; font-size: 10px; font-weight: 400;
+      color: var(--sa-muted); letter-spacing: .05em;
+    }
+
+    .sa-nav {
+      padding: 12px 0;
+      flex: 1;
+    }
+    .sa-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--sa-muted);
+      padding: 8px 16px 4px;
+      margin-top: 8px;
+    }
+    .sa-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      color: var(--sa-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 0;
+      transition: color .15s, background .15s;
+      border-left: 3px solid transparent;
+    }
+    .sa-nav a:hover {
+      background: var(--sa-hover);
+      color: var(--sa-text);
+    }
+    .sa-nav a.active {
+      background: var(--sa-hover);
+      color: #fff;
+      border-left-color: var(--sa-accent2);
+    }
+    .sa-nav a i { font-size: 15px; width: 18px; text-align: center; }
+
+    .sa-sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--sa-border);
+      font-size: 12px;
+      color: var(--sa-muted);
+    }
+    .sa-sidebar-footer a { color: var(--sa-muted); text-decoration: none; }
+    .sa-sidebar-footer a:hover { color: var(--sa-text); }
+
+    /* ---- Main ---- */
+    #sa-main {
+      margin-left: var(--sa-sidebar-w);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sa-topbar {
+      background: var(--sa-sidebar);
+      border-bottom: 1px solid var(--sa-border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .sa-topbar-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--sa-text);
+    }
+    .sa-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sa-user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--sa-muted);
+    }
+    .sa-user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--sa-accent2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+    }
+
+    #sa-content {
+      flex: 1;
+      padding: 24px;
+    }
+
+    /* ---- Cards ---- */
+    .sa-card {
+      background: var(--sa-card);
+      border: 1px solid var(--sa-border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .sa-card-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sa-text);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ---- Stat tiles ---- */
+    .sa-stat {
+      background: var(--sa-card);
+      border: 1px solid var(--sa-border);
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+    .sa-stat-label {
+      font-size: 11px;
+      color: var(--sa-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 6px;
+    }
+    .sa-stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+    .sa-stat-sub {
+      font-size: 11px;
+      color: var(--sa-muted);
+      margin-top: 4px;
+    }
+
+    /* ---- Tables ---- */
+    .sa-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .sa-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--sa-muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--sa-border);
+      text-align: left;
+    }
+    .sa-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--sa-border);
+      color: var(--sa-text);
+      vertical-align: middle;
+    }
+    .sa-table tr:last-child td { border-bottom: none; }
+    .sa-table tbody tr:hover { background: var(--sa-hover); }
+
+    /* ---- Badges ---- */
+    .sa-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .sa-badge-green  { background: rgba(35,134,54,.2);  color: #3fb950; border: 1px solid rgba(35,134,54,.4); }
+    .sa-badge-blue   { background: rgba(31,111,235,.2); color: #58a6ff; border: 1px solid rgba(31,111,235,.4); }
+    .sa-badge-red    { background: rgba(248,81,73,.2);  color: #f85149; border: 1px solid rgba(248,81,73,.4); }
+    .sa-badge-yellow { background: rgba(210,153,34,.2); color: #e3b341; border: 1px solid rgba(210,153,34,.4); }
+    .sa-badge-gray   { background: rgba(139,148,158,.15); color: var(--sa-muted); border: 1px solid var(--sa-border); }
+
+    /* ---- Buttons ---- */
+    .sa-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: opacity .15s, background .15s;
+    }
+    .sa-btn:hover { opacity: .85; }
+    .sa-btn-primary  { background: var(--sa-accent2); color: #fff; }
+    .sa-btn-success  { background: var(--sa-accent);  color: #fff; }
+    .sa-btn-danger   { background: #da3633; color: #fff; }
+    .sa-btn-outline  { background: transparent; color: var(--sa-text); border-color: var(--sa-border); }
+    .sa-btn-outline:hover { background: var(--sa-hover); }
+    .sa-btn-sm { padding: 4px 10px; font-size: 11px; }
+
+    /* ---- Forms ---- */
+    .sa-form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sa-muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+    .sa-form-control, .sa-form-select {
+      background: #0d1117;
+      border: 1px solid var(--sa-border);
+      color: var(--sa-text);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .sa-form-control:focus, .sa-form-select:focus {
+      border-color: var(--sa-accent2);
+    }
+    .sa-form-control::placeholder { color: var(--sa-muted); }
+
+    /* ---- Alerts ---- */
+    .sa-alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .sa-alert-info    { background: rgba(31,111,235,.15); border: 1px solid rgba(31,111,235,.4); color: #58a6ff; }
+    .sa-alert-success { background: rgba(35,134,54,.15);  border: 1px solid rgba(35,134,54,.4);  color: #3fb950; }
+    .sa-alert-danger  { background: rgba(248,81,73,.15);  border: 1px solid rgba(248,81,73,.4);  color: #f85149; }
+    .sa-alert-warning { background: rgba(210,153,34,.15); border: 1px solid rgba(210,153,34,.4); color: #e3b341; }
+
+    /* ---- Page header ---- */
+    .sa-page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .sa-page-title { font-size: 18px; font-weight: 700; color: #fff; margin: 0; }
+    .sa-page-sub   { font-size: 12px; color: var(--sa-muted); margin-top: 2px; }
+
+    /* ---- Toggle switch ---- */
+    .sa-switch { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+    .sa-switch input { opacity: 0; width: 0; height: 0; }
+    .sa-slider {
+      width: 36px; height: 20px;
+      background: var(--sa-border);
+      border-radius: 20px;
+      position: relative;
+      transition: background .2s;
+    }
+    .sa-slider::before {
+      content: '';
+      position: absolute;
+      left: 3px; top: 3px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .2s;
+    }
+    .sa-switch input:checked + .sa-slider { background: var(--sa-accent); }
+    .sa-switch input:checked + .sa-slider::before { transform: translateX(16px); }
+
+    code {
+      font-size: 11px;
+      background: rgba(139,148,158,.1);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: #79c0ff;
+    }
+
+    @media (max-width: 768px) {
+      #sa-sidebar { display: none; }
+      #sa-main { margin-left: 0; }
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav id="sa-sidebar">
+  <a href="{% url 'sa_dashboard' %}" class="sa-logo">
+    <div class="sa-logo-icon"><i class="bi bi-shield-check"></i></div>
+    <div class="sa-logo-text">DCC Platform<small>SaaS Admin</small></div>
+  </a>
+
+  <div class="sa-nav">
+    <div class="sa-section-label">Overview</div>
+    <a href="{% url 'sa_dashboard' %}" class="{% if nav == 'sa_dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <div class="sa-section-label">Subscribers</div>
+    <a href="{% url 'sa_tenants' %}" class="{% if nav == 'sa_tenants' %}active{% endif %}">
+      <i class="bi bi-building"></i> Tenants
+    </a>
+    <a href="{% url 'sa_users' %}" class="{% if nav == 'sa_users' %}active{% endif %}">
+      <i class="bi bi-people"></i> Users
+    </a>
+
+    <div class="sa-section-label">Data</div>
+    <a href="{% url 'sa_clients' %}" class="{% if nav == 'sa_clients' %}active{% endif %}">
+      <i class="bi bi-person-vcard"></i> Client Records
+    </a>
+    <a href="{% url 'sa_loans' %}" class="{% if nav == 'sa_loans' %}active{% endif %}">
+      <i class="bi bi-cash-coin"></i> Loan Records
+    </a>
+
+    <div class="sa-section-label">Billing</div>
+    <a href="{% url 'sa_billing' %}" class="{% if nav == 'sa_billing' %}active{% endif %}">
+      <i class="bi bi-receipt"></i> Usage & Billing
+    </a>
+    <a href="{% url 'sa_pricing' %}" class="{% if nav == 'sa_billing' and request.resolver_match.url_name == 'sa_pricing' %}active{% endif %}">
+      <i class="bi bi-tag"></i> Pricing
+    </a>
+
+    <div class="sa-section-label">Analytics</div>
+    <a href="{% url 'sa_dcc_report' %}" class="{% if nav == 'sa_dcc_report' %}active{% endif %}">
+      <i class="bi bi-bar-chart-line"></i> DCC Report
+    </a>
+
+    <div class="sa-section-label">System</div>
+    <a href="{% url 'sa_settings' %}" class="{% if nav == 'sa_settings' %}active{% endif %}">
+      <i class="bi bi-gear"></i> Settings
+    </a>
+    <a href="{% url 'admin_dashboard' %}">
+      <i class="bi bi-arrow-left-right"></i> Tenant Admin
+    </a>
+    <a href="/appadmin/">
+      <i class="bi bi-database"></i> Django Admin
+    </a>
+  </div>
+
+  <div class="sa-sidebar-footer">
+    <div>{{ request.user.email }}</div>
+    <a href="{% url 'logout_user' %}">Sign out</a>
+  </div>
+</nav>
+
+<!-- Main -->
+<div id="sa-main">
+
+  <!-- Topbar -->
+  <div id="sa-topbar">
+    <div class="sa-topbar-title">{% block topbar_title %}DCC SaaS Admin{% endblock %}</div>
+    <div class="sa-topbar-actions">
+      {% if messages %}
+        {% for message in messages %}
+        <div class="sa-alert sa-alert-{{ message.tags|default:'info' }}" style="margin:0; padding: 5px 12px; font-size: 12px;">
+          {{ message }}
+        </div>
+        {% endfor %}
+      {% endif %}
+      <div class="sa-user-badge">
+        <div class="sa-user-avatar">{{ request.user.email|first|upper }}</div>
+        <span>Superuser</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div id="sa-content">
+    {% block content %}{% endblock %}
+  </div>
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="{% static 'admin/assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

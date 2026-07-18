@@ -1,0 +1,183 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}DCC Report{% endblock %}
+{% block topbar_title %}DCC Credit Report{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">DCC Credit Report</h1>
+    <div class="sa-page-sub">Monthly credit check activity, billing, and score distribution</div>
+  </div>
+</div>
+
+<!-- Month filter -->
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+    <div style="min-width:130px;">
+      <label class="sa-form-label">Month</label>
+      <select name="month" class="sa-form-select">
+        {% for m_num, m_name in months %}
+        <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="min-width:100px;">
+      <label class="sa-form-label">Year</label>
+      <select name="year" class="sa-form-select">
+        {% for y in years %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="sa-btn sa-btn-primary">Filter</button>
+  </form>
+</div>
+
+<!-- Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Credit Checks</div>
+      <div class="sa-stat-value">{{ grand_total_checks }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Total Billed</div>
+      <div class="sa-stat-value" style="color:#3fb950; font-size:18px;">{{ pricing.currency }} {{ grand_total_cost|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Avg Credit Score</div>
+      <div class="sa-stat-value">{{ avg_score }}</div>
+      <div class="sa-stat-sub">All clients with scores</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Rate / Check</div>
+      <div class="sa-stat-value" style="font-size:18px;">{{ pricing.currency }} {{ pricing.price_per_credit_check|floatformat:2 }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Per-tenant usage -->
+  <div class="col-lg-7">
+    <div class="sa-card h-100">
+      <div class="sa-card-header"><i class="bi bi-table"></i> Usage by Tenant</div>
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead>
+            <tr>
+              <th>Tenant</th>
+              <th>DCC</th>
+              <th class="text-end">Checks</th>
+              <th class="text-end">Cost ({{ pricing.currency }})</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in tenant_rows %}
+            <tr>
+              <td>
+                <a href="{% url 'sa_tenant_detail' row.tenant.id %}" style="color:#58a6ff; text-decoration:none;">
+                  {{ row.tenant.organisation|default:row.tenant }}
+                </a>
+              </td>
+              <td>
+                {% if row.enabled %}
+                  <span class="sa-badge sa-badge-green">ON</span>
+                {% else %}
+                  <span class="sa-badge sa-badge-gray">OFF</span>
+                {% endif %}
+              </td>
+              <td class="text-end">{{ row.checks }}</td>
+              <td class="text-end">{{ row.cost|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center; color:var(--sa-muted); padding:24px;">No data.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if tenant_rows %}
+          <tfoot>
+            <tr style="font-weight:700; border-top: 2px solid var(--sa-border);">
+              <td colspan="2">TOTAL</td>
+              <td class="text-end">{{ grand_total_checks }}</td>
+              <td class="text-end" style="color:#3fb950;">{{ pricing.currency }} {{ grand_total_cost|floatformat:2 }}</td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grade distribution -->
+  <div class="col-lg-5">
+    <div class="sa-card h-100">
+      <div class="sa-card-header"><i class="bi bi-bar-chart"></i> Credit Score Grade Distribution</div>
+      {% if grade_dist %}
+        {% for g in grade_dist %}
+        <div style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+            <span style="font-weight:600;
+              {% if g.grade == 'AAA' or g.grade == 'AA' or g.grade == 'A' %}color:#3fb950;
+              {% elif g.grade == 'BBB' or g.grade == 'BB' %}color:#e3b341;
+              {% else %}color:#f85149;{% endif %}">
+              {{ g.grade }}
+            </span>
+            <span style="font-size:12px; color:var(--sa-muted);">{{ g.count }} client{{ g.count|pluralize }}</span>
+          </div>
+          <div style="height:6px; background:var(--sa-border); border-radius:3px;">
+            <div style="height:100%; width:{{ g.count }}%; border-radius:3px;
+              background: {% if g.grade == 'AAA' or g.grade == 'AA' or g.grade == 'A' %}#3fb950{% elif g.grade == 'BBB' or g.grade == 'BB' %}#e3b341{% else %}#f85149{% endif %};"></div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--sa-muted); font-size:13px;">No credit scores computed yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if top_clients %}
+<div class="sa-card mt-4">
+  <div class="sa-card-header"><i class="bi bi-trophy"></i> Most-Accessed Clients This Month</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>CUID</th>
+          <th>DCC Status</th>
+          <th class="text-end">Accesses</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in top_clients %}
+        <tr>
+          <td><strong>{{ row.client.first_name }} {{ row.client.last_name }}</strong></td>
+          <td><code>{{ row.client.CUID|default:"—" }}</code></td>
+          <td>
+            {% if row.client.dcc_status == 'CLEAR' or not row.client.dcc_status %}
+              <span class="sa-badge sa-badge-green">{{ row.client.dcc_status|default:"CLEAR" }}</span>
+            {% else %}
+              <span class="sa-badge sa-badge-red">{{ row.client.dcc_status }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end"><strong>{{ row.access_count }}</strong></td>
+          <td>
+            <a href="{% url 'admin_view_client' row.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

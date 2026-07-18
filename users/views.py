@@ -473,9 +473,10 @@ def dashboard(request):
         search_string = request.POST.get('search_string')
         return redirect('database_search_redirect', search_string )
 
-    today = datetime.datetime.now().date()
+    from django.utils import timezone
+    today = timezone.localdate()
     yesterday = today - datetime.timedelta(days=1)
-    
+
     dcc_records_today = ClientProfile.objects.filter(created_at__lt=today)
     dcc_records_yesterday = ClientProfile.objects.filter(created_at__gt=yesterday)
     dcc_records_today_count = dcc_records_today.count()
@@ -936,7 +937,7 @@ def front_search(request):
             Q(permanent_address__icontains=query)
 
 
-        )
+        ).order_by('-updated_at')
 
         sme_results = BusinessProfile.objects.filter(
             Q(trading_name__icontains=query) |
@@ -1015,107 +1016,85 @@ def view_client_record_front(request, client_id):
 ##############
 @login_check
 def database_overview(request):
+    from django.utils import timezone
     user = request.user
     uid = user.id
     user_profile = UserProfile.objects.get(user_id=uid)
 
     if request.method == 'POST':
         search_string = request.POST.get('search_string')
-        return redirect('database_search_redirect', search_string )
+        return redirect('database_search_redirect', search_string)
 
-    today = datetime.datetime.now().date()
+    today = timezone.localdate()
     yesterday = today - datetime.timedelta(days=1)
-    
-    dcc_records_today = ClientProfile.objects.filter(created_at__gte=today)
-    dcc_records_yesterday = ClientProfile.objects.filter(created_at__gte=yesterday).filter(created_at__lte=today)
-    dcc_records_today_count = dcc_records_today.count()
-    dcc_records_yesterday_count = dcc_records_yesterday.count()
-    dcc_updated_today = ClientProfile.objects.filter(updated_at__gte=today)
-    dcc_updated_yesterday = ClientProfile.objects.filter(updated_at__gte=yesterday).filter(updated_at__lte=yesterday)
-    dcc_updated_today_count = dcc_updated_today.count()
-    dcc_updated_yesterday_count = dcc_updated_yesterday.count()
 
+    def pct_change(today_n, yesterday_n):
+        """Actual percentage change: positive = up, negative = down."""
+        if yesterday_n:
+            return round((today_n - yesterday_n) / yesterday_n * 100)
+        return 100 if today_n else 0
 
-    business_records_today = BusinessProfile.objects.filter(created_at__gte=today)
-    business_records_yesterday = BusinessProfile.objects.filter(created_at__gte=yesterday).filter(created_at__lte=today)
-    business_records_today_count = business_records_today.count()
-    business_records_yesterday_count = business_records_yesterday.count()
-    business_updated_today = BusinessProfile.objects.filter(updated_at__gte=today)
-    business_updated_yesterday = BusinessProfile.objects.filter(updated_at__gte=yesterday).filter(updated_at__lte=yesterday)
-    business_updated_today_count = business_updated_today.count()
-    business_updated_yesterday_count = business_updated_yesterday.count()
-    
+    # --- DCC-wide client records (vetted only — tenant sees the approved DCC pool) ---
+    dcc_records_today_count     = ClientProfile.objects.filter(vetted=True, created_at__date=today).count()
+    dcc_records_yesterday_count  = ClientProfile.objects.filter(vetted=True, created_at__date=yesterday).count()
+    dcc_updated_today_count     = ClientProfile.objects.filter(vetted=True, updated_at__date=today).count()
+    dcc_updated_yesterday_count  = ClientProfile.objects.filter(vetted=True, updated_at__date=yesterday).count()
 
-    if (dcc_records_today_count + dcc_records_yesterday_count) != 0:
-        dcc_records_percentage_change = (dcc_records_today_count / (dcc_records_today_count + dcc_records_yesterday_count)) * 100
-    else:
-        dcc_records_percentage_change = 0
+    dcc_records_percentage_change = pct_change(dcc_records_today_count, dcc_records_yesterday_count)
+    dcc_updated_percentage_change  = pct_change(dcc_updated_today_count, dcc_updated_yesterday_count)
 
-    if (dcc_updated_today_count + dcc_updated_yesterday_count) != 0:
-        dcc_updated_percentage_change = (dcc_updated_today_count / (dcc_updated_today_count + dcc_updated_yesterday_count)) * 100
-    else:
-        dcc_updated_percentage_change = 0
+    dcc_records_today = ClientProfile.objects.filter(vetted=True, created_at__date=today)
+    dcc_updated_today = ClientProfile.objects.filter(vetted=True, updated_at__date=today)
 
-    
+    # Tenant-facing counts: only vetted records make up the "DCC database"
+    dcc_total_client_records  = ClientProfile.objects.filter(vetted=True).count()
+    dcc_vetted_client_records = dcc_total_client_records
 
-    if (business_records_today_count + business_records_yesterday_count) != 0:
-        business_records_percentage_change = (business_records_today_count / (business_records_today_count + business_records_yesterday_count)) * 100
-    else:
-        business_records_percentage_change = 0
+    # --- Business records ---
+    business_records_today_count     = BusinessProfile.objects.filter(created_at__date=today).count()
+    business_records_yesterday_count  = BusinessProfile.objects.filter(created_at__date=yesterday).count()
+    business_updated_today_count     = BusinessProfile.objects.filter(updated_at__date=today).count()
+    business_updated_yesterday_count  = BusinessProfile.objects.filter(updated_at__date=yesterday).count()
 
-    if (business_updated_today_count + business_updated_yesterday_count) != 0:
-        business_updated_percentage_change = (business_updated_today_count / (business_updated_today_count + business_updated_yesterday_count)) * 100
-    else:
-        business_updated_percentage_change = 0
+    business_records_percentage_change = pct_change(business_records_today_count, business_records_yesterday_count)
+    business_updated_percentage_change  = pct_change(business_updated_today_count, business_updated_yesterday_count)
 
-    
-    
-    print(type(dcc_records_today))
-    print(dcc_records_today)
+    business_records_today = BusinessProfile.objects.filter(created_at__date=today)
+    business_updated_today = BusinessProfile.objects.filter(updated_at__date=today)
+    dcc_total_business_records = BusinessProfile.objects.count()
 
     from loan.models import Loan, RecoveryRecord
 
-    business_arrears = Loan.objects.filter(lender=user_profile, funded_category='ACTIVE')
+    # --- This tenant's loan portfolio ---
+    business_arrears = Loan.objects.filter(lender=user_profile, funded_category='ACTIVE', total_arrears__gt=0)
     business_arrears_count = business_arrears.count()
     business_total_arrears = business_arrears.aggregate(total=Sum('total_arrears'))['total'] or 0
-    business_defaults = Loan.objects.filter(lender=user_profile, category='FUNDED', status='DEFAULTED')
+    business_defaults = Loan.objects.filter(lender=user_profile, status='DEFAULTED')
     business_defaults_count = business_defaults.count()
     business_total_defaults = business_defaults.aggregate(total=Sum('total_outstanding'))['total'] or 0
     business_recovery = Loan.objects.filter(lender=user_profile, funded_category='RECOVERY')
     business_recovery_count = business_recovery.count()
     business_total_recovery = business_recovery.aggregate(total=Sum('total_outstanding'))['total'] or 0
 
-    dcc_arrears = Loan.objects.filter(funded_category='ACTIVE')
+    # --- DCC-wide loan stats ---
+    dcc_arrears = Loan.objects.filter(funded_category='ACTIVE', total_arrears__gt=0)
     dcc_arrears_count = dcc_arrears.count()
     dcc_total_arrears = dcc_arrears.aggregate(total=Sum('total_arrears'))['total'] or 0
-    dcc_defaults = Loan.objects.filter(category='FUNDED', status='DEFAULTED')
+    dcc_defaults = Loan.objects.filter(status='DEFAULTED')
     dcc_defaults_count = dcc_defaults.count()
     dcc_total_defaults = dcc_defaults.aggregate(total=Sum('total_outstanding'))['total'] or 0
     dcc_recovery = Loan.objects.filter(funded_category='RECOVERY')
     dcc_recovery_count = dcc_recovery.count()
     dcc_total_recovery = dcc_recovery.aggregate(total=Sum('total_outstanding'))['total'] or 0
 
-    ##recovered
+    # --- Recovery records ---
+    dcc_total_client_recovered_today     = RecoveryRecord.objects.filter(category='CLIENT', created_at__date=today).aggregate(total=Sum('amount'))['total'] or 0
+    dcc_total_client_recovered_yesterday  = RecoveryRecord.objects.filter(category='CLIENT', created_at__date=yesterday).aggregate(total=Sum('amount'))['total'] or 0
+    dcc_client_recovered_percentage_change = pct_change(dcc_total_client_recovered_today, dcc_total_client_recovered_yesterday)
 
-    dcc_client_recovered_today = RecoveryRecord.objects.filter(category='CLIENT', created_at__gt=today)
-    dcc_total_client_recovered_today = dcc_client_recovered_today.aggregate(total=Sum('amount'))['total'] or 0
-    dcc_client_recovered_yesterday = RecoveryRecord.objects.filter(category='CLIENT', created_at__gt=yesterday)
-    dcc_total_client_recovered_yesterday = dcc_client_recovered_yesterday.aggregate(total=Sum('amount'))['total'] or 0
-
-    if (dcc_total_client_recovered_today + dcc_total_client_recovered_yesterday) != 0:
-        dcc_client_recovered_percentage_change = (dcc_total_client_recovered_today / (dcc_total_client_recovered_today + dcc_total_client_recovered_yesterday)) * 100
-    else:
-        dcc_client_recovered_percentage_change = 0
-    
-    dcc_business_recovered_today = RecoveryRecord.objects.filter(category='BUSINESS', created_at__gt=today)
-    dcc_total_business_recovered_today = dcc_business_recovered_today.aggregate(total=Sum('amount'))['total'] or 0
-    dcc_business_recovered_yesterday = RecoveryRecord.objects.filter(category='BUSINESS', created_at__gt=yesterday)
-    dcc_total_business_recovered_yesterday = dcc_business_recovered_yesterday.aggregate(total=Sum('amount'))['total'] or 0
-
-    if (dcc_total_business_recovered_today + dcc_total_business_recovered_yesterday) != 0:
-        dcc_business_recovered_percentage_change = (dcc_total_business_recovered_today / (dcc_total_business_recovered_today + dcc_total_business_recovered_yesterday)) * 100
-    else:
-        dcc_business_recovered_percentage_change = 0
+    dcc_total_business_recovered_today    = RecoveryRecord.objects.filter(category='BUSINESS', created_at__date=today).aggregate(total=Sum('amount'))['total'] or 0
+    dcc_total_business_recovered_yesterday = RecoveryRecord.objects.filter(category='BUSINESS', created_at__date=yesterday).aggregate(total=Sum('amount'))['total'] or 0
+    dcc_business_recovered_percentage_change = pct_change(dcc_total_business_recovered_today, dcc_total_business_recovered_yesterday)
 
     context = {
         'domain':domain,
@@ -1160,6 +1139,10 @@ def database_overview(request):
         'dcc_total_business_recovered_today':dcc_total_business_recovered_today,
         'dcc_client_recovered_percentage_change':dcc_client_recovered_percentage_change,
         'dcc_business_recovered_percentage_change':dcc_business_recovered_percentage_change,
+
+        'dcc_total_client_records':dcc_total_client_records,
+        'dcc_vetted_client_records':dcc_vetted_client_records,
+        'dcc_total_business_records':dcc_total_business_records,
 
     }
     return render(request, 'database_overview.html', context)
@@ -1208,7 +1191,7 @@ def database_search(request):
             Q(super_member_code__icontains=query) |
             Q(permanent_address__icontains=query)
 
-        )
+        ).order_by('-updated_at')
 
         sme_results = BusinessProfile.objects.filter(
             Q(trading_name__icontains=query) |
@@ -1299,7 +1282,7 @@ def database_search_redirect(request, search_string):
             Q(super_member_code__icontains=query) |
             Q(permanent_address__icontains=query)
 
-        )
+        ).order_by('-updated_at')
 
         sme_results = BusinessProfile.objects.filter(
             Q(trading_name__icontains=query) |

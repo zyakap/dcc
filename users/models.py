@@ -178,12 +178,30 @@ class UserProfile(models.Model):
     use_loanmasta = models.BooleanField(default=False)
 
     record_count = models.IntegerField(default=0)
-    
+
+    #tenant integration (LMS <-> DCC machine-to-machine)
+    #shared secret for this tenant: DCC sends it as X-API-KEY when pulling the
+    #tenant's feed, and the tenant sends the same key when calling DCC's API.
+    api_key = models.CharField(max_length=128, null=True, blank=True, help_text="Shared secret for this tenant's API access (both directions).")
+    feed_enabled = models.BooleanField(default=False, help_text='When on, the automated sync pulls this tenant LMS feed on schedule.')
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    last_sync_status = models.CharField(max_length=255, null=True, blank=True)
+
+    #subscription plan + per-tenant API access restrictions. DCC decides what
+    #each tenant may view from the credit database when setting up its API access.
+    PLAN_CHOICES = [('BASIC', 'BASIC'), ('STANDARD', 'STANDARD'), ('PREMIUM', 'PREMIUM')]
+    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='BASIC', help_text='Subscription plan; governs default API visibility.')
+    can_view_loans = models.BooleanField(default=True, help_text='Tenant may view other-lender loan records in credit checks.')
+    can_view_transactions = models.BooleanField(default=False, help_text='Tenant may view repayment transaction history in credit checks.')
+    can_view_uploads = models.BooleanField(default=False, help_text='Tenant may view client documents held by DCC.')
+    credit_check_enabled = models.BooleanField(default=True, help_text='Master switch for this tenant to run credit checks at all.')
+    credit_check_window_hours = models.PositiveIntegerField(default=12, help_text='Hours a paid credit-check view remains accessible before requiring a new payment.')
+
     def __str__(self):
         if self.category == 'SOLE TRADER':
-            return f'ST - {self.first_name} {self.last_name}'
+            return f'ST - {self.first_name} {self.last_name or ""}'.strip()
         else:
-            return self.organisation
+            return self.organisation or ''
 
 
 class ActivityLog(models.Model):

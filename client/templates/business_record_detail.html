@@ -1,130 +1,139 @@
-<!-- add_business.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
+{% load static %}
 
-{% block title %} Business Record{% endblock %}
+{% block title %}{{ business.trading_name }}{% endblock %}
 
-
-
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Business Record {% endblock %}
-{% block dashboard_title %} View Business Record {% endblock %}
-
-
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'business_records' %}">Business Records</a>{% endblock %}
+{% block breadcrumb_active %}{{ business.trading_name }}{% endblock %}
+{% block dashboard_title %}Business Record{% endblock %}
 
 {% block content %}
-  <!-- Content Ends Here -->
 
-  
-    <h3 class="text-primary">{{ business.trading_name }} ({{ business.registered_name }})</h3>
-    <hr>
-    <div class="row">
-        <div class="col-4">
-            <div class="card p-2 bg-danger">
-                <span class="text-light">Credit Status:</span> <strong class="text-warning">DEFAULTED</strong>
-            </div>
-            
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h3 class="mb-0 text-primary">{{ business.trading_name }}</h3>
+      {% if business.registered_name %}<small class="text-muted">Registered as: {{ business.registered_name }}</small>{% endif %}
+    </div>
+    <a href="{% url 'business_records' %}" class="btn btn-outline-dark btn-sm">
+      <i class="bi bi-arrow-left"></i> Back to Business Records
+    </a>
+  </div>
+
+  <!-- Status row -->
+  <div class="row g-2 mb-3">
+    <div class="col-md-4">
+      <div class="card p-2 text-center {% if business.dcc_status == 'DEFAULTED' %}bg-danger text-white{% elif business.dcc_status == 'CLEAR' %}bg-success text-white{% else %}bg-warning text-white{% endif %}">
+        <small>Credit Status</small>
+        <strong>{{ business.dcc_status|default:"—" }}</strong>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-2 text-center">
+        <small class="text-muted">Credit Rating</small>
+        <strong class="text-primary">{{ business.credit_rating|default:"—" }}</strong>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-2 text-center">
+        <small class="text-muted">Last Updated</small>
+        <strong class="text-primary">{{ business.updated_at|date:"d/m/Y"|default:"—" }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Business Details -->
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-header fw-semibold"><i class="bi bi-building"></i> Business Details</div>
+        <div class="card-body">
+          <p class="mb-1">Trading Name: <strong>{{ business.trading_name|default:"—" }}</strong></p>
+          <p class="mb-1">Registered Name: <strong>{{ business.registered_name|default:"—" }}</strong></p>
+          <p class="mb-1">Category: <strong>{{ business.business_category|default:"—" }}</strong></p>
+          <p class="mb-1">IPA #: <strong>{{ business.ipa_registration_number|default:"—" }}</strong></p>
+          <p class="mb-0">TIN #: <strong>{{ business.tin_number|default:"—" }}</strong></p>
         </div>
-        <div class="col-4">
-            <div class="card p-2">
-            Credit Rating: <strong class="text-primary">67/100</strong>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card p-2">
-            Updated at: <strong class="text-primary">12/01/2025</strong>
-            </div>
-        </div>
+      </div>
     </div>
 
-    <div class="row">
-        <div class="col-4">
-            <div class="card">
-                <div class="card-header">Business Details</div>
-                <div class="card-body pt-2">
-                    <p class="m-0 py-1 px-0">Trading Name: <strong>{{ business.trading_name }}</strong></p>
-                    <p class="m-0 py-1 px-0">Registration Name: <strong>{{ business.registration_name }}</strong></p>
-                    <p class="m-0 py-1 px-0">IPA #: <strong>{{ business.ipa_registration_number }}</strong></p>
-                    <p class="m-0 py-1 px-0">TIN #: <strong>{{ business.tin_number }}</strong></p>
-                    
-                </div>
-            </div>
+    <!-- Contact Details -->
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-header fw-semibold"><i class="bi bi-telephone"></i> Contact Details</div>
+        <div class="card-body">
+          <p class="mb-1">Phone: <strong>{{ business.phone|default:"—" }}</strong></p>
+          <p class="mb-1">Email: <strong>{{ business.email|default:"—" }}</strong></p>
+          <p class="mb-1">Website: <strong>{{ business.website|default:"—" }}</strong></p>
+          <p class="mb-1">Office Address: <strong>{{ business.address|default:"—" }}</strong></p>
+          <p class="mb-0">Social Media: <strong>{{ business.social_media|default:"—" }}</strong></p>
         </div>
-        <div class="col-4">
-            <div class="card">
-                <div class="card-header">Contact Details</div>
-                <div class="card-body pt-2">
-                    <p class="m-0 py-1 px-0">Website: <strong>{{ business.website }}</strong></p>
-                    <p class="m-0 py-1 px-0">Phone: <strong>{{ business.phone }}</strong></p>
-                    <p class="m-0 py-1 px-0">Email: <strong>{{ business.email }}</strong></p>
-                    <p class="m-0 py-1 px-0">Office Address: <strong>{{ business.address }}</strong></p>
-                    <p class="m-0 py-1 px-0">Social Media: <strong>{{ business.phone }}</strong></p>
-                </div>  
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card">
-                <div class="card-header">Owner Information</div>
-                <div class="card-body pt-2">
-                    <p class="m-0 py-1 px-0">Name: <strong>{{ business.client.first_name }} {{ business.client.last_name }}</strong></p>
-                    <p class="m-0 py-1 px-0">Employer: <strong>{{ business.client.employer }}</strong></p>
-                    <p class="m-0 py-1 px-0">Office: <strong>{{ business.client.office }}</strong></p>
-                    <p class="m-0 py-1 px-0">Phone: <strong>{{ business.client.work_phone }}</strong></p>
-                    <p class="m-0 py-1 px-0">Email: <strong>{{ business.client.work_email }}</strong></p>
-                </div>
-        </div>
+      </div>
     </div>
 
-    <h4 class="section-title">Business Loan Records</h4>
-    <table border="1" class="table table-striped datatable">
-        <thead>
+    <!-- Owner Information -->
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-header fw-semibold"><i class="bi bi-person"></i> Owner Information</div>
+        <div class="card-body">
+          {% if business.client %}
+          <p class="mb-1">Name: <strong>{{ business.client.first_name }} {{ business.client.last_name }}</strong></p>
+          <p class="mb-1">Phone: <strong>{{ business.client.mobile1|default:"—" }}</strong></p>
+          <p class="mb-0">Email: <strong>{{ business.client.email|default:"—" }}</strong></p>
+          {% else %}
+          <p class="text-muted mb-0">No owner linked.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Business Loan Records -->
+  <h5 class="mt-4 mb-2 fw-semibold"><i class="bi bi-list-ul"></i> Business Loan Records</h5>
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle mb-0 datatable">
+          <thead class="table-dark">
             <tr>
-                <th>Loan Ref</th>
-                <th>Status</th>
-                <th>Company</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Term</th>
-                <th>Repayment</th>
-                <th>Paid</th>
-                <th>Outstanding</th>
-                <th>Arrears</th>
-                <th>Default</th>
-                <th>Write Off</th>
-                <th>Legal Status</th>
-                <th>Notes</th>
+              <th>Loan Ref</th>
+              <th>Status</th>
+              <th>Lender</th>
+              <th>Amount</th>
+              <th>Funding Date</th>
+              <th>Term</th>
+              <th>Repayment</th>
+              <th class="text-end">Paid</th>
+              <th class="text-end">Outstanding</th>
+              <th class="text-end">Arrears</th>
+              <th>Notes</th>
             </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
             {% for loan in loans %}
-                <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                    <td>{{ loan.ref }}</td>
-                    <td>{{ loan.status }}</td>
-                    <td>{{ loan.luid }}</td>
-                    <td>{{ loan.amount }}</td>
-                    <td>{{ loan.date }}</td>
-                    <td>{{ loan.term }}</td>
-                    <td>{{ loan.repayment }}</td>
-                    <td>{{ loan.paid }}</td>
-                    <td>{{ loan.outstanding }}</td>
-                    <td>{{ loan.arrears }}</td>
-                    <td>{{ loan.default }}</td>
-                    <td>{{ loan.write_off }}</td>
-                    <td>{{ loan.legal_status }}</td>
-                    <td>{{ loan.notes }}</td>
-                </tr>
+            <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;">
+              <td><code>{{ loan.ref }}</code></td>
+              <td>
+                <span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">
+                  {{ loan.status|default:"—" }}
+                </span>
+              </td>
+              <td>{{ loan.lender.organisation|default:"—" }}</td>
+              <td>K {{ loan.amount|default:"0" }}</td>
+              <td>{{ loan.funding_date|default:"—" }}</td>
+              <td>{{ loan.number_of_fortnights|default:"—" }} fn</td>
+              <td>K {{ loan.repayment_amount|default:"0" }}</td>
+              <td class="text-end">K {{ loan.total_paid|default:"0" }}</td>
+              <td class="text-end">K {{ loan.total_outstanding|default:"0" }}</td>
+              <td class="text-end {% if loan.total_arrears > 0 %}text-danger fw-bold{% endif %}">K {{ loan.total_arrears|default:"0" }}</td>
+              <td><small>{{ loan.notes|default:"" }}</small></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="11" class="text-center text-muted py-3">No loan records found.</td></tr>
             {% endfor %}
-        </tbody>
-    </table>
-
-    
-    
-    <h4 class="section-title text-dark mt-3">Public Notices</h4>
-    <p>No public notices have been recorded in the system.</p>
-
-    <h4 class="section-title text-dark mt-3">General Information</h4>
-    <p>No general information has been recorded in the system.</p>
-
-
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
 {% endblock %}

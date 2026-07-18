@@ -1,0 +1,131 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Loan Records{% endblock %}
+{% block topbar_title %}Loan Records{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Loan Records</h1>
+    <div class="sa-page-sub">All loans across all tenant portfolios — showing up to 500 records</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+    <div style="flex:1; min-width:180px;">
+      <label class="sa-form-label">Search</label>
+      <input type="text" name="q" value="{{ query }}" class="sa-form-control"
+             placeholder="Client name, CUID, lender…">
+    </div>
+    <div style="min-width:140px;">
+      <label class="sa-form-label">Status</label>
+      <select name="status" class="sa-form-select">
+        <option value="">All Statuses</option>
+        {% for s in status_choices %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="min-width:160px;">
+      <label class="sa-form-label">Tenant</label>
+      <select name="tenant" class="sa-form-select">
+        <option value="">All Tenants</option>
+        {% for t in tenants %}
+        <option value="{{ t.id }}" {% if tenant_filter == t.id|stringformat:"s" %}selected{% endif %}>
+          {{ t.organisation|default:t }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="sa-btn sa-btn-primary">Filter</button>
+    <a href="{% url 'sa_loans' %}" class="sa-btn sa-btn-outline">Clear</a>
+  </form>
+</div>
+
+<!-- Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Loans (filtered)</div>
+      <div class="sa-stat-value">{{ total_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Total Outstanding</div>
+      <div class="sa-stat-value" style="font-size:18px;">{{ agg.total_outstanding|floatformat:0|default:"0" }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label">Total Arrears</div>
+      <div class="sa-stat-value" style="font-size:18px; color:#e3b341;">{{ agg.total_arrears|floatformat:0|default:"0" }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-cash-coin"></i> Loan Records</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Lender</th>
+          <th class="text-end">Amount</th>
+          <th class="text-end">Outstanding</th>
+          <th class="text-end">Arrears</th>
+          <th>Status</th>
+          <th>Category</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for loan in loans %}
+        <tr>
+          <td>
+            {% if loan.owner %}
+              <div><strong>{{ loan.owner.first_name }} {{ loan.owner.last_name }}</strong></div>
+              <div style="font-size:11px; color:var(--sa-muted);"><code>{{ loan.owner.CUID|default:"" }}</code></div>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:12px;">{{ loan.lender.organisation|default:"—" }}</td>
+          <td class="text-end">{{ loan.amount|floatformat:0|default:"—" }}</td>
+          <td class="text-end">{{ loan.total_outstanding|floatformat:0|default:"—" }}</td>
+          <td class="text-end" style="{% if loan.total_arrears > 0 %}color:#e3b341;{% endif %}">
+            {{ loan.total_arrears|floatformat:0|default:"0" }}
+          </td>
+          <td>
+            <span class="sa-badge
+              {% if loan.status == 'RUNNING' %}sa-badge-green
+              {% elif loan.status == 'DEFAULTED' %}sa-badge-red
+              {% elif loan.status == 'COMPLETED' %}sa-badge-gray
+              {% else %}sa-badge-yellow{% endif %}">
+              {{ loan.status|default:"—" }}
+            </span>
+          </td>
+          <td>
+            <span class="sa-badge
+              {% if loan.funded_category == 'ACTIVE' %}sa-badge-blue
+              {% elif loan.funded_category == 'RECOVERY' %}sa-badge-red
+              {% elif loan.funded_category == 'COMPLETED' %}sa-badge-gray
+              {% else %}sa-badge-yellow{% endif %}">
+              {{ loan.funded_category|default:"—" }}
+            </span>
+          </td>
+          <td style="font-size:11px; color:var(--sa-muted);">{{ loan.created_at|date:"Y-m-d" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center; color:var(--sa-muted); padding:24px;">No loan records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if total_count > 500 %}
+  <div style="padding: 10px 12px; font-size:12px; color:var(--sa-muted); border-top: 1px solid var(--sa-border);">
+    Showing 500 of {{ total_count }} records. Use filters to narrow results.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

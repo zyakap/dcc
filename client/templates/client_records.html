@@ -1,71 +1,63 @@
-<!-- add_Client.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} My Client Records{% endblock %}
+{% block title %}My Client Records{% endblock %}
 
-
-
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Records {% endblock %}
-{% block dashboard_title %} My Client Records {% endblock %}
-
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a>{% endblock %}
+{% block breadcrumb_active %}My Records{% endblock %}
+{% block dashboard_title %}My Client Records{% endblock %}
 
 {% block content %}
-  <!-- Content Ends Here -->
-  
-    <div class="row">
-        <div class="col-lg-12">
 
-          <div class="card">
-            <div class="card-body">
-              <p class="pt-2">This is the list of all your records in the database</p>
-
-              <!-- Table with stripped rows -->
-              <table class="table datatable">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>C.Rating</th>
-                    <th>Status</th>
-                    
-                    <th>Email</th>
-                    <th>Mobile</th>
-                    <th>Action</th>
-                    
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for client in clients %}
-                    <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ client.first_name }} {{ client.last_name }}</td>
-                        <td>{{ client.credit_rating }}</td>
-                        <td>{{ client.dcc_status }}</td>
-                        
-                        <td>{{ client.email }}</td>
-                        <td>{{ client.mobile1 }}</td>
-                        <td>  
-                          <a href="{% url 'client_record_detail' client.id %}">
-                          <button type="button" class="btn btn-sm btn-primary m-0 py-1">
-                            View Details
-                          </button>
-                          </a>
-                        </td>
-                       
-                    </tr>
-                    {% endfor %}
-                </tbody>
-              </table>
-              <!-- End Table with stripped rows -->
-
-            </div>
-          </div>
-
-        </div>
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <p class="mb-0 text-muted">All client records submitted by your organisation.</p>
+    <div class="d-flex gap-2">
+      <a href="{% url 'add_client' %}" class="btn btn-success btn-sm"><i class="bi bi-person-fill-add"></i> Add Record</a>
+      <a href="{% url 'upload_records' %}" class="btn btn-primary btn-sm"><i class="bi bi-upload"></i> Upload Records</a>
     </div>
-   
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle mb-0 datatable">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>CUID</th>
+              <th>DCC Status</th>
+              <th>Mobile</th>
+              <th>Email</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in clients %}
+            <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+              <td><strong>{{ client.first_name }} {{ client.last_name }}</strong></td>
+              <td><code>{{ client.CUID|default:"—" }}</code></td>
+              <td>
+                <span class="badge {% if client.dcc_flagged %}bg-danger{% else %}bg-success{% endif %}">
+                  {{ client.dcc_status|default:"CLEAR" }}
+                </span>
+              </td>
+              <td>{{ client.mobile1|default:"—" }}</td>
+              <td>{{ client.email|default:"—" }}</td>
+              <td>
+                <a href="{% url 'client_record_detail' client.id %}" class="btn btn-sm btn-outline-primary py-0">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">
+                No records yet. <a href="{% url 'add_client' %}">Add your first record</a> or <a href="{% url 'upload_records' %}">upload from Excel</a>.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
 {% endblock %}
-
-

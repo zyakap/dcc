@@ -1,0 +1,86 @@
+{% extends "admin_base.html" %}
+{% load static %}
+{% block title %} Tenant Configuration {% endblock %}
+
+{% block breadcrumb %} <a href="{% url 'admin_tenants' %}">Tenants</a> {% endblock %}
+{% block breadcrumb_active %} {{ tenant }} {% endblock %}
+{% block dashboard_title %} Tenant Configuration — {{ tenant }} {% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Connection</h5>
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">LUID (tenant identifier)</label>
+            <input type="text" class="form-control" name="LUID" value="{{ tenant.LUID }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">LMS Endpoint (domain, no scheme)</label>
+            <input type="text" class="form-control" name="endpoint" value="{{ tenant.endpoint }}" required>
+            <small class="text-muted">DCC pulls https://&lt;endpoint&gt;/API/profiles/ | loans/ | statements/</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">API Key (shared secret)</label>
+            <input type="password" class="form-control" name="api_key" placeholder="{% if has_key %}•••••••• (leave blank to keep){% else %}not set{% endif %}" autocomplete="new-password">
+            <small class="text-muted">Must equal DCC_API_KEY in the tenant's .env. Used for feed pulls and to authenticate the tenant's credit checks.</small>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="feed_enabled" id="feed_enabled" {% if tenant.feed_enabled %}checked{% endif %}>
+            <label class="form-check-label" for="feed_enabled">Automated feed sync enabled</label>
+          </div>
+
+          <hr>
+          <h5 class="card-title">Subscription Plan &amp; Access Restrictions</h5>
+          <p class="text-muted" style="font-size:.85rem">Controls what this tenant may view from the DCC credit database via the API.</p>
+          <div class="mb-3">
+            <label class="form-label">Plan</label>
+            <select class="form-select" name="plan">
+              {% for value, label in tenant.PLAN_CHOICES %}
+              <option value="{{ value }}" {% if tenant.plan == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="credit_check_enabled" id="cce" {% if tenant.credit_check_enabled %}checked{% endif %}>
+            <label class="form-check-label" for="cce">Credit checks enabled</label>
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="can_view_loans" id="cvl" {% if tenant.can_view_loans %}checked{% endif %}>
+            <label class="form-check-label" for="cvl">May view loan records</label>
+          </div>
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="can_view_transactions" id="cvt" {% if tenant.can_view_transactions %}checked{% endif %}>
+            <label class="form-check-label" for="cvt">May view transaction history</label>
+          </div>
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="can_view_uploads" id="cvu" {% if tenant.can_view_uploads %}checked{% endif %}>
+            <label class="form-check-label" for="cvu">May view client documents</label>
+          </div>
+          <button type="submit" class="btn btn-primary" name="action" value="save">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Sync Status</h5>
+        <p class="mb-1"><strong>Records ingested (all time):</strong> {{ tenant.record_count }}</p>
+        <p class="mb-1"><strong>Last sync:</strong> {{ tenant.last_sync_at|default:"never" }}</p>
+        <p class="mb-3"><strong>Status:</strong> <small>{{ tenant.last_sync_status|default:"—" }}</small></p>
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-success" name="action" value="sync_now"
+                  {% if not tenant.api_key %}disabled title="Set an API key first"{% endif %}>
+            <i class="bi bi-arrow-repeat"></i> Sync Now
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

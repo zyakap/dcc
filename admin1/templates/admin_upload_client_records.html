@@ -12,7 +12,7 @@
 {% block content %}
 
     
-    <p>Select .xlsx file to upload. If you do not have the file yet, <a href="#">click to download excel template.</a></p>
+    <p>Select <code>.xlsx</code> file to upload. Accepted format: Excel (.xlsx). Max recommended size: 5 MB.</p>
     <hr>
     <div class="card p-3">
       <form method="POST" enctype="multipart/form-data">
@@ -27,7 +27,7 @@
           <input type="file" class="form-control" id="recordsexceldata" name="recordsexceldata">
         </div>
         <div class="text-end">
-          <a href="#" class="btn btn-secondary">CANCEL</a>
+          <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">CANCEL</a>
           <button type="submit" class="btn btn-primary px-4">UPLOAD</button>
         </div>
       </form>

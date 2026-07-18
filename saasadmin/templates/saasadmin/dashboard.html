@@ -1,0 +1,181 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block topbar_title %}Platform Dashboard{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Platform Overview</h1>
+    <div class="sa-page-sub">{{ today|date:"l, j F Y" }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <form method="post" action="{% url 'sa_sync_all' %}"
+          onsubmit="return confirm('Sync all feed-enabled tenants now? This may take a while.');">
+      {% csrf_token %}
+      <button type="submit" class="sa-btn sa-btn-success">
+        <i class="bi bi-arrow-repeat"></i> Sync All Tenants
+      </button>
+    </form>
+    <a href="{% url 'sa_tenant_create' %}" class="sa-btn sa-btn-primary">
+      <i class="bi bi-plus-lg"></i> New Tenant
+    </a>
+  </div>
+</div>
+
+<!-- Stat tiles row 1 -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-building me-1"></i>Total Tenants</div>
+      <div class="sa-stat-value">{{ total_tenants }}</div>
+      <div class="sa-stat-sub">{{ active_tenants }} active</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-person-vcard me-1"></i>Client Records</div>
+      <div class="sa-stat-value">{{ total_clients|default:"0" }}</div>
+      <div class="sa-stat-sub">+{{ month_clients }} this month</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-cash-coin me-1"></i>Loan Records</div>
+      <div class="sa-stat-value">{{ total_loans|default:"0" }}</div>
+      <div class="sa-stat-sub">+{{ month_loans }} this month</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-shield-check me-1"></i>Credit Checks</div>
+      <div class="sa-stat-value">{{ month_credit_checks }}</div>
+      <div class="sa-stat-sub">This month</div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: financial + billing -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-exclamation-triangle me-1"></i>Total Outstanding</div>
+      <div class="sa-stat-value" style="font-size:18px;">{{ loan_outstanding|floatformat:0 }}</div>
+      <div class="sa-stat-sub">Across all tenant loan portfolios</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-clock-history me-1"></i>Total Arrears</div>
+      <div class="sa-stat-value" style="font-size:18px; color: #e3b341;">{{ loan_arrears|floatformat:0 }}</div>
+      <div class="sa-stat-sub">Active arrears, all tenants</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-currency-exchange me-1"></i>DCC Revenue (month)</div>
+      <div class="sa-stat-value" style="font-size:18px; color: #3fb950;">
+        {{ pricing.currency }} {{ month_revenue|floatformat:2 }}
+      </div>
+      <div class="sa-stat-sub">{{ dcc_enabled_count }} tenants with DCC enabled</div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent tenants + quick links -->
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-building"></i> Recent Tenants</div>
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead>
+            <tr>
+              <th>Organisation</th>
+              <th>Plan</th>
+              <th>DCC</th>
+              <th>Joined</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in recent_tenants %}
+            <tr>
+              <td>
+                <strong>{{ t.organisation|default:"—" }}</strong>
+                <div style="font-size:11px; color: var(--sa-muted);">{{ t.endpoint }}</div>
+              </td>
+              <td>
+                <span class="sa-badge {% if t.plan == 'PREMIUM' %}sa-badge-blue{% elif t.plan == 'STANDARD' %}sa-badge-yellow{% else %}sa-badge-gray{% endif %}">
+                  {{ t.plan }}
+                </span>
+              </td>
+              <td>
+                {% if t.credit_check_enabled %}
+                  <span class="sa-badge sa-badge-green">ON</span>
+                {% else %}
+                  <span class="sa-badge sa-badge-gray">OFF</span>
+                {% endif %}
+              </td>
+              <td style="color:var(--sa-muted); font-size:12px;">{{ t.date_joined|date:"Y-m-d" }}</td>
+              <td>
+                <a href="{% url 'sa_tenant_detail' t.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center; color:var(--sa-muted); padding: 24px;">No tenants yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 12px;">
+        <a href="{% url 'sa_tenants' %}" class="sa-btn sa-btn-outline sa-btn-sm">View all tenants</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-lightning"></i> Quick Actions</div>
+      <div class="d-flex flex-column gap-2">
+        <a href="{% url 'sa_tenant_create' %}" class="sa-btn sa-btn-primary">
+          <i class="bi bi-plus-lg"></i> Add Tenant
+        </a>
+        <a href="{% url 'sa_billing' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-receipt"></i> View Billing
+        </a>
+        <a href="{% url 'sa_dcc_report' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-bar-chart-line"></i> DCC Report
+        </a>
+        <a href="{% url 'sa_pricing' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-tag"></i> Edit Pricing
+        </a>
+      </div>
+    </div>
+
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-tag"></i> Current Pricing</div>
+      <div style="font-size: 13px; line-height: 2;">
+        <div style="display:flex; justify-content:space-between; border-bottom: 1px solid var(--sa-border); padding-bottom: 6px; margin-bottom:6px;">
+          <span style="color:var(--sa-muted);">Currency</span>
+          <strong>{{ pricing.currency }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Base fee / month</span>
+          <strong>{{ pricing.monthly_base_fee|floatformat:2 }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Per credit check</span>
+          <strong>{{ pricing.price_per_credit_check|floatformat:2 }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Per profile lookup</span>
+          <strong>{{ pricing.price_per_profile_lookup|floatformat:2 }}</strong>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <a href="{% url 'sa_pricing' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

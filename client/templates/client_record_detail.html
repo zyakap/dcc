@@ -1,156 +1,258 @@
-<!-- add_business.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
+{% load static %}
 
-{% block title %} Client Record{% endblock %}
+{% block title %}{{ client.first_name }} {{ client.last_name }}{% endblock %}
 
-
-
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Client Record {% endblock %}
-{% block dashboard_title %} View Client Record {% endblock %}
-
-
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'client_records' %}">My Records</a>{% endblock %}
+{% block breadcrumb_active %}{{ client.first_name }} {{ client.last_name }}{% endblock %}
+{% block dashboard_title %}Client Record{% endblock %}
 
 {% block content %}
-  <!-- Content Ends Here -->
 
-  
-    <h3 class="text-primary">{{ client.first_name }} {{ client.last_name }}</h3>
-    <hr>
-    <div class="row">
-        <div class="col-4">
-            <div class="card p-2 {% if client.credit_status == 'GOOD' %}bg-success{% else %} bg-danger {% endif %}">
-                <span class="text-light">Credit Status:</span> <strong class="text-warning">{{ client.public_category }}</strong>
-            </div>
-            
-        </div>
-        <div class="col-4">
-            <div class="card p-2">
-            Credit Rating: <strong class="text-primary">{{ client.credit_rating }}/100</strong>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card p-2">
-            Updated at: <strong class="text-primary">{{ client.updated_at }}</strong>
-            </div>
-        </div>
+<!-- Header bar -->
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+  <div>
+    <h3 class="mb-0 text-primary">{{ client.first_name }} {{ client.middle_name|default:"" }} {{ client.last_name }}</h3>
+    <small class="text-muted">CUID: <code>{{ client.CUID|default:"—" }}</code> &nbsp;·&nbsp; LUID: <code>{{ client.LUID|default:"—" }}</code></small>
+  </div>
+  <a href="{% url 'client_records' %}" class="btn btn-outline-dark btn-sm"><i class="bi bi-arrow-left"></i> Back to Records</a>
+</div>
+
+<!-- Status summary -->
+<div class="row g-2 mb-3">
+  <div class="col-md-3">
+    <div class="card p-2 text-center {% if client.dcc_flagged %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+      <small>DCC Status</small>
+      <strong>{{ client.dcc_status|default:"CLEAR" }}</strong>
     </div>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card p-2">
-                <div class="card-header">Listed By:</div>
-                <p class="m-0 p-1"><span class="text-primary">Name of Organisation:</span> {{ client.user_profile.organisation }}</p>
-                <p class="m-0 p-1"><span class="text-primary">Phone:</span> {{ client.user_profile.mobile }}</p>
-                <p class="m-0 p-1"><span class="text-primary">Email:</span> {{ client.user_profile.email }}</p>
-            </div>
-        </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-2 text-center">
+      <small class="text-muted">Credit Rating</small>
+      <strong class="text-primary">{{ client.credit_rating|default:"—" }}/100</strong>
     </div>
-
-    <div class="row">
-        <div class="col-4">
-            <div class="card">
-                <div class="card-header">Client Details</div>
-                <div class="card-body pt-2">
-                    <p class="m-0 py-1 px-0">First Name: <strong>{{ client.first_name }}</strong></p>
-                    <p class="m-0 py-1 px-0">Last Name: <strong>{{ client.last_name }}</strong></p>
-                    <p class="m-0 py-1 px-0">Gender: <strong>{{ client.gender }}</strong></p>
-                    <p class="m-0 py-1 px-0">Date of Birth: <strong>{{ client.date_of_birth }}</strong></p>
-                    <p class="m-0 py-1 px-0">NID Number: <strong>{{ client.id_number }}</strong></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card">
-                <div class="card-header">Contact Details</div>
-                <div class="card-body pt-2">
-                    <p class="m-0 py-1 px-0">Mobile : <strong>{{ client.mobile }}</strong></p>
-                    <p class="m-0 py-1 px-0">Email : <strong>{{ client.email  }}</strong></p>
-                    
-                    {% for contact in client.client_contact.all %}
-                    
-                    <p class="m-0 py-1 px-0">Mobile 1: <strong>{{ contact.mobile1 }}</strong></p>
-                    <p class="m-0 py-1 px-0">Mobile 2: <strong>{{ contact.mobile1  }}</strong></p>
-                    <p class="m-0 py-1 px-0">Email 1: <strong>{{ contact.email1 }}</strong></p>
-                    <p class="m-0 py-1 px-0">Email 2: <strong>{{ contact.email2 }}</strong></p>
-                    {% endfor %}
-                    {% for address in client.client_address.all %}
-                    <p class="m-0 py-1 px-0">Residential Address: <strong>{{ address.residential_address }}</strong></p>
-                    {% endfor %}
-                </div>  
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="card">
-                <div class="card-header">Employment Details</div>
-                <div class="card-body pt-2">
-                     {% for employer in client.client_employer.all %}
-                    <p class="m-0 py-1 px-0">Employer: <strong>{{ employer.sector }}</strong></p>
-                    <p class="m-0 py-1 px-0">Occupation: <strong>{{ employer.job_title }}</strong></p>
-                    
-                    <p class="m-0 py-1 px-0">Employer: <strong>{{ employer.employer }}</strong></p>
-
-                    <p class="m-0 py-1 px-0">Office: <strong>{{ employer.office }}</strong></p>
-                    <p class="m-0 py-1 px-0">Work Phone: <strong>{{ employer.work_phone }}</strong></p>
-                    <p class="m-0 py-1 px-0">Work Email: <strong>{{ employer.work_email }}</strong></p>
-                    {% endfor %}
-                    
-                    
-                   
-                </div>
-        </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-2 text-center">
+      <small class="text-muted">Loans on Record</small>
+      <strong>{{ loans|length }}</strong>
     </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-2 text-center">
+      <small class="text-muted">Last Updated</small>
+      <strong class="text-primary">{{ client.updated_at|date:"d M Y"|default:"—" }}</strong>
+    </div>
+  </div>
+</div>
 
-    
+<!-- Listed by -->
+<div class="card mb-3">
+  <div class="card-header fw-semibold"><i class="bi bi-building"></i> Listed By</div>
+  <div class="card-body py-2">
+    <span class="text-muted me-3">Organisation:</span><strong>{{ client.user_profile.organisation|default:"—" }}</strong>
+    &nbsp;·&nbsp;
+    <span class="text-muted me-1">Phone:</span><strong>{{ client.user_profile.mobile1|default:"—" }}</strong>
+    &nbsp;·&nbsp;
+    <span class="text-muted me-1">Email:</span><strong>{{ client.user_profile.work_email|default:"—" }}</strong>
+  </div>
+</div>
 
-    <h4 class="section-title">Loan Records</h4>
-    <table border="1" class="table table-striped">
-        <thead>
-            <tr>
-                <th>Loan Ref</th>
-                <th>Status</th>
-                <th>Company</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Term</th>
-                <th>Repayment</th>
-                <th>Paid</th>
-                <th>Outstanding</th>
-                
-                
-                <th>Legal Status</th>
-                <th>Notes</th>
-            </tr>
+<!-- Details cards -->
+<div class="row g-3 mb-3">
+  <!-- Personal -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold"><i class="bi bi-person"></i> Personal Details</div>
+      <div class="card-body">
+        <p class="mb-1">First Name: <strong>{{ client.first_name|default:"—" }}</strong></p>
+        <p class="mb-1">Middle Name: <strong>{{ client.middle_name|default:"—" }}</strong></p>
+        <p class="mb-1">Last Name: <strong>{{ client.last_name|default:"—" }}</strong></p>
+        <p class="mb-1">Gender: <strong>{{ client.gender|default:"—" }}</strong></p>
+        <p class="mb-1">Date of Birth: <strong>{{ client.date_of_birth|default:"—" }}</strong></p>
+        <p class="mb-1">NID Number: <strong>{{ client.nid_number|default:"—" }}</strong></p>
+        <p class="mb-0">Passport: <strong>{{ client.passport_number|default:"—" }}</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold"><i class="bi bi-telephone"></i> Contact Details</div>
+      <div class="card-body">
+        <p class="mb-1">Mobile: <strong>{{ client.mobile1|default:"—" }}</strong></p>
+        <p class="mb-1">Email: <strong>{{ client.email|default:"—" }}</strong></p>
+        {% for contact in client.client_contact.all %}
+        {% if contact.mobile2 %}<p class="mb-1">Mobile 2: <strong>{{ contact.mobile2 }}</strong></p>{% endif %}
+        {% if contact.email2 %}<p class="mb-1">Email 2: <strong>{{ contact.email2 }}</strong></p>{% endif %}
+        {% endfor %}
+        {% for address in client.client_address.all %}
+        <p class="mb-1">Address: <strong>{{ address.address|default:address.residential_address|default:"—" }}</strong></p>
+        {% endfor %}
+        <p class="mb-0">Permanent Address: <strong>{{ client.permanent_address|default:"—" }}</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employment -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold"><i class="bi bi-briefcase"></i> Employment Details</div>
+      <div class="card-body">
+        {% for employer in client.client_employer.all %}
+        <p class="mb-1">Sector: <strong>{{ employer.sector|default:"—" }}</strong></p>
+        <p class="mb-1">Employer: <strong>{{ employer.employer|default:"—" }}</strong></p>
+        <p class="mb-1">Job Title: <strong>{{ employer.job_title|default:"—" }}</strong></p>
+        <p class="mb-1">Work Phone: <strong>{{ employer.work_phone|default:"—" }}</strong></p>
+        <p class="mb-0">Work Email: <strong>{{ employer.work_email|default:"—" }}</strong></p>
+        {% empty %}
+        <p class="text-muted mb-0">No employment details recorded.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DCC Credit Check section -->
+{% if dcc_enabled %}
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white fw-semibold">
+    <i class="bi bi-shield-check"></i> DCC Credit Check
+    {% if dcc_access_valid %}
+    <span class="badge bg-success ms-2">Access Active</span>
+    <small class="ms-2 fw-normal">Expires: {{ dcc_expires_at|date:"d M Y H:i" }}</small>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if not dcc_access_valid %}
+    <p class="mb-2 text-muted">Unlock the full DCC credit profile for this client. Access is valid for {{ tenant.credit_check_window_hours|default:12 }} hours and will be billed to your account.</p>
+    <form method="post" action="{% url 'dcc_credit_check_access' client.id %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary"><i class="bi bi-unlock"></i> Unlock DCC Credit Data</button>
+    </form>
+    {% else %}
+    {% if dcc_data %}
+    <!-- Credit score -->
+    {% if credit_score %}
+    <div class="mb-3">
+      <strong>Credit Score: {{ credit_score.score|default:"—" }}/100</strong>
+      <div class="progress mt-1" style="height:10px;">
+        <div class="progress-bar {% if credit_score.score >= 70 %}bg-success{% elif credit_score.score >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+             style="width:{{ credit_score.score|default:0 }}%"></div>
+      </div>
+      <small class="text-muted">Grade: {{ credit_score.grade|default:"—" }} · {{ credit_score.label|default:"" }}</small>
+    </div>
+    {% endif %}
+
+    <!-- Related profiles -->
+    {% if dcc_data.other_profiles %}
+    <h6 class="fw-semibold mt-3 mb-2"><i class="bi bi-person-lines-fill"></i> Other Profiles Matched ({{ dcc_data.other_profiles|length }})</h6>
+    <div class="table-responsive mb-3">
+      <table class="table table-sm table-bordered mb-0">
+        <thead class="table-light"><tr><th>Name</th><th>CUID</th><th>Lender</th><th>Updated</th></tr></thead>
+        <tbody>
+          {% for p in dcc_data.other_profiles %}
+          <tr>
+            <td>{{ p.first_name }} {{ p.last_name }}</td>
+            <td><code>{{ p.CUID|default:"—" }}</code></td>
+            <td>{{ p.user_profile.organisation|default:"—" }}</td>
+            <td><small>{{ p.updated_at|date:"d M Y" }}</small></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- All loans across profiles -->
+    <h6 class="fw-semibold mb-2"><i class="bi bi-list-ul"></i> All DCC Loan History</h6>
+    {% if dcc_data.loan_summary %}
+    <div class="row g-2 mb-2">
+      <div class="col-md-4"><div class="card p-2 text-center bg-light"><small class="text-muted">Total Borrowed</small><div class="fw-bold">K {{ dcc_data.loan_summary.total_borrowed|default:"0" }}</div></div></div>
+      <div class="col-md-4"><div class="card p-2 text-center bg-light"><small class="text-muted">Total Outstanding</small><div class="fw-bold text-warning">K {{ dcc_data.loan_summary.total_outstanding|default:"0" }}</div></div></div>
+      <div class="col-md-4"><div class="card p-2 text-center bg-light"><small class="text-muted">Total Arrears</small><div class="fw-bold {% if dcc_data.loan_summary.total_arrears > 0 %}text-danger{% endif %}">K {{ dcc_data.loan_summary.total_arrears|default:"0" }}</div></div></div>
+    </div>
+    {% endif %}
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover mb-0">
+        <thead class="table-dark">
+          <tr><th>Ref</th><th>Lender</th><th>Status</th><th class="text-end">Amount</th><th class="text-end">Outstanding</th><th class="text-end">Arrears</th><th>Funded</th></tr>
         </thead>
         <tbody>
-            {% for loan in loans %}
-            
-                <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                    <td>{{ loan.ref }}</td>
-                    <td>{{ loan.status }}</td>
-                    <td>{{ loan.lender.organisation }}</td>
-                    <td>{{ loan.amount }}</td>
-                    <td>{{ loan.date }}</td>
-                    <td>{{ loan.term }}</td>
-                    <td>{{ loan.repayment }}</td>
-                    <td>{{ loan.paid }}</td>
-                    <td>{{ loan.total_outstanding }}</td>
-                    <td>{{ loan.legal_status }}</td>
-                    <td>{{ loan.notes }}</td>
-                </tr>
-            {% endfor %}
+          {% for loan in dcc_data.all_loans %}
+          <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;">
+            <td><code>{{ loan.ref }}</code></td>
+            <td><small>{{ loan.lender.organisation|default:"—" }}</small></td>
+            <td><span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">{{ loan.status|default:"—" }}</span></td>
+            <td class="text-end">K {{ loan.amount|default:"0" }}</td>
+            <td class="text-end">K {{ loan.total_outstanding|default:"0" }}</td>
+            <td class="text-end {% if loan.total_arrears > 0 %}text-danger fw-bold{% endif %}">{% if loan.total_arrears > 0 %}K {{ loan.total_arrears }}{% else %}—{% endif %}</td>
+            <td><small>{{ loan.funding_date|default:"—" }}</small></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-3">No DCC loan history found.</td></tr>
+          {% endfor %}
         </tbody>
-    </table>
+      </table>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 
-    
-    
-    <h4 class="section-title text-dark mt-3">Public Notices</h4>
-    <p>No public notices have been recorded in the system.</p>
-
-    <h4 class="section-title text-dark mt-3">General Information</h4>
-    <p>No general information has been recorded in the system.</p>
-
-
+<!-- Basic loan records (always visible — own lender's loans) -->
+<h5 class="fw-semibold mb-2"><i class="bi bi-list-ul"></i> Loan Records</h5>
+<div class="card mb-3">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-striped table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Ref</th>
+            <th>Status</th>
+            <th>Lender</th>
+            <th class="text-end">Amount</th>
+            <th>Funding Date</th>
+            <th>Term</th>
+            <th class="text-end">Repayment</th>
+            <th class="text-end">Paid</th>
+            <th class="text-end">Outstanding</th>
+            <th class="text-end">Arrears</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for loan in loans %}
+          <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+            <td><code>{{ loan.ref }}</code></td>
+            <td>
+              <span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">
+                {{ loan.status|default:"—" }}
+              </span>
+            </td>
+            <td><small>{{ loan.lender.organisation|default:"—" }}</small></td>
+            <td class="text-end">K {{ loan.amount|default:"0" }}</td>
+            <td>{{ loan.funding_date|default:"—" }}</td>
+            <td>{{ loan.number_of_fortnights|default:"—" }} fn</td>
+            <td class="text-end">K {{ loan.repayment_amount|default:"0" }}</td>
+            <td class="text-end">K {{ loan.total_paid|default:"0" }}</td>
+            <td class="text-end">K {{ loan.total_outstanding|default:"0" }}</td>
+            <td class="text-end {% if loan.total_arrears > 0 %}text-danger fw-bold{% endif %}">
+              {% if loan.total_arrears > 0 %}K {{ loan.total_arrears }}{% else %}—{% endif %}
+            </td>
+            <td><small>{{ loan.notes|default:"" }}</small></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-muted py-4">No loan records found for this client.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 {% endblock %}

@@ -53,6 +53,31 @@
 {% block content %}
 
 
+  <!-- Database Totals Summary -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card text-center p-3">
+        <div class="text-muted small mb-1"><i class="bi bi-people-fill text-primary"></i> Total Client Records</div>
+        <div class="fs-3 fw-bold text-primary">{{ dcc_total_client_records|default:"0" }}</div>
+        <div class="text-muted small">Vetted &amp; DCC approved</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center p-3">
+        <div class="text-muted small mb-1"><i class="bi bi-building text-success"></i> Total Business Records</div>
+        <div class="fs-3 fw-bold text-success">{{ dcc_total_business_records|default:"0" }}</div>
+        <div class="text-muted small">All business profiles in DCC</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center p-3">
+        <div class="text-muted small mb-1"><i class="bi bi-database-fill text-info"></i> Total Database Records</div>
+        <div class="fs-3 fw-bold text-info">{{ dcc_total_client_records|add:dcc_total_business_records }}</div>
+        <div class="text-muted small">Combined DCC database size</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Content Goes Here -->
   <h3 class="">Client Records</h3>
   <hr class="p-0 my-3" style="border: 1px solid #0cf; width:100%;">
@@ -85,7 +110,7 @@
             </div>
 
             <div class="ps-3">
-              <h6 style="display: inline-block;">{{ business_records_today_count }}</h6> 
+              <h6 style="display: inline-block;">{{ dcc_records_today_count }}</h6>
               <a href="{% url 'filtered_client_records_dcc_records_today' %}" style="display: inline-block;"> View Records</a>
               <br>
               <span class="text-{% if dcc_records_percentage_change < 0 %}danger{% elif dcc_records_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_records_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_records_percentage_change < 0 %}decrease{% elif dcc_records_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
@@ -126,7 +151,7 @@
             </div>
 
             <div class="ps-3">
-              <h6 style="display: inline-block;">{{ business_updated_today_count }}</h6> 
+              <h6 style="display: inline-block;">{{ dcc_updated_today_count }}</h6>
               <a href="{% url 'filtered_client_records_dcc_updated_today' %}" style="display: inline-block;"> View Records</a>
               <br>
               <span class="text-{% if dcc_updated_percentage_change < 0 %}danger{% elif dcc_updated_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_updated_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_updated_percentage_change < 0 %}decrease{% elif dcc_updated_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>

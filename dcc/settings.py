@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'users',
     'api',
     'admin1',
+    'saasadmin',
     'client',
     'loan',
     'transaction',
@@ -149,9 +150,9 @@ else:
 DATABASES = {
     "default": {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dcc',
+        'NAME': 'dccdb',
         'USER': 'root',
-        'PASSWORD': 'j5dct5&Wfefs24@',
+        'PASSWORD': 'dcceht5&Wfefs24@',
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -181,7 +182,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Etc/GMT-10'
+TIME_ZONE = 'Pacific/Port_Moresby'
 USE_I18N = True
 USE_TZ = True
 DATE_INPUT_FORMATS = ['%d-%m-%Y']
@@ -232,9 +233,19 @@ CELERY_BEAT_SCHEDULE = {
     'weekly_report': {
         'task': 'report.tasks.weekly_report',
         'schedule': 5*60,
+    },
+
+    # Pull profile/loan/statement feeds from every feed-enabled tenant LMS.
+    'sync_tenant_feeds': {
+        'task': 'api.tasks.sync_tenant_feeds',
+        'schedule': crontab(minute=0),  # hourly, on the hour
     }
 
 }
+
+# Verify TLS certificates when calling tenant LMS endpoints. Leave True in
+# production; set False only for tenants on self-signed certificates.
+TENANT_VERIFY_SSL = os.environ.get('TENANT_VERIFY_SSL', 'False').strip().lower() in ('1', 'true', 'yes', 'on')
 
 
 #django rest framework

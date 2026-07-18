@@ -1,0 +1,103 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Platform Settings{% endblock %}
+{% block topbar_title %}Platform Settings{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Platform Settings</h1>
+    <div class="sa-page-sub">System configuration and administrative shortcuts</div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Quick admin links -->
+  <div class="col-lg-4">
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-lightning"></i> Admin Shortcuts</div>
+      <div class="d-flex flex-column gap-2">
+        <a href="/appadmin/" class="sa-btn sa-btn-outline">
+          <i class="bi bi-database"></i> Django Admin (full)
+        </a>
+        <a href="{% url 'admin_dashboard' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-grid"></i> Tenant Admin Dashboard
+        </a>
+        <a href="{% url 'sa_pricing' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-tag"></i> Edit Pricing
+        </a>
+        <a href="{% url 'sa_billing' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-receipt"></i> Billing Report
+        </a>
+        <a href="{% url 'sa_dcc_report' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-bar-chart-line"></i> DCC Credit Report
+        </a>
+      </div>
+    </div>
+
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-tag"></i> Current Pricing</div>
+      <div style="font-size:13px; line-height:2.2;">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--sa-border); margin-bottom:6px; padding-bottom:6px;">
+          <span style="color:var(--sa-muted);">Currency</span> <strong>{{ pricing.currency }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Monthly base fee</span>
+          <strong>{{ pricing.monthly_base_fee|floatformat:2 }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Per credit check</span>
+          <strong>{{ pricing.price_per_credit_check|floatformat:2 }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Per profile lookup</span>
+          <strong>{{ pricing.price_per_profile_lookup|floatformat:2 }}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Per feed record</span>
+          <strong>{{ pricing.price_per_record_synced|floatformat:4 }}</strong>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <a href="{% url 'sa_pricing' %}" class="sa-btn sa-btn-primary sa-btn-sm">
+          <i class="bi bi-pencil"></i> Edit Pricing
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Platform info -->
+  <div class="col-lg-8">
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-info-circle"></i> Platform Information</div>
+      <div style="font-size:13px; line-height:2.5;">
+        <div class="row">
+          <div class="col-5" style="color:var(--sa-muted);">Admin URL</div>
+          <div class="col-7"><code>/saasadmin/</code></div>
+          <div class="col-5" style="color:var(--sa-muted);">Tenant Admin URL</div>
+          <div class="col-7"><code>/admin/</code></div>
+          <div class="col-5" style="color:var(--sa-muted);">Django Admin URL</div>
+          <div class="col-7"><code>/appadmin/</code></div>
+          <div class="col-5" style="color:var(--sa-muted);">API Base</div>
+          <div class="col-7"><code>/api/</code> <span style="color:var(--sa-muted); font-size:11px;">(also /API/)</span></div>
+          <div class="col-5" style="color:var(--sa-muted);">Logged in as</div>
+          <div class="col-7"><code>{{ request.user.email }}</code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-shield-check"></i> Access Control Notes</div>
+      <div style="font-size:13px; color:var(--sa-muted); line-height:1.8;">
+        <p>The <code>/saasadmin/</code> area is restricted to superuser accounts only. Tenants access their own admin area at <code>/admin/</code>, which is protected by staff-level credentials.</p>
+        <p>To create a superuser from the command line:</p>
+        <pre style="background: var(--sa-bg); border: 1px solid var(--sa-border); border-radius:6px; padding:10px; font-size:12px; color:#79c0ff; margin: 0;">pipenv run python manage.py shell -c "
+from users.models import User
+User.objects.create_superuser(
+    email='admin@dc.com.pg',
+    password='YOUR_PASSWORD'
+)"</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

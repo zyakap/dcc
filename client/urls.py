@@ -6,6 +6,7 @@ urlpatterns = [
     path('get_clientprofiles/<str:endpoint_url>/', views.get_clientprofiles, name='get_clientprofiles'),
 
     path('view/<int:client_id>/', views.client_record_detail, name='client_record_detail'),
+    path('view/<int:client_id>/dcc-access/', views.dcc_credit_check_access, name='dcc_credit_check_access'),
     path('business/view/<int:business_id>/', views.business_record_detail, name='business_record_detail'),
     path('client/sample/', views.client_record_detail_sample, name='client_record_detail_sample'),
     path('business/sample/', views.business_record_detail_sample, name='business_record_detail_sample'),

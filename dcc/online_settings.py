@@ -149,9 +149,9 @@ else:
 DATABASES = {
     "default": {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dcc',
+        'NAME': 'dccdb',
         'USER': 'root',
-        'PASSWORD': 'j5dct5&Wfefs24@',
+        'PASSWORD': 'dcceht5&Wfefs24@',
         'HOST': 'localhost',
         'PORT': '3306',
     }

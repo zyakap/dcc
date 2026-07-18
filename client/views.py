@@ -1,9 +1,9 @@
 from django.conf import settings
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from datetime import datetime
 
 import requests
-from .models import ClientProfile, BusinessProfile, ClientContact, ClientAddress, ClientEmployer, ClientBankAccount, ClientUpload
+from .models import ClientProfile, BusinessProfile, ClientContact, ClientAddress, ClientEmployer, ClientBankAccount, ClientUpload, ClientCreditScore
 from .serializers import ClientProfileSerializer  # Import your LoanSerializer
 from .functions import fileuploader, fileuploader_records, login_check, admin_check, check_staff
 # views.py
@@ -70,19 +70,140 @@ def get_clientprofiles(request, endpoint_url):
         error_message = "Failed to fetch data from the API"
         return render(request, 'error.html', {'error_message': error_message})
 
+@login_check
 def client_record_detail(request, client_id):
-    client = ClientProfile.objects.get(id=client_id)
-    loans = Loan.objects.filter(owner=client)
-    
-    return render(request, 'client_record_detail.html', {'nav': 'client_record_detail', 'client': client,'loans': loans})
+    from django.utils import timezone
+    from django.db.models import Q, Sum
+    from api.models import CreditCheckAccess
+    from loan.models import Loan
+
+    client = get_object_or_404(ClientProfile, id=client_id)
+    # Match by FK where set, AND fall back to CUID/LUID string match to cover
+    # cases where the loan was synced but owner FK wasn't linked (e.g. ordering issues).
+    from django.db.models import Q as _Q
+    loan_q = _Q(owner=client)
+    if client.CUID:
+        loan_q |= _Q(UID=client.CUID)
+        if client.LUID:
+            loan_q |= _Q(UID=client.CUID, LUID=client.LUID)
+    loans = Loan.objects.filter(loan_q).distinct().select_related('lender')
+
+    try:
+        tenant = request.user.userprofile
+    except Exception:
+        tenant = None
+
+    dcc_enabled = bool(tenant and tenant.credit_check_enabled)
+    dcc_access_valid = False
+    dcc_expires_at = None
+    dcc_data = None
+    credit_score = None
+
+    if dcc_enabled and client.CUID:
+        access = CreditCheckAccess.objects.filter(
+            tenant=tenant,
+            client_cuid=client.CUID,
+            expires_at__gt=timezone.now(),
+        ).order_by('-expires_at').first()
+
+        if access:
+            dcc_access_valid = True
+            dcc_expires_at = access.expires_at
+
+            match_q = Q()
+            if client.nid_number:
+                match_q |= Q(nid_number=client.nid_number)
+            if client.first_name and client.last_name:
+                match_q |= Q(first_name__iexact=client.first_name,
+                             last_name__iexact=client.last_name)
+            other_profiles = ClientProfile.objects.filter(match_q).exclude(pk=client.pk) \
+                             .select_related('user_profile').order_by('-updated_at') if match_q else ClientProfile.objects.none()
+
+            all_loans = Loan.objects.filter(owner__in=list(other_profiles) + [client]) \
+                            .select_related('lender', 'owner__user_profile').order_by('-created_at')
+            loan_summary = all_loans.aggregate(
+                total_borrowed=Sum('amount'),
+                total_outstanding=Sum('total_outstanding'),
+                total_arrears=Sum('total_arrears'),
+            )
+            credit_score_obj, _ = ClientCreditScore.objects.get_or_create(client=client)
+            credit_score = credit_score_obj
+            dcc_data = {
+                'other_profiles': other_profiles,
+                'all_loans': all_loans,
+                'loan_summary': loan_summary,
+            }
+
+    return render(request, 'client_record_detail.html', {
+        'nav': 'client_record_detail',
+        'client': client,
+        'loans': loans,
+        'dcc_enabled': dcc_enabled,
+        'dcc_access_valid': dcc_access_valid,
+        'dcc_expires_at': dcc_expires_at,
+        'dcc_data': dcc_data,
+        'credit_score': credit_score,
+        'tenant': tenant,
+    })
+
+
+def dcc_credit_check_access(request, client_id):
+    """POST: unlock DCC credit view for this client, bill the tenant, redirect back."""
+    import datetime as _dt
+    from django.utils import timezone
+    from api.models import CreditCheckAccess, log_usage
+
+    if request.method != 'POST':
+        return redirect('client_record_detail', client_id=client_id)
+
+    client = get_object_or_404(ClientProfile, pk=client_id)
+    try:
+        tenant = request.user.userprofile
+    except Exception:
+        messages.error(request, 'No tenant profile.', extra_tags='danger')
+        return redirect('client_record_detail', client_id=client_id)
+
+    if not tenant.credit_check_enabled:
+        messages.warning(request, 'DCC is disabled for your account.', extra_tags='warning')
+        return redirect('client_record_detail', client_id=client_id)
+
+    if not client.CUID:
+        messages.warning(request, 'Client has no CUID — DCC access cannot be logged.', extra_tags='warning')
+        return redirect('client_record_detail', client_id=client_id)
+
+    existing = CreditCheckAccess.objects.filter(
+        tenant=tenant, client_cuid=client.CUID, expires_at__gt=timezone.now(),
+    ).order_by('-expires_at').first()
+
+    if existing:
+        messages.info(request, f'DCC access already active until {existing.expires_at:%d %b %Y %H:%M}.', extra_tags='info')
+    else:
+        window_hours = tenant.credit_check_window_hours or 12
+        expires_at = timezone.now() + _dt.timedelta(hours=window_hours)
+        CreditCheckAccess.objects.create(tenant=tenant, client_cuid=client.CUID, expires_at=expires_at)
+        log_usage(tenant, 'CREDIT_CHECK', detail=client.CUID)
+        try:
+            score_obj, _ = ClientCreditScore.objects.get_or_create(client=client)
+            score_obj.recompute()
+        except Exception:
+            pass
+        messages.success(
+            request,
+            f'DCC Credit data unlocked for {window_hours}h (until {expires_at:%d %b %Y %H:%M}). Billed.',
+            extra_tags='info',
+        )
+    return redirect('client_record_detail', client_id=client_id)
 
 def client_record_detail_sample(request):
     
     return render(request, 'client_record_detail.html', {'nav': 'client_record_detail_sample'})
 
+@login_check
 def business_record_detail(request, business_id):
-    business = BusinessProfile.objects.get(id=business_id)
-    return render(request, 'business_record_detail.html', {'nav': 'business_record_detail', 'business': business})
+    from loan.models import Loan
+    business = get_object_or_404(BusinessProfile, id=business_id)
+    loans = Loan.objects.filter(owner=business.business_owner).select_related('lender') if business.business_owner else Loan.objects.none()
+    return render(request, 'business_record_detail.html', {'nav': 'business_record_detail', 'business': business, 'loans': loans})
 
 def business_record_detail_sample(request):
     
@@ -465,31 +586,49 @@ def upload_complete(request):
 
     return render(request, 'upload_complete.html', {'nav': 'upload_records',})
 
+def _tenant_profile(request):
+    """Return the UserProfile for the logged-in tenant, or None."""
+    try:
+        return request.user.userprofile
+    except Exception:
+        return None
+
+
 def client_records(request):
-    clients = ClientProfile.objects.filter(vetted=True)
+    # A tenant sees ALL of their own records (vetted or not).
+    # vetted=True was hiding synced records that hadn't been manually approved,
+    # and was also leaking other tenants' vetted records to everyone.
+    up = _tenant_profile(request)
+    clients = ClientProfile.objects.filter(user_profile=up) if up else ClientProfile.objects.none()
     return render(request, 'client_records.html', {'nav':'client_records', 'clients': clients})
 
 def client_records_under_review(request):
-    clients = ClientProfile.objects.filter(vetted=False)
+    up = _tenant_profile(request)
+    clients = ClientProfile.objects.filter(user_profile=up, vetted=False) if up else ClientProfile.objects.none()
     return render(request, 'client_records_under_review.html', {'nav':'client_records_under_review', 'clients': clients})
 
 def client_records_dcc(request):
+    # Database view: all vetted records across every tenant
     clients = ClientProfile.objects.filter(vetted=True)
     return render(request, 'client_records_dcc.html', {'nav':'client_records_dcc', 'clients': clients})
 
 def business_records(request):
-    businesses = BusinessProfile.objects.filter(vetted=True)
+    up = _tenant_profile(request)
+    businesses = BusinessProfile.objects.filter(user_profile=up) if up else BusinessProfile.objects.none()
     return render(request, 'business_records.html', {'nav':'business_records', 'businesses': businesses})
 
 def business_records_dcc(request):
+    # Database view: all vetted business records across every tenant
     businesses = BusinessProfile.objects.filter(vetted=True)
     return render(request, 'business_records_dcc.html', {'nav':'business_records_dcc', 'businesses': businesses})
 
 def recent_client_records_dcc(request):
+    # Database view: recently updated vetted records across every tenant
     clients = ClientProfile.objects.filter(vetted=True)
     return render(request, 'recent_client_records.html', {'nav':'recent_client_records_dcc', 'clients': clients})
 
 def recovery_insights(request):
+    # Database view: all vetted records for recovery analysis
     clients = ClientProfile.objects.filter(vetted=True)
     return render(request, 'recovery_insights.html', {'nav':'recovery_insights', 'clients': clients})
 
@@ -497,220 +636,168 @@ def recovery_insights(request):
 
 
 
-@admin_check
+@login_check
 def filtered_client_records_your_records_today(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    clients = ClientProfile.objects.filter(user_profile=user_profile, created_at__lt=today)
+    from django.utils import timezone
+    _today = timezone.localdate()
+    user_profile = UserProfile.objects.get(user_id=request.user.id)
+    clients = ClientProfile.objects.filter(user_profile=user_profile, created_at__date=_today)
     context = {
-        'nav':'client_records', 
+        'nav': 'client_records',
         'clients': clients,
         'count': clients.count(),
-        'descriptor': 'Records created today'
-        }
-
+        'descriptor': f'Your records created today ({_today})',
+    }
     return render(request, 'filtered_client_records.html', context)
 
-@admin_check
+@login_check
 def filtered_client_records_your_updated_today(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    clients = ClientProfile.objects.filter(user_profile=user_profile, updated_at__gt=today)
+    from django.utils import timezone
+    _today = timezone.localdate()
+    user_profile = UserProfile.objects.get(user_id=request.user.id)
+    clients = ClientProfile.objects.filter(user_profile=user_profile, updated_at__date=_today)
     context = {
-        'nav':'client_records', 
+        'nav': 'client_records',
         'clients': clients,
         'count': clients.count(),
-        'descriptor': 'Records updated today'
-        }
-
+        'descriptor': f'Your records updated today ({_today})',
+    }
     return render(request, 'filtered_client_records.html', context)
 
-@admin_check
+@login_check
 def filtered_records_your_business_today(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    businesses = BusinessProfile.objects.filter(user_profile=user_profile, updated_at__lt=today)
+    from django.utils import timezone
+    _today = timezone.localdate()
+    user_profile = UserProfile.objects.get(user_id=request.user.id)
+    businesses = BusinessProfile.objects.filter(user_profile=user_profile, created_at__date=_today)
     context = {
-        'nav':'business_records', 
+        'nav': 'business_records',
         'businesses': businesses,
         'count': businesses.count(),
-        'descriptor': 'Business Records added today'
-        }
-
+        'descriptor': f'Your business records added today ({_today})',
+    }
     return render(request, 'filtered_business_records.html', context)
 
-@admin_check
+@login_check
 def filtered_client_records_dcc_records_today(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    clients = ClientProfile.objects.filter(created_at__gt=today)
+    from django.utils import timezone
+    _today = timezone.localdate()
+    clients = ClientProfile.objects.filter(vetted=True, created_at__date=_today)
     context = {
-        'nav':'client_records_dcc', 
+        'nav': 'client_records_dcc',
         'clients': clients,
         'count': clients.count(),
-        'descriptor': 'DCC Records created today'
-        }
-
+        'descriptor': f'DCC Client Records created today ({_today})',
+    }
     return render(request, 'filtered_client_records.html', context)
 
-@admin_check
+@login_check
 def filtered_client_records_dcc_updated_today(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    clients = ClientProfile.objects.filter(updated_at__gt=today)
+    from django.utils import timezone
+    _today = timezone.localdate()
+    clients = ClientProfile.objects.filter(vetted=True, updated_at__date=_today)
     context = {
-        'nav':'client_records_dcc', 
+        'nav': 'client_records_dcc',
         'clients': clients,
         'count': clients.count(),
-        'descriptor': 'DCC Records updated today'
-        }
-
+        'descriptor': f'DCC Client Records updated today ({_today})',
+    }
     return render(request, 'filtered_client_records.html', context)
 
-@admin_check
+@login_check
 def filtered_business_records_dcc_today(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    businesses = BusinessProfile.objects.filter(created_at__gt=today)
+    from django.utils import timezone
+    _today = timezone.localdate()
+    businesses = BusinessProfile.objects.filter(vetted=True, created_at__date=_today)
     context = {
-        'nav':'business_records_dcc', 
+        'nav': 'business_records_dcc',
         'businesses': businesses,
         'count': businesses.count(),
-        'descriptor': 'DCC Business Records added today'
-        }
-
+        'descriptor': f'DCC Business Records added today ({_today})',
+    }
     return render(request, 'filtered_business_records.html', context)
 
-@admin_check
+@login_check
 def filtered_business_records_dcc_updated_today(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    businesses = BusinessProfile.objects.filter(updated_at__gt=today)
+    from django.utils import timezone
+    _today = timezone.localdate()
+    businesses = BusinessProfile.objects.filter(vetted=True, updated_at__date=_today)
     context = {
-        'nav':'business_records_dcc', 
+        'nav': 'business_records_dcc',
         'businesses': businesses,
         'count': businesses.count(),
-        'descriptor': 'DCC Business Records added today'
-        }
-
+        'descriptor': f'DCC Business Records updated today ({_today})',
+    }
     return render(request, 'filtered_business_records.html', context)
 
 from loan.models import Loan
 from django.http import Http404
-#loan records
-@admin_check
+
+@login_check
 def filtered_loan_records_your_arrears(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    loans = Loan.objects.filter(lender=user_profile, funded_category='ACTIVE')
+    user_profile = UserProfile.objects.get(user_id=request.user.id)
+    loans = Loan.objects.filter(lender=user_profile, funded_category='ACTIVE', total_arrears__gt=0)
     context = {
-        'nav':'client_records', 
+        'nav': 'client_records',
         'loans': loans,
         'count': loans.count(),
-        'descriptor': 'Loans with Arrears'
-        }
-
+        'descriptor': 'Your Loans with Arrears',
+    }
     return render(request, 'filtered_loan_list.html', context)
 
-#loan records
-@admin_check
+@login_check
 def filtered_loan_records_dcc_arrears(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    loans = Loan.objects.filter(funded_category='ACTIVE')
-
+    loans = Loan.objects.filter(funded_category='ACTIVE', total_arrears__gt=0)
     context = {
-        'nav':'client_records_dcc', 
+        'nav': 'client_records_dcc',
         'loans': loans,
         'count': loans.count(),
-        'descriptor': 'DCC Loans with Arrears'
-        }
-
+        'descriptor': 'DCC Loans with Arrears',
+    }
     return render(request, 'filtered_loan_list.html', context)
 
-@admin_check
+@login_check
 def filtered_loan_records_your_defaults(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    loans = Loan.objects.filter(lender=user_profile, category='FUNDED', status='DEFAULTED')
-    
+    user_profile = UserProfile.objects.get(user_id=request.user.id)
+    loans = Loan.objects.filter(lender=user_profile, status='DEFAULTED')
     context = {
-        'nav':'client_records', 
+        'nav': 'client_records',
         'loans': loans,
         'count': loans.count(),
-        'descriptor': 'Loans in Default'
-        }
-
+        'descriptor': 'Your Loans in Default',
+    }
     return render(request, 'filtered_loan_list.html', context)
 
-#loan records
-@admin_check
+@login_check
 def filtered_loan_records_dcc_defaults(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
-    loans = Loan.objects.filter(category='FUNDED', status='DEFAULTED')
-
+    loans = Loan.objects.filter(status='DEFAULTED')
     context = {
-        'nav':'client_records_dcc', 
+        'nav': 'client_records_dcc',
         'loans': loans,
         'count': loans.count(),
-        'descriptor': 'DCC Loans in Default'
-        }
-
+        'descriptor': 'DCC Loans in Default',
+    }
     return render(request, 'filtered_loan_list.html', context)
 
-@admin_check
+@login_check
 def filtered_loan_records_your_recovery(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
+    user_profile = UserProfile.objects.get(user_id=request.user.id)
     loans = Loan.objects.filter(lender=user_profile, funded_category='RECOVERY')
     context = {
-        'nav':'client_records', 
+        'nav': 'client_records',
         'loans': loans,
         'count': loans.count(),
-        'descriptor': 'Loans in Recovery'
-        }
-
+        'descriptor': 'Your Loans in Recovery',
+    }
     return render(request, 'filtered_loan_list.html', context)
 
-#loan records
-@admin_check
+@login_check
 def filtered_loan_records_dcc_recovery(request):
-    user = request.user
-    uid = user.id
-    user_profile = UserProfile.objects.get(user_id=uid)
-
     loans = Loan.objects.filter(funded_category='RECOVERY')
-
     context = {
-        'nav':'client_records_dcc', 
+        'nav': 'client_records_dcc',
         'loans': loans,
         'count': loans.count(),
-        'descriptor': 'DCC Loans in Recovery'
-        }
-
+        'descriptor': 'DCC Loans in Recovery',
+    }
     return render(request, 'filtered_loan_list.html', context)

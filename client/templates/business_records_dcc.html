@@ -1,63 +1,58 @@
-<!-- add_business.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} Business Records{% endblock %}
+{% block title %}DCC Business Records{% endblock %}
 
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Records {% endblock %}
-{% block dashboard_title %} Business Records {% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'database_overview' %}">Database Overview</a>{% endblock %}
+{% block breadcrumb_active %}Business Records{% endblock %}
+{% block dashboard_title %}DCC Business Records{% endblock %}
 
 {% block content %}
-  <!-- Content Ends Here -->
-  <h3 class="text-primary">{{ client.first_name }} {{ client.last_name }}</h3>
-  <hr>
 
-  <div class="row">
-      <div class="col-lg-12">
+  <p class="text-muted mb-3">All vetted business records in the DCC database.</p>
 
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Businesses in Database</h5>
-            <p>This is a list of all business records in the database</p>
-
-            <!-- Table with stripped rows -->
-            <table class="table datatable">
-              <thead>
-                <tr>
-                  <th>Busines Name</th>
-                  <th>C.Rating</th>
-                  <th>Status</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                  <th>Email</th>
-                  <th>Mobile</th>
-                  <th>Owner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for business in businesses %}
-                  <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                      <td>{{ business.trading_name }}</td>
-                      <td>{{ business.credit_rating }}</td>
-                      <td>{{ business.status }}</td>
-                      <td>{{ business.amount }}</td>
-                      <td>{{ business.date }}</td>
-                      <td>{{ business.email }}</td>
-                      <td>{{ business.mobile }}</td>
-                      <td>{{ business.client.first_name }} {{ business.client.last_name }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-            <!-- End Table with stripped rows -->
-
-          </div>
-        </div>
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle mb-0 datatable">
+          <thead class="table-dark">
+            <tr>
+              <th>Business Name</th>
+              <th>DCC Status</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>IPA #</th>
+              <th>Lender</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for business in businesses %}
+            <tr onclick="window.location.href='{% url 'business_record_detail' business.id %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+              <td>
+                <strong>{{ business.trading_name|default:"—" }}</strong>
+                {% if business.registered_name %}<br><small class="text-muted">{{ business.registered_name }}</small>{% endif %}
+              </td>
+              <td>
+                <span class="badge {% if business.dcc_status == 'DEFAULTED' %}bg-danger{% elif business.dcc_status == 'CLEAR' %}bg-success{% else %}bg-warning{% endif %}">
+                  {{ business.dcc_status|default:"—" }}
+                </span>
+              </td>
+              <td>{{ business.phone|default:"—" }}</td>
+              <td>{{ business.email|default:"—" }}</td>
+              <td><small>{{ business.ipa_registration_number|default:"—" }}</small></td>
+              <td><small>{{ business.user_profile.organisation|default:"—" }}</small></td>
+              <td>
+                <a href="{% url 'business_record_detail' business.id %}" class="btn btn-sm btn-outline-primary py-0">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No business records in the DCC database yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
+    </div>
   </div>
 
 {% endblock %}
-
-

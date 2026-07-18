@@ -1,0 +1,99 @@
+{% extends "admin_base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %} Usage &amp; Billing {% endblock %}
+
+{% block breadcrumb %} <a href="{% url 'admin_tenants' %}">Tenants</a> {% endblock %}
+{% block breadcrumb_active %} Usage &amp; Billing {% endblock %}
+{% block dashboard_title %} Tenant Usage &amp; Billing {% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Metered Usage — {{ month }}/{{ year }}</h5>
+          <form method="get" class="d-flex gap-2">
+            <select name="month" class="form-select form-select-sm">
+              {% for num, name in months %}
+              <option value="{{ num }}" {% if num == month %}selected{% endif %}>{{ name }}</option>
+              {% endfor %}
+            </select>
+            <select name="year" class="form-select form-select-sm">
+              {% for y in years %}
+              <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">View</button>
+          </form>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th class="text-end">Credit Checks</th>
+                <th class="text-end">Lookups</th>
+                <th class="text-end">Feed Records</th>
+                <th class="text-end">Cost ({{ pricing.currency }})</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+              <tr>
+                <td><a href="{% url 'admin_tenant_config' row.tenant.id %}">{{ row.tenant }}</a></td>
+                <td class="text-end">{{ row.credit_checks|intcomma }}</td>
+                <td class="text-end">{{ row.lookups|intcomma }}</td>
+                <td class="text-end">{{ row.feed_records|intcomma }}</td>
+                <td class="text-end"><strong>{{ row.cost|floatformat:2|intcomma }}</strong></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted">No tenants.</td></tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="4" class="text-end">Total</th>
+                <th class="text-end">{{ grand_total|floatformat:2|intcomma }} {{ pricing.currency }}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <small class="text-muted">Cost = monthly base fee + credit checks × {{ pricing.price_per_credit_check }} + lookups × {{ pricing.price_per_profile_lookup }} + feed records × {{ pricing.price_per_record_synced }}.</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">DCC Pricing</h5>
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-2">
+            <label class="form-label">Currency</label>
+            <input type="text" class="form-control" name="currency" value="{{ pricing.currency }}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Monthly base fee</label>
+            <input type="number" step="0.01" min="0" class="form-control" name="monthly_base_fee" value="{{ pricing.monthly_base_fee }}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Per credit check</label>
+            <input type="number" step="0.01" min="0" class="form-control" name="price_per_credit_check" value="{{ pricing.price_per_credit_check }}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Per profile/loans/transactions lookup</label>
+            <input type="number" step="0.01" min="0" class="form-control" name="price_per_profile_lookup" value="{{ pricing.price_per_profile_lookup }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Per feed record synced</label>
+            <input type="number" step="0.0001" min="0" class="form-control" name="price_per_record_synced" value="{{ pricing.price_per_record_synced }}">
+          </div>
+          <button type="submit" class="btn btn-primary" name="action" value="save_pricing">Save Pricing</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

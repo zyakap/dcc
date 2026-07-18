@@ -1,0 +1,80 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Create Tenant{% endblock %}
+{% block topbar_title %}Create New Tenant{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Create Tenant</h1>
+    <div class="sa-page-sub">Add a new subscriber organisation to the platform</div>
+  </div>
+  <a href="{% url 'sa_tenants' %}" class="sa-btn sa-btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-building-add"></i> Tenant Details</div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12">
+            <div style="background: rgba(31,111,235,.1); border: 1px solid rgba(31,111,235,.3); border-radius:6px; padding: 10px 14px; font-size:13px; color: #58a6ff;">
+              <i class="bi bi-info-circle me-1"></i> A user account will be created with the email and password below. The tenant can log in at <code>/users/login_user/</code>.
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="sa-form-label">Login Email *</label>
+            <input type="email" name="email" value="{{ post.email|default:'' }}" required class="sa-form-control" placeholder="tenant@company.com">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Password *</label>
+            <input type="password" name="password" required class="sa-form-control" placeholder="Temporary password">
+          </div>
+
+          <div class="col-12"><hr style="border-color: var(--sa-border); margin: 4px 0;"></div>
+
+          <div class="col-12">
+            <label class="sa-form-label">Organisation Name</label>
+            <input type="text" name="organisation" value="{{ post.organisation|default:'' }}" class="sa-form-control" placeholder="ACME Finance Ltd">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">First Name (contact person)</label>
+            <input type="text" name="first_name" value="{{ post.first_name|default:'' }}" class="sa-form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Last Name</label>
+            <input type="text" name="last_name" value="{{ post.last_name|default:'' }}" class="sa-form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="sa-form-label">LUID</label>
+            <input type="text" name="LUID" value="{{ post.LUID|default:'' }}" class="sa-form-control" placeholder="Unique lender ID">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Subscription Plan</label>
+            <select name="plan" class="sa-form-select">
+              {% for code, label in plan_choices %}
+              <option value="{{ code }}" {% if post.plan == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="sa-form-label">LMS Endpoint URL</label>
+            <input type="text" name="endpoint" value="{{ post.endpoint|default:'' }}" class="sa-form-control" placeholder="www.loanmasta.com">
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="sa-btn sa-btn-primary">
+              <i class="bi bi-plus-lg"></i> Create Tenant
+            </button>
+            <a href="{% url 'sa_tenants' %}" class="sa-btn sa-btn-outline ms-2">Cancel</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

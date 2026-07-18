@@ -8,19 +8,87 @@ from django.utils.translation import gettext_lazy as _
 from django.db import models
 from users.models import UserProfile
 
-class ClientProfile(models.Model):
-  
+
+class _AuditedModel(models.Model):
+    """Abstract mixin: on every save(), diffs this instance's tracked fields
+    against what is currently in the database and appends any change to
+    ClientProfileHistory — the single audit trail for everything DCC knows
+    about a client, across every tenant that has ever fed data about them.
+
+    This is deliberately a database-diff on save(), not a signal on the
+    incoming tenant feed, so it also captures direct edits made by DCC staff
+    (e.g. via /appadmin/), not just tenant-sync writes. The very first save()
+    of a row is logged too (old_value=None), so "the first copy" of a fact is
+    preserved exactly like every value after it — nothing is only ever
+    overwritten in place.
+    """
+    _history_excluded_fields = ('id', 'created_at', 'updated_at')
+    _history_prefix = ''
+
+    class Meta:
+        abstract = True
+
+    def _history_client(self):
+        """The ClientProfile this instance's history rows belong to."""
+        if isinstance(self, ClientProfile):
+            return self
+        return getattr(self, 'client', None)
+
+    def save(self, *args, _history_source='MANUAL', **kwargs):
+        old = None
+        if self.pk:
+            old = type(self).objects.filter(pk=self.pk).first()
+        super().save(*args, **kwargs)
+        self._record_history(old, source=_history_source)
+
+    def _record_history(self, old, source='MANUAL'):
+        client = self._history_client()
+        if client is None or client.pk is None:
+            return
+        entries = []
+        for f in self._meta.fields:
+            name = f.name
+            if name in self._history_excluded_fields:
+                continue
+            new_val = getattr(self, name)
+            old_val = getattr(old, name) if old is not None else None
+            new_str = '' if new_val in (None, '') else str(new_val)
+            old_str = '' if old_val in (None, '') else str(old_val)
+            if new_str == old_str:
+                continue
+            if old is None and not new_str:
+                continue  # nothing worth recording on creation if left blank
+            entries.append(ClientProfileHistory(
+                client=client,
+                field_name=f'{self._history_prefix}{name}',
+                old_value=old_str or None,
+                new_value=new_str or None,
+                source=source,
+            ))
+        if entries:
+            ClientProfileHistory.objects.bulk_create(entries)
+
+
+class ClientProfile(_AuditedModel):
+
     PROVINCE = [('AROB','AROB'),('CENTRAL','CENTRAL'),('ENGA','ENGA'),('EAST SEPIK','EAST SEPIK'),('EHP','EHP'),('ENB','ENBP'),
     ('HELA','HELA'), ('JIWAKA','JIWAKA'),('MADANG','MADANG'),('MANUS','MANUS'),('MOROBE', 'MOROBE'),('NCD','NCD'),('NEW IRELAND','NEW IRELAND'),('ORO','ORO'),
     ('SHP','SHP'),('SIMBU','SIMBU'), ('WESTERN','WESTERN'), ('WEST SEPIK','WEST SEPIK'), ('WHP','WHP'), ('WNB','WNBP'),
     ]
 
     DCC_STATUS_CHOICES = [
-        ('DEFAULT','DEFAULT'), 
+        ('DEFAULT','DEFAULT'),
         ('RECOVERY','RECOVERY'),
         ('BAD','BAD'),
         ('BACKLIST','BLACKLIST')
     ]
+
+    # A client keeps exactly one profile per tenant (LUID) — re-registering or
+    # re-syncing must update that same row, never create a duplicate.
+    class Meta:
+        unique_together = [('LUID', 'CUID')]
+
+    _history_excluded_fields = ('id', 'created_at', 'updated_at', 'user_profile')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -85,6 +153,34 @@ class ClientProfile(models.Model):
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
+
+class ClientProfileHistory(models.Model):
+    """Full audit trail for one tenant's copy of a client. Every fact DCC has
+    ever held about this ClientProfile (or its ClientEmployer / ClientBankAccount
+    rows) gets one entry per change — the very first value included, not just
+    edits — so nothing is ever only overwritten in place. See _AuditedModel."""
+    SOURCE_CHOICES = [
+        ('SYNC', 'Tenant Sync'),
+        ('MANUAL', 'DCC Staff'),
+        ('SYSTEM', 'System'),
+    ]
+
+    client = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='history')
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+    changed_at = models.DateTimeField(auto_now_add=True)
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='SYNC')
+
+    class Meta:
+        ordering = ['-changed_at']
+        indexes = [models.Index(fields=['client', '-changed_at'])]
+        verbose_name_plural = 'Client profile history'
+
+    def __str__(self):
+        return f'{self.client} · {self.field_name}: {self.old_value!r} → {self.new_value!r}'
+
+
 class BusinessProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -116,6 +212,104 @@ class BusinessProfile(models.Model):
 
     public_category = models.CharField(max_length=20, choices=[('GOOD CUSTOMER','GOOD CUSTOMER'),('IN DEFAULT','IN DEFAULT'),('IN RECOVERY','IN RECOVERY'),('HAS A BAD LOAN','HAS A BAD LOAN'),('BLACKLISTED','BLACKLISTED')], default='GOOD CUSTOMER', null=True, blank=True)
     
+class ClientCreditScore(models.Model):
+    """Computed credit score for a client based on all loan/transaction history
+    across every DCC tenant. Recomputed each time a credit check is paid for."""
+    GRADE_CHOICES = [
+        ('AAA', 'AAA – Exceptional'),
+        ('AA',  'AA – Excellent'),
+        ('A',   'A – Very Good'),
+        ('BBB', 'BBB – Good'),
+        ('BB',  'BB – Fair'),
+        ('B',   'B – Below Average'),
+        ('CCC', 'CCC – Poor'),
+        ('CC',  'CC – Bad'),
+        ('C',   'C – Very Bad'),
+    ]
+    client = models.OneToOneField(ClientProfile, on_delete=models.CASCADE, related_name='credit_score')
+    score = models.PositiveIntegerField(default=500, help_text='0–1000 composite credit score.')
+    grade = models.CharField(max_length=5, choices=GRADE_CHOICES, default='BBB')
+    computed_at = models.DateTimeField(auto_now=True)
+    # factor breakdown (stored for display / audit)
+    total_loans = models.IntegerField(default=0)
+    completed_loans = models.IntegerField(default=0)
+    active_loans = models.IntegerField(default=0)
+    defaulted_loans = models.IntegerField(default=0)
+    arrears_loans = models.IntegerField(default=0)
+    recovery_loans = models.IntegerField(default=0)
+    total_borrowed = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    total_outstanding = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f'{self.client} – {self.grade} ({self.score}/1000)'
+
+    @staticmethod
+    def _score_to_grade(score):
+        if score >= 850: return 'AAA'
+        if score >= 750: return 'AA'
+        if score >= 650: return 'A'
+        if score >= 550: return 'BBB'
+        if score >= 450: return 'BB'
+        if score >= 350: return 'B'
+        if score >= 250: return 'CCC'
+        if score >= 150: return 'CC'
+        return 'C'
+
+    def recompute(self):
+        """Recalculate score from live loan/transaction data across all tenants
+        and save. Call after each paid credit-check access event."""
+        from loan.models import Loan
+        from django.db.models import Sum as _Sum
+
+        # Gather all loan records for this client (across all lender tenants)
+        loans = Loan.objects.filter(owner=self.client)
+        total = loans.count()
+        completed = loans.filter(status='COMPLETED').count()
+        active = loans.filter(funded_category='ACTIVE').count()
+        defaulted = loans.filter(status='DEFAULTED').count()
+        arrears = loans.filter(funded_category='ACTIVE', total_arrears__gt=0).count()
+        recovery = loans.filter(funded_category='RECOVERY').count()
+        total_borrowed = loans.aggregate(s=_Sum('amount'))['s'] or 0
+        total_outstanding = loans.aggregate(s=_Sum('total_outstanding'))['s'] or 0
+
+        # Base score
+        score = 500
+        # Positive: completed loans, history depth
+        score += min(completed * 30, 150)
+        if total > 0:
+            tenure_years = (loans.order_by('funding_date').last().funding_date -
+                            loans.order_by('funding_date').first().funding_date).days // 365 if \
+                loans.filter(funding_date__isnull=False).count() >= 2 else 0
+            score += min(tenure_years * 10, 50)
+        # Negative: bad loan behaviour
+        score -= defaulted * 150
+        score -= arrears * 50
+        score -= recovery * 100
+        # DCC flags
+        if self.client.dcc_flagged:
+            score -= 100
+        if self.client.dcc_status in ('DEFAULT', 'BAD'):
+            score -= 80
+        if self.client.dcc_status == 'RECOVERY':
+            score -= 60
+        if self.client.public_category == 'BLACKLISTED':
+            score = min(score, 49)
+
+        score = max(0, min(1000, score))
+
+        self.score = score
+        self.grade = self._score_to_grade(score)
+        self.total_loans = total
+        self.completed_loans = completed
+        self.active_loans = active
+        self.defaulted_loans = defaulted
+        self.arrears_loans = arrears
+        self.recovery_loans = recovery
+        self.total_borrowed = total_borrowed
+        self.total_outstanding = total_outstanding
+        self.save()
+
+
 class UserProfileUpload(models.Model):
     UPLOAD_TYPE_CHOICES = [('RECORD','RECORD')]
     
@@ -173,7 +367,10 @@ class ClientContact(models.Model):
     mobile1 = models.IntegerField(null=True, blank=True)
     mobile2 = models.IntegerField(null=True, blank=True)
     
-class ClientEmployer(models.Model):
+class ClientEmployer(_AuditedModel):
+    _history_prefix = 'employer.'
+    _history_excluded_fields = ('id', 'created_at', 'updated_at', 'client')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     #employer information
@@ -191,7 +388,10 @@ class ClientEmployer(models.Model):
     work_phone = models.CharField(max_length=20, blank = True, null=True)
     work_email = models.EmailField(verbose_name='Work Email Address', max_length=50, blank = True, null=True)
 
-class ClientBankAccount(models.Model):
+class ClientBankAccount(_AuditedModel):
+    _history_prefix = 'bank.'
+    _history_excluded_fields = ('id', 'created_at', 'updated_at', 'client')
+
     BANK_CHOICES = [('BSP', 'BSP'),('KINA','KINA'),
     ('WESTPAC','WESTPAC'),('CREDIT BANK','CREDIT BANK'),('TISA BANK','TISA BANK')
     ]

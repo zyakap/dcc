@@ -30,7 +30,7 @@
               <table class="table datatable">
                 <thead>
                   <tr>
-                    <th>Busines Name</th>
+                    <th>Business Name</th>
                     <th>C.Rating</th>
                     <th>Status</th>
                     <th>Amount</th>
@@ -42,7 +42,7 @@
                 </thead>
                 <tbody>
                   {% for business in businesses %}
-                    <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
+                    <tr onclick="window.location.href='{% url 'business_record_detail' business.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
                         <td>{{ business.trading_name }}</td>
                         <td>{{ business.credit_rating }}</td>
                         <td>{{ business.status }}</td>

@@ -1,0 +1,58 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Pricing{% endblock %}
+{% block topbar_title %}Platform Pricing{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Pricing Configuration</h1>
+    <div class="sa-page-sub">Set the rates charged to tenants for DCC services</div>
+  </div>
+  <a href="{% url 'sa_billing' %}" class="sa-btn sa-btn-outline"><i class="bi bi-arrow-left"></i> Billing</a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-tag"></i> Rate Sheet</div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="sa-form-label">Currency Code</label>
+            <input type="text" name="currency" value="{{ pricing.currency }}" class="sa-form-control" maxlength="10" placeholder="PGK">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Monthly Base Fee (per tenant)</label>
+            <input type="number" step="0.01" name="monthly_base_fee" value="{{ pricing.monthly_base_fee }}" class="sa-form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Price per Credit Check</label>
+            <input type="number" step="0.01" name="price_per_credit_check" value="{{ pricing.price_per_credit_check }}" class="sa-form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Price per Profile Lookup</label>
+            <input type="number" step="0.01" name="price_per_profile_lookup" value="{{ pricing.price_per_profile_lookup }}" class="sa-form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Price per Feed Record Synced</label>
+            <input type="number" step="0.0001" name="price_per_record_synced" value="{{ pricing.price_per_record_synced }}" class="sa-form-control">
+          </div>
+          {% if pricing.updated_at %}
+          <div class="col-12">
+            <div style="font-size:12px; color:var(--sa-muted);">
+              <i class="bi bi-clock"></i> Last updated: {{ pricing.updated_at|date:"Y-m-d H:i" }}
+            </div>
+          </div>
+          {% endif %}
+          <div class="col-12">
+            <button type="submit" class="sa-btn sa-btn-primary">
+              <i class="bi bi-check-lg"></i> Save Pricing
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Client Records{% endblock %}
+{% block topbar_title %}Client Records{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Client Records</h1>
+    <div class="sa-page-sub">All client profiles across all tenants</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="sa-card mb-4">
+  <form method="get" class="d-flex gap-2 flex-wrap align-items-end">
+    <div style="flex:1; min-width:200px;">
+      <label class="sa-form-label">Search</label>
+      <input type="text" name="q" value="{{ query }}" class="sa-form-control"
+             placeholder="Name, CUID, LUID, NID, mobile, email, tenant…">
+    </div>
+    <div style="min-width:160px;">
+      <label class="sa-form-label">Filter by Tenant</label>
+      <select name="tenant" class="sa-form-select">
+        <option value="">All Tenants</option>
+        {% for t in tenants %}
+        <option value="{{ t.id }}" {% if tenant_filter == t.id|stringformat:"s" %}selected{% endif %}>
+          {{ t.organisation|default:t }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="sa-btn sa-btn-primary">Filter</button>
+    <a href="{% url 'sa_clients' %}" class="sa-btn sa-btn-outline">Clear</a>
+  </form>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-person-vcard"></i> {{ clients.count }} Record{{ clients.count|pluralize }}</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Tenant</th>
+          <th>CUID</th>
+          <th>LUID</th>
+          <th>NID</th>
+          <th>DCC Status</th>
+          <th>Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clients %}
+        <tr>
+          <td>
+            <strong>{{ c.first_name }} {% if c.middle_name %}{{ c.middle_name }} {% endif %}{{ c.last_name }}</strong>
+          </td>
+          <td style="font-size:12px;">{{ c.user_profile.organisation|default:"—" }}</td>
+          <td><code>{{ c.CUID|default:"—" }}</code></td>
+          <td><code>{{ c.LUID|default:"—" }}</code></td>
+          <td><code>{{ c.nid_number|default:"—" }}</code></td>
+          <td>
+            {% if c.dcc_status == 'CLEAR' or not c.dcc_status %}
+              <span class="sa-badge sa-badge-green">{{ c.dcc_status|default:"CLEAR" }}</span>
+            {% else %}
+              <span class="sa-badge sa-badge-red">{{ c.dcc_status }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size:11px; color:var(--sa-muted);">{{ c.updated_at|date:"Y-m-d" }}</td>
+          <td>
+            <a href="{% url 'admin_view_client' c.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center; color:var(--sa-muted); padding:24px;">No client records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

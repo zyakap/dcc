@@ -1,72 +1,71 @@
-<!-- add_Client.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} Loan Records{% endblock %}
+{% block title %}Loan Records{% endblock %}
 
-
-
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Records {% endblock %}
-{% block dashboard_title %} Loan Records {% endblock %}
-
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a> / <a href="{% url 'database_overview' %}">Database Overview</a>{% endblock %}
+{% block breadcrumb_active %}{{ descriptor }}{% endblock %}
+{% block dashboard_title %}Loan Records{% endblock %}
 
 {% block content %}
-  <!-- Content Ends Here -->
 
-  
-    <div class="row">
-      <div class="col-lg-12">
-        <div class="card bg-secondary">
-          <div class="card-body pt-3">
-                <h2 class="text-light">{{ count }} {{ descriptor }}</h2>
-          </div>
-        </div>
+  <div class="card bg-secondary mb-3">
+    <div class="card-body py-3">
+      <h4 class="text-white mb-0"><i class="bi bi-list-ul"></i> {{ count }} &nbsp;<span class="fw-light">{{ descriptor }}</span></h4>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle mb-0 datatable">
+          <thead class="table-dark">
+            <tr>
+              <th>Ref</th>
+              <th>Borrower</th>
+              <th>Lender</th>
+              <th>Status</th>
+              <th>Category</th>
+              <th class="text-end">Amount</th>
+              <th class="text-end">Outstanding</th>
+              <th class="text-end">Arrears</th>
+              <th>Funding Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for loan in loans %}
+            <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+              <td><code>{{ loan.ref }}</code></td>
+              <td>{{ loan.owner.first_name|default:"" }} {{ loan.owner.last_name|default:"—" }}</td>
+              <td><small>{{ loan.lender.organisation|default:"—" }}</small></td>
+              <td>
+                <span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">
+                  {{ loan.status|default:"—" }}
+                </span>
+              </td>
+              <td>
+                <span class="badge {% if loan.funded_category == 'ACTIVE' %}bg-primary{% elif loan.funded_category == 'RECOVERY' %}bg-danger{% elif loan.funded_category == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">
+                  {{ loan.funded_category|default:"—" }}
+                </span>
+              </td>
+              <td class="text-end">K {{ loan.amount|default:"0" }}</td>
+              <td class="text-end">K {{ loan.total_outstanding|default:"0" }}</td>
+              <td class="text-end {% if loan.total_arrears > 0 %}text-danger fw-bold{% endif %}">
+                {% if loan.total_arrears > 0 %}K {{ loan.total_arrears }}{% else %}—{% endif %}
+              </td>
+              <td><small>{{ loan.funding_date|default:"—" }}</small></td>
+              <td>
+                <a href="{% url 'admin_loan_detail' loan.ref %}" class="btn btn-sm btn-outline-primary py-0">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center text-muted py-4">No loan records found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-
     </div>
-  
-    <div class="row">
-        <div class="col-lg-12">
-          
-          <div class="card">
-            <div class="card-body">
-              
-               <!-- Table with stripped rows -->
-               <table class="table datatable">
-                <thead>
-                  <tr>
-                    <th>Borrower</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                   
-                    <th>Status</th>
-                    <th>Total Outstanding</th>
-                    
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for loan in loans %}
-                    <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ loan.owner.first_name }} {{ loan.owner.last_name }}</td>
-                        <td>{{ loan.date }}</td>
-                        <td>{{ loan.amount }}</td>
-                        <td>{{ loan.status }}</td>
-                        <td>{{ client.total_outstanding }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-              </table>
-              <!-- End Table with stripped rows -->
-
-            </div>
-          </div>
-
-        </div>
-    </div>
-   
+  </div>
 
 {% endblock %}
-
-
