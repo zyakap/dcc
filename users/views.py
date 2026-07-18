@@ -477,21 +477,21 @@ def dashboard(request):
     today = timezone.localdate()
     yesterday = today - datetime.timedelta(days=1)
 
-    dcc_records_today = ClientProfile.objects.filter(created_at__lt=today)
-    dcc_records_yesterday = ClientProfile.objects.filter(created_at__gt=yesterday)
+    dcc_records_today = ClientProfile.objects.filter(created_at__date=today)
+    dcc_records_yesterday = ClientProfile.objects.filter(created_at__date=yesterday)
     dcc_records_today_count = dcc_records_today.count()
     dcc_records_yesterday_count = dcc_records_yesterday.count()
-    dcc_updated_today = ClientProfile.objects.filter(updated_at__gt=today)
-    dcc_updated_yesterday = ClientProfile.objects.filter(updated_at__gt=yesterday)
+    dcc_updated_today = ClientProfile.objects.filter(updated_at__date=today)
+    dcc_updated_yesterday = ClientProfile.objects.filter(updated_at__date=yesterday)
     dcc_updated_today_count = dcc_updated_today.count()
     dcc_updated_yesterday_count = dcc_updated_yesterday.count()
-    dcc_business_today = BusinessProfile.objects.filter(updated_at__lt=today)
-    dcc_business_yesterday = BusinessProfile.objects.filter(updated_at__gt=yesterday)
+    dcc_business_today = BusinessProfile.objects.filter(created_at__date=today)
+    dcc_business_yesterday = BusinessProfile.objects.filter(created_at__date=yesterday)
     dcc_business_today_count = dcc_business_today.count()
     dcc_business_yesterday_count = dcc_business_yesterday.count()
 
-    your_records_today = ClientProfile.objects.filter(user_profile=user_profile, created_at__lt=today)
-    your_records_yesterday = ClientProfile.objects.filter(user_profile=user_profile, created_at__gt=yesterday)
+    your_records_today = ClientProfile.objects.filter(user_profile=user_profile, created_at__date=today)
+    your_records_yesterday = ClientProfile.objects.filter(user_profile=user_profile, created_at__date=yesterday)
     your_records_today_count = your_records_today.count()
     your_records_yesterday_count = your_records_yesterday.count()
     your_updated_today = ClientProfile.objects.filter(user_profile=user_profile, updated_at__gt=today)
@@ -1375,9 +1375,14 @@ def my_billing(request):
 
     summary = usage_summary(user_profile, year, month)
 
+    import datetime as _dt
+    _period_start = _dt.datetime(year, month, 1, tzinfo=_dt.timezone.utc)
+    _next_month = month + 1 if month < 12 else 1
+    _next_year = year if month < 12 else year + 1
+    _period_end = _dt.datetime(_next_year, _next_month, 1, tzinfo=_dt.timezone.utc)
     views_qs = (CreditCheckAccess.objects
                 .filter(tenant=user_profile,
-                        accessed_at__year=year, accessed_at__month=month)
+                        accessed_at__gte=_period_start, accessed_at__lt=_period_end)
                 .order_by('-accessed_at'))
     from django.utils import timezone as _tz
     per_view_price = summary['pricing'].price_per_credit_check

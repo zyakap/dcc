@@ -36,8 +36,13 @@
                   {{ client.dcc_status|default:"CLEAR" }}
                 </span>
               </td>
+              {% if client.CUID in paid_cuids or client.LUID == tenant_luid %}
               <td>{{ client.mobile1|default:"—" }}</td>
               <td>{{ client.email|default:"—" }}</td>
+              {% else %}
+              <td><span class="text-muted">•••••••</span></td>
+              <td><span class="text-muted">•••••••</span></td>
+              {% endif %}
               <td><small>{{ client.user_profile.organisation|default:"—" }}</small></td>
               <td>
                 <a href="{% url 'client_record_detail' client.id %}" class="btn btn-sm btn-outline-primary py-0">View</a>

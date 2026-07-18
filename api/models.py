@@ -76,10 +76,16 @@ def usage_summary(tenant, year, month):
 
     Rows that carry a unit_price snapshot are billed at that price; legacy
     rows without one fall back to the current pricing table."""
+    import datetime as _dt
     from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 
+    period_start = _dt.datetime(year, month, 1, tzinfo=_dt.timezone.utc)
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+    period_end = _dt.datetime(next_year, next_month, 1, tzinfo=_dt.timezone.utc)
+
     pricing = PricingSettings.current()
-    logs = ApiUsageLog.objects.filter(tenant=tenant, created_at__year=year, created_at__month=month)
+    logs = ApiUsageLog.objects.filter(tenant=tenant, created_at__gte=period_start, created_at__lt=period_end)
     rows = []
     total = pricing.monthly_base_fee
     row_cost = ExpressionWrapper(F('units') * F('unit_price'),

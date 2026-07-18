@@ -96,6 +96,14 @@ def client_record_detail(request, client_id):
     own_record = bool(tenant and client.LUID and client.LUID == tenant.LUID)
     dcc_enabled = bool(tenant and tenant.credit_check_enabled)
 
+    # Free only when the client has no cross-lender data. The moment any
+    # matched profile comes from a different lender the full record is billable.
+    if own_record and client.CUID:
+        all_profiles = matched_profiles(ClientProfile.objects.filter(pk=client.pk))
+        has_external = any(p.LUID != tenant.LUID for p in all_profiles)
+        if has_external:
+            own_record = False  # treat as paid view — cross-lender data exists
+
     access = None
     if tenant and client.CUID:
         access = CreditCheckAccess.objects.filter(
@@ -104,7 +112,7 @@ def client_record_detail(request, client_id):
             expires_at__gt=timezone.now(),
         ).order_by('-expires_at').first()
     dcc_access_valid = access is not None
-    # Someone else's client + no paid window = teaser page only
+    # Someone else's client (or own client with cross-lender data) + no paid window = teaser page only
     locked_page = not own_record and not dcc_access_valid
 
     pricing = PricingSettings.current()
@@ -182,6 +190,14 @@ def dcc_credit_check_access(request, client_id):
         messages.warning(request, 'Client has no CUID — DCC access cannot be logged.', extra_tags='warning')
         return redirect('client_record_detail', client_id=client_id)
 
+    own_record = bool(client.LUID and client.LUID == tenant.LUID)
+    if own_record:
+        profiles = matched_profiles(ClientProfile.objects.filter(pk=client.pk))
+        has_external = any(p.LUID != tenant.LUID for p in profiles)
+        if not has_external:
+            messages.info(request, 'This is your own client record with no cross-lender data — available at no charge.', extra_tags='info')
+            return redirect('client_record_detail', client_id=client_id)
+
     access, created = open_access(tenant, client.CUID)
     if created:
         try:
@@ -200,8 +216,48 @@ def dcc_credit_check_access(request, client_id):
     return redirect('client_record_detail', client_id=client_id)
 
 def client_record_detail_sample(request):
-    
+
     return render(request, 'client_record_detail.html', {'nav': 'client_record_detail_sample'})
+
+
+@login_check
+def loan_detail(request, ref):
+    """Tenant-accessible loan detail. Allowed when:
+    - the loan belongs to the tenant's own clients (same LUID), OR
+    - the tenant has a live DCC access window for the borrower's CUID.
+    """
+    from django.utils import timezone
+    from loan.models import Loan
+    from api.models import CreditCheckAccess
+
+    loan = get_object_or_404(Loan, ref=ref)
+    try:
+        tenant = request.user.userprofile
+    except Exception:
+        messages.error(request, 'No tenant profile.', extra_tags='danger')
+        return redirect('dashboard')
+
+    own_loan = bool(loan.LUID and loan.LUID == tenant.LUID)
+    dcc_access = False
+    if not own_loan and loan.UID:
+        dcc_access = CreditCheckAccess.objects.filter(
+            tenant=tenant,
+            client_cuid=loan.UID,
+            expires_at__gt=timezone.now(),
+        ).exists()
+
+    if not own_loan and not dcc_access:
+        messages.error(request, 'You do not have access to this loan record.', extra_tags='danger')
+        if loan.owner:
+            return redirect('client_record_detail', client_id=loan.owner.id)
+        return redirect('dashboard')
+
+    transactions = loan.transaction_set.all().order_by('-date')
+    return render(request, 'loan_detail.html', {
+        'nav': 'client_records_dcc',
+        'loan': loan,
+        'transactions': transactions,
+    })
 
 @login_check
 def business_record_detail(request, business_id):
@@ -613,9 +669,32 @@ def client_records_under_review(request):
     return render(request, 'client_records_under_review.html', {'nav':'client_records_under_review', 'clients': clients})
 
 def client_records_dcc(request):
-    # Database view: all vetted records across every tenant
+    from django.utils import timezone
+    from api.models import CreditCheckAccess
+
     clients = ClientProfile.objects.filter(vetted=True)
-    return render(request, 'client_records_dcc.html', {'nav':'client_records_dcc', 'clients': clients})
+    try:
+        tenant = request.user.userprofile
+    except Exception:
+        tenant = None
+
+    paid_cuids = set()
+    tenant_luid = None
+    if tenant:
+        tenant_luid = tenant.LUID
+        paid_cuids = set(
+            CreditCheckAccess.objects.filter(
+                tenant=tenant,
+                expires_at__gt=timezone.now(),
+            ).values_list('client_cuid', flat=True)
+        )
+
+    return render(request, 'client_records_dcc.html', {
+        'nav': 'client_records_dcc',
+        'clients': clients,
+        'paid_cuids': paid_cuids,
+        'tenant_luid': tenant_luid,
+    })
 
 def business_records(request):
     up = _tenant_profile(request)

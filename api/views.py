@@ -12,7 +12,7 @@ from client.models import ClientCreditScore, ClientProfile, matched_profiles
 from loan.models import Loan
 from transaction.models import Transaction
 
-from .models import CreditCheckAccess, PricingSettings, log_usage, usage_summary
+from .models import CreditCheckAccess, PricingSettings, log_usage, open_access, usage_summary
 from .permissions import TenantAPIKey
 from .serializers import ClientProfileSerializer, LoanSerializer, TransactionSerializer
 
@@ -117,12 +117,33 @@ def _full_payload(tenant, uid, profiles, access):
     }
 
 
+def _ensure_access(tenant, uid):
+    """Gate all profile/loan/transaction lookups behind the same window as a
+    credit check.
+
+    Free only when every matched profile for this client belongs to the tenant's
+    own LUID — meaning DCC holds no cross-lender data worth paying for.
+
+    As soon as any matched profile comes from a different lender the lookup is
+    billable: open_access bills once and the window covers the full window
+    duration (tenant's configured hours, default 12). No double-billing within
+    an open window."""
+    client = ClientProfile.objects.filter(CUID=uid).first()
+    if client:
+        profiles = matched_profiles(ClientProfile.objects.filter(pk=client.pk))
+        has_external = any(p.LUID != tenant.LUID for p in profiles)
+        if not has_external:
+            return None  # purely own data — free
+    access, _ = open_access(tenant, uid)
+    return access
+
+
 @api_view(['GET'])
 @permission_classes([TenantAPIKey])
 def get_clientprofile(request, uid):
     client = get_object_or_404(ClientProfile, CUID=uid)
+    _ensure_access(request.tenant, uid)
     serializer = ClientProfileSerializer(client)
-    log_usage(request.tenant, 'PROFILE_LOOKUP', detail=uid)
     return Response(serializer.data)
 
 
@@ -132,9 +153,9 @@ def get_client_loans(request, uid):
     if not request.tenant.can_view_loans:
         return Response({'detail': 'Loan visibility is not included in your DCC plan.'},
                         status=status.HTTP_403_FORBIDDEN)
+    _ensure_access(request.tenant, uid)
     loans = Loan.objects.filter(Q(UID=uid) | Q(owner__CUID=uid)).distinct()
     serializer = LoanSerializer(loans, many=True, context={'request': request})
-    log_usage(request.tenant, 'LOANS_LOOKUP', detail=uid)
     return Response(serializer.data)
 
 
@@ -144,9 +165,9 @@ def get_client_transactions(request, uid):
     if not request.tenant.can_view_transactions:
         return Response({'detail': 'Transaction visibility is not included in your DCC plan.'},
                         status=status.HTTP_403_FORBIDDEN)
+    _ensure_access(request.tenant, uid)
     transactions = Transaction.objects.filter(Q(uid=uid) | Q(owner__CUID=uid)).distinct()
     serializer = TransactionSerializer(transactions, many=True, context={'request': request})
-    log_usage(request.tenant, 'TRANSACTIONS_LOOKUP', detail=uid)
     return Response(serializer.data)
 
 

@@ -35,7 +35,7 @@
           </thead>
           <tbody>
             {% for loan in loans %}
-            <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+            <tr {% if loan.owner %}onclick="window.location.href='{% url 'client_record_detail' loan.owner.id %}';" style="cursor:pointer;"{% endif %} onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
               <td><code>{{ loan.ref }}</code></td>
               <td>{{ loan.owner.first_name|default:"" }} {{ loan.owner.last_name|default:"—" }}</td>
               <td><small>{{ loan.lender.organisation|default:"—" }}</small></td>
@@ -56,7 +56,9 @@
               </td>
               <td><small>{{ loan.funding_date|default:"—" }}</small></td>
               <td>
-                <a href="{% url 'admin_loan_detail' loan.ref %}" class="btn btn-sm btn-outline-primary py-0">View</a>
+                {% if loan.owner %}
+                <a href="{% url 'client_record_detail' loan.owner.id %}" class="btn btn-sm btn-outline-primary py-0">View</a>
+                {% else %}—{% endif %}
               </td>
             </tr>
             {% empty %}

@@ -225,7 +225,7 @@
         </thead>
         <tbody>
           {% for loan in dcc_data.all_loans %}
-          <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;">
+          <tr onclick="window.location.href='{% url 'loan_detail' loan.ref %}';" style="cursor:pointer;">
             <td><code>{{ loan.ref }}</code></td>
             <td><small>{{ loan.lender.organisation|default:"—" }}</small></td>
             <td><span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">{{ loan.status|default:"—" }}</span></td>
@@ -246,7 +246,8 @@
 </div>
 {% endif %}
 
-<!-- Basic loan records (always visible — own lender's loans) -->
+<!-- Basic loan records (shown only when DCC full history is not already displayed) -->
+{% if not dcc_access_valid %}
 <h5 class="fw-semibold mb-2"><i class="bi bi-list-ul"></i> Loan Records</h5>
 <div class="card mb-3">
   <div class="card-body p-0">
@@ -269,7 +270,7 @@
         </thead>
         <tbody>
           {% for loan in loans %}
-          <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+          <tr onclick="window.location.href='{% url 'loan_detail' loan.ref %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
             <td><code>{{ loan.ref }}</code></td>
             <td>
               <span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">
@@ -298,6 +299,7 @@
     </div>
   </div>
 </div>
+{% endif %}{# not dcc_access_valid #}
 
 {% endif %}{# locked_page #}
 
