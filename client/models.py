@@ -816,7 +816,7 @@ class ClientBankAccount(_AuditedModel):
     account_name =  models.CharField(max_length=100, null=True, blank=True, default='')
     account_number = models.CharField(max_length=30,null=True, blank = True)
     branch_bsb = models.CharField(max_length=30,null=True, blank = True, default='')
-    branch_name = models.CharField(max_length=30,null=True, blank = True, default='')
+    branch_name = models.CharField(max_length=100, null=True, blank=True, default='')
 
 class Payslip(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

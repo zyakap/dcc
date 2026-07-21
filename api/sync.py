@@ -146,9 +146,9 @@ def _sync_bank_accounts(client, row):
             continue
         account = ClientBankAccount.objects.filter(client=client, account_number=number).first() \
             or ClientBankAccount(client=client, account_number=number)
-        account.bank = bank or account.bank
+        account.bank = (bank or account.bank or '')[:30]
         account.account_name = name or account.account_name
-        account.branch_name = branch or account.branch_name
+        account.branch_name = (branch or account.branch_name or '')[:100]
         account.save(_history_source='SYNC')
 
 

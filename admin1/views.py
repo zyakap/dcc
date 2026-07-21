@@ -724,12 +724,34 @@ from client.models import ClientCreditScore
 
 @admin_check
 def admin_tenants(request):
-    tenants = UserProfile.objects.filter(use_loanmasta=True).order_by('organisation')
+    from client.models import ClientProfile
+    from loan.models import Loan
+    tenants = list(UserProfile.objects.filter(use_loanmasta=True).order_by('organisation'))
+    for t in tenants:
+        t.dcc_client_count = ClientProfile.objects.filter(user_profile=t).count()
+        t.dcc_loan_count = Loan.objects.filter(lender=t).count()
     context = {
         'nav': 'admin_tenants',
         'tenants': tenants,
     }
     return render(request, 'admin_tenants.html', context)
+
+
+@admin_check
+def admin_sync_tenant(request, tenant_id):
+    if request.method != 'POST':
+        return redirect('admin_tenants')
+    tenant = get_object_or_404(UserProfile, pk=tenant_id)
+    result = sync_tenant(tenant)
+    if result['ok']:
+        messages.success(
+            request,
+            f"Sync complete for {tenant}: {result['profiles']} profiles, "
+            f"{result['loans']} loans, {result['statements']} statements.",
+            extra_tags='info')
+    else:
+        messages.error(request, f"Sync failed for {tenant}: {result['error']}", extra_tags='danger')
+    return redirect('admin_tenants')
 
 
 @admin_check
