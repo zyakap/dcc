@@ -1,0 +1,73 @@
+{% extends "dashboard_base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <nav aria-label="breadcrumb" style="margin-bottom:12px;">
+    <ol class="breadcrumb" style="background:none;padding:0;font-size:13px;">
+      <li class="breadcrumb-item"><a href="{% url 'client_record_detail' client.id %}">{{ client.first_name }} {{ client.last_name }}</a></li>
+      <li class="breadcrumb-item active">Submit Default Notice</li>
+    </ol>
+  </nav>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-exclamation-triangle"></i> Submit Default Notice</div>
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="sa-form-label">Amount Owed (K) <span style="color:var(--sa-danger);">*</span></label>
+              <input type="number" name="amount_owed" class="sa-form-control" step="0.01" min="0.01" required placeholder="0.00">
+            </div>
+            <div class="col-md-6">
+              <label class="sa-form-label">Loan Reference (optional)</label>
+              <input type="text" name="loan_ref" class="sa-form-control" placeholder="e.g. LN-20240001">
+            </div>
+            <div class="col-12">
+              <label class="sa-form-label">Reason for Default <span style="color:var(--sa-danger);">*</span></label>
+              <textarea name="reason" class="sa-form-control" rows="4" required placeholder="Describe why this default is being reported…"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="sa-form-label">Grace Period (days)</label>
+              <input type="number" name="grace_days" class="sa-form-control" value="14" min="1" max="90">
+              <div style="font-size:11px;color:var(--sa-muted);margin-top:4px;">Borrower has this many days to respond before listing.</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;display:flex;gap:8px;">
+            <button type="submit" class="sa-btn sa-btn-primary">
+              <i class="bi bi-send"></i> Submit Notice
+            </button>
+            <a href="{% url 'client_record_detail' client.id %}" class="sa-btn sa-btn-outline">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-person"></i> Borrower</div>
+        <div style="font-size:13px;line-height:2;">
+          <div><strong>{{ client.first_name }} {{ client.last_name }}</strong></div>
+          <div style="color:var(--sa-muted);">CUID: {{ client.CUID|default:"—" }}</div>
+          <div style="color:var(--sa-muted);">Email: {{ client.email|default:"—" }}</div>
+          <div style="color:var(--sa-muted);">Current Status:
+            <span style="color:{% if client.dcc_flagged %}var(--sa-danger){% else %}var(--sa-success){% endif %};font-weight:600;">
+              {{ client.dcc_status|default:"CLEAR" }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="sa-card" style="margin-top:12px;">
+        <div class="sa-card-header"><i class="bi bi-info-circle"></i> What happens next?</div>
+        <ol style="font-size:13px;color:var(--sa-muted);padding-left:18px;line-height:2;">
+          <li>Notice is submitted (SUBMITTED status)</li>
+          <li>DCC reviews and emails the borrower (NOTIFIED)</li>
+          <li>Grace period begins — borrower can pay or dispute</li>
+          <li>If unresolved, DCC lists the default (LISTED)</li>
+          <li>When resolved, you can apply to SETTLE</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

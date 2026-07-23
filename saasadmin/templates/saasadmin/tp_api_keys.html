@@ -1,0 +1,135 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Third-Party API Keys{% endblock %}
+{% block topbar_title %}Third-Party API Keys{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Third-Party API Keys</h1>
+    <div class="sa-page-sub">Manage external integrations at <code>/tpapi/v1/</code> — separate from Loanmasta's /api/ endpoints</div>
+  </div>
+</div>
+
+{% if new_key %}
+<div style="background:#1a4731;border:1px solid #2ea661;border-radius:8px;padding:16px;margin-bottom:20px;">
+  <div style="font-weight:600;color:#2ea661;margin-bottom:8px;"><i class="bi bi-key"></i> New API Key — Copy Now</div>
+  <div style="color:var(--sa-muted);font-size:12px;margin-bottom:8px;">This key will NOT be shown again. Store it securely.</div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <code id="raw-key" style="background:var(--sa-bg);border:1px solid var(--sa-border);border-radius:6px;padding:8px 12px;font-size:13px;flex:1;overflow:auto;word-break:break-all;">{{ new_key }}</code>
+    <button onclick="navigator.clipboard.writeText(document.getElementById('raw-key').textContent)" class="sa-btn sa-btn-outline">
+      <i class="bi bi-clipboard"></i> Copy
+    </button>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-plus-circle"></i> Create New Key</div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="sa-form-group">
+          <label class="sa-form-label">Organisation / App Name <span style="color:var(--sa-danger);">*</span></label>
+          <input type="text" name="name" class="sa-form-control" required placeholder="e.g. PNF Finance Portal">
+        </div>
+        <div class="sa-form-group">
+          <label class="sa-form-label">Contact Email</label>
+          <input type="email" name="contact_email" class="sa-form-control" placeholder="api-owner@example.com">
+        </div>
+        <div class="sa-form-group">
+          <label class="sa-form-label">Daily Rate Limit</label>
+          <input type="number" name="rate_limit_per_day" class="sa-form-control" value="1000" min="1">
+        </div>
+        <div class="sa-form-group">
+          <label class="sa-form-label">Permissions</label>
+          {% for val, label in perm_choices %}
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" name="permissions" value="{{ val }}" {% if val == 'credit_report' %}checked{% endif %}
+              style="width:15px;height:15px;accent-color:var(--sa-accent);">
+            {{ label }}
+          </label>
+          {% endfor %}
+        </div>
+        <button type="submit" class="sa-btn sa-btn-primary" style="width:100%;margin-top:8px;">
+          <i class="bi bi-key"></i> Generate Key
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-list-ul"></i> Issued Keys ({{ keys|length }})</div>
+      {% if keys %}
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Prefix</th>
+              <th>Permissions</th>
+              <th>Rate/Day</th>
+              <th>Last Used</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key in keys %}
+            <tr>
+              <td>
+                <strong>{{ key.name }}</strong>
+                {% if key.contact_email %}<div style="font-size:11px;color:var(--sa-muted);">{{ key.contact_email }}</div>{% endif %}
+              </td>
+              <td><code>{{ key.key_prefix }}…</code></td>
+              <td style="font-size:11px;">
+                {% for p in key.permissions %}<span style="background:var(--sa-hover);border-radius:4px;padding:2px 6px;margin:1px;display:inline-block;">{{ p }}</span>{% endfor %}
+              </td>
+              <td>{{ key.rate_limit_per_day }}</td>
+              <td style="color:var(--sa-muted);font-size:12px;">{{ key.last_used|date:"d M Y H:i"|default:"Never" }}</td>
+              <td>
+                {% if key.is_active %}<span class="sa-badge sa-badge-success">Active</span>
+                {% else %}<span class="sa-badge sa-badge-danger">Disabled</span>{% endif %}
+              </td>
+              <td>
+                <form method="post" style="display:flex;gap:4px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="key_id" value="{{ key.pk }}">
+                  <button type="submit" name="action" value="toggle" class="sa-btn sa-btn-outline sa-btn-sm">
+                    {% if key.is_active %}Disable{% else %}Enable{% endif %}
+                  </button>
+                  <button type="submit" name="action" value="delete" class="sa-btn sa-btn-sm"
+                    style="background:var(--sa-danger);color:#fff;border:none;"
+                    onclick="return confirm('Delete this API key? This cannot be undone.')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="color:var(--sa-muted);font-size:13px;">No API keys issued yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="sa-card" style="margin-top:12px;">
+      <div class="sa-card-header"><i class="bi bi-book"></i> API Quick Reference</div>
+      <div style="font-size:12px;color:var(--sa-muted);line-height:1.7;">
+        <p>All endpoints require: <code>Authorization: Bearer tpk_&lt;key&gt;</code></p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:12px;">
+          <code>GET</code> <span>/tpapi/v1/credit-report/&lt;cuid&gt;/</span>
+          <code>GET</code> <span>/tpapi/v1/score/&lt;cuid&gt;/</span>
+          <code>POST</code> <span>/tpapi/v1/consent/</span>
+          <code>GET</code> <span>/tpapi/v1/enquiry-log/</span>
+          <code>GET</code> <span>/tpapi/v1/ping/</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -28,7 +28,7 @@
           </thead>
           <tbody>
             {% for business in businesses %}
-            <tr onclick="window.location.href='{% url 'business_record_detail' business.id %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+            <tr onclick="window.location.href='{% url 'business_record_detail' business.id %}';" style="cursor:pointer;">
               <td>
                 <strong>{{ business.trading_name|default:"—" }}</strong>
                 {% if business.registered_name %}<br><small class="text-muted">{{ business.registered_name }}</small>{% endif %}

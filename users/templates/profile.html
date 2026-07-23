@@ -1,147 +1,120 @@
 {% extends "dashboard_base.html" %}
-
-{% block title %} My Profile {% endblock %}
-
-{% block breadcrumb %} Dashboard {% endblock %}
-{% block breadcrumb_active %} Profile {% endblock %}
-{% block dashboard_title %} 
-                  {{ user.first_name.upper}} 
-                  {% if user.middle_name != None %}
-                    {{ user.middle_name.upper }} 
-                  {% endif %} 
-                  {{ user.last_name.upper }}
- {% endblock %}
+{% block title %}My Profile{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block breadcrumb_active %}Profile{% endblock %}
+{% block dashboard_title %}{{ user.first_name }} {{ user.last_name }}{% endblock %}
 
 {% block content %}
 
-<!-- Button trigger modal -->
-
-
-<!-- Modal -->
-<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-  <div class="modal-dialog">
+<!-- Profile photo modal -->
+<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
     <div class="modal-content">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="staticBackdropLabel">Profile Photo</h1>
+        <h6 class="modal-title">Profile Photo</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <img src="{{ user.propic_url }}"  width="100%">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      <div class="modal-body p-2">
+        <img src="{{ user.propic_url }}" width="100%" style="border-radius:6px;">
       </div>
     </div>
   </div>
 </div>
 
-  <!-- Content Goes Here -->
- 
-<div class="card p-0 mt-3 mb-2">
-  <div class="card-header bg-secondary pt-2 pr-1 pb-2 pl-1 text-center">
-    <h5 class="text-light p-0 m-0"><b>Profile Information</b></h5>
+<div class="row g-3">
+
+  <!-- Contact info -->
+  <div class="col-md-4">
+    <div class="sa-card h-100">
+      <div class="sa-card-header">
+        <i class="bi bi-person"></i> Contact Information
+        <a href="{% url 'edit_contact_info' %}" class="sa-btn sa-btn-outline sa-btn-sm ms-auto">Edit</a>
+      </div>
+      <div style="font-size:13px; line-height:2.2;">
+        <div><span style="color:var(--sa-muted); width:80px; display:inline-block;">Name</span> <strong>{{ user.first_name }} {% if user.middle_name %}{{ user.middle_name }} {% endif %}{{ user.last_name }}</strong></div>
+        <div><span style="color:var(--sa-muted); width:80px; display:inline-block;">Role</span> {{ user.role|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted); width:80px; display:inline-block;">Email</span> {{ user.email|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted); width:80px; display:inline-block;">Mobile</span> {{ user.mobile1|default:"—" }}</div>
+        {% if user.propic_url %}
+        <div style="margin-top:12px;">
+          <a href="#" data-bs-toggle="modal" data-bs-target="#photoModal" class="sa-btn sa-btn-outline sa-btn-sm">
+            <i class="bi bi-image"></i> View Photo
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
   </div>
-  <div class="card-body p-2">
-    <div class="row">
-      <div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-xs-12 mb-1">
-        <div class="card p-1">
-          <div class="card-body pt-0 p-1">
-            <ul class="list-group">
-              <li class="list-group-item border-0 d-flex pr-3 pl-3 pt-0 pb-3 mb-2 bg-gray-100 border-radius-lg">
-                <div class="d-flex flex-column">
-                  <h6 class="mb-1 text-md text-primary">Contact Information<span><a class="btn btn-link text-dark px-3 mb-0" href="{% url 'edit_contact_info' %}"><i class="material-icons text-sm me-2"></i>Edit</a></span></h6>
-                  <div class="row">
-                    <div class="col-12">
-                      
-                     
-                      <span class="mb-1 text-sm">Name: <span class="text-dark font-weight-bold ms-sm-2">{{ user.first_name}} 
-                        {% if user.middle_name != None %}
-                          {{ user.middle_name}} 
-                        {% endif %} 
-                        {{ user.last_name}}</span></span>
-                    </div>
-                  </div>
-                  
-                  <span class="mb-1 text-sm">Role: <span class="text-dark font-weight-bold ms-sm-2">{{ user.role }}</span></span>
-                      <span class="mb-1 text-sm">Email: <span class="text-dark font-weight-bold ms-sm-2">{{ user.email }}</span></span>
-                      <span class="mb-1 text-sm">Mobile: <span class="text-dark font-weight-bold ms-sm-2">{{ user.mobile1 }}</span></span>
-                      <span class="mb-1 text-sm">UID: <span class="text-dark font-weight-bold ms-sm-2">{{ user.uid }}</span></span>
-                    
-                </div>
-               
-              </li>
-              
-              
-                         
-            </ul>
-          </div>
+
+  <!-- Organisation -->
+  <div class="col-md-4">
+    <div class="sa-card h-100">
+      <div class="sa-card-header">
+        <i class="bi bi-building"></i> Organisation
+        <a href="{% url 'edit_organisation_info' %}" class="sa-btn sa-btn-outline sa-btn-sm ms-auto">Edit</a>
+      </div>
+      <div style="font-size:13px; line-height:2.2;">
+        <div><span style="color:var(--sa-muted); width:110px; display:inline-block;">Sector</span> {{ user.sector|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted); width:110px; display:inline-block;">Organisation</span> <strong>{{ user.organisation|default:"—" }}</strong></div>
+        <div><span style="color:var(--sa-muted); width:110px; display:inline-block;">Address</span> {{ user.office_address|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted); width:110px; display:inline-block;">Work Phone</span> {{ user.work_phone|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted); width:110px; display:inline-block;">Work Email</span> {{ user.work_email|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted); width:110px; display:inline-block;">IPA #</span> {{ user.ipa_number|default:"—" }}</div>
+        <div><span style="color:var(--sa-muted); width:110px; display:inline-block;">TIN</span> {{ user.tin_number|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents -->
+  <div class="col-md-4">
+    <div class="sa-card h-100">
+      <div class="sa-card-header">
+        <i class="bi bi-file-earmark"></i> Documents
+        <a href="{% url 'edit_uploads' %}" class="sa-btn sa-btn-outline sa-btn-sm ms-auto">Edit</a>
+      </div>
+      <div style="font-size:13px; line-height:2.4;">
+        <div>
+          <span style="color:var(--sa-muted);">IPA Certificate</span><br>
+          {% if user.ipa_url %}
+          <a href="{{ user.ipa_url }}" target="_blank" class="sa-btn sa-btn-success sa-btn-sm mt-1">
+            <i class="bi bi-file-earmark-arrow-down"></i> View IPA Cert
+          </a>
+          {% else %}
+          <span style="color:var(--sa-muted); font-size:12px;">Not uploaded</span>
+          {% endif %}
+        </div>
+        <div style="margin-top:12px;">
+          <span style="color:var(--sa-muted);">TIN Certificate</span><br>
+          {% if user.tin_url %}
+          <a href="{{ user.tin_url }}" target="_blank" class="sa-btn sa-btn-success sa-btn-sm mt-1">
+            <i class="bi bi-file-earmark-arrow-down"></i> View TIN
+          </a>
+          {% else %}
+          <span style="color:var(--sa-muted); font-size:12px;">Not uploaded</span>
+          {% endif %}
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-xs-12 mb-2">
-      <div class="card p-1">
-      
-      <div class="card-body pt-2 p-1">
-        <ul class="list-group">
-
-          <li class="list-group-item border-0 d-flex pr-3 pl-3 pt-0 pb-3 mb-2 bg-gray-100 border-radius-lg">
-            <div class="d-flex flex-column">
-              <h6 class="mb-1 text-md text-primary">Organization Details<span><a class="btn btn-link text-dark px-3 mb-0" href="{% url 'edit_organisation_info' %}"><i class="material-icons text-sm me-2"></i>Edit</a></span></h6>
-              <span class="mb-1 text-sm">Sector: <span class="text-dark font-weight-bold ms-sm-2">{{ user.sector }}</span></span>
-              <span class="mb-1 text-sm">Name: <span class="text-dark font-weight-bold ms-sm-2">{{ user.organisation }}</span></span>
-              <span class="mb-1 text-sm">Office Address: <span class="text-dark ms-sm-2 font-weight-bold">{{ user.office_address }}</span></span>
-              <span class="mb-1 text-sm">Work Phone: <span class="text-dark ms-sm-2 font-weight-bold">{{ user.work_phone }}</span></span>
-              <span class="mb-1 text-sm">Work Email: <span class="text-dark ms-sm-2 font-weight-bold">{{ user.work_email }}</span></span>
-              <span class="mb-1 text-sm">IPA Registration #: <span class="text-dark ms-sm-2 font-weight-bold">{{ user.ipa_number }}</span></span>
-              <span class="mb-1 text-sm">TIN: <span class="text-dark ms-sm-2 font-weight-bold">{{ user.tin_number }}</span></span>
-            </div>
-          </li>
-
-        </ul>
+  <!-- Account info -->
+  <div class="col-md-4">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-shield-lock"></i> Account</div>
+      <div style="font-size:13px; line-height:2.2;">
+        <div><span style="color:var(--sa-muted); width:80px; display:inline-block;">Plan</span> <span class="sa-badge sa-badge-blue">{{ user.plan }}</span></div>
+        <div><span style="color:var(--sa-muted); width:80px; display:inline-block;">DCC Access</span>
+          {% if user.credit_check_enabled %}<span class="sa-badge sa-badge-green">Enabled</span>{% else %}<span class="sa-badge sa-badge-gray">Disabled</span>{% endif %}
+        </div>
+        <div><span style="color:var(--sa-muted); width:80px; display:inline-block;">View Window</span> {{ user.credit_check_window_hours }}h</div>
       </div>
+      <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+        <a href="{% url 'my_billing' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-receipt"></i> Billing</a>
+        <a href="{% url 'tenant_settings' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-gear"></i> Settings</a>
       </div>
-      </div>
+    </div>
+  </div>
 
-      <div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-xs-12 mb-1">
-      <div class="card p-1">
-      
-      <div class="card-body pt-2 p-1">
-        <ul class="list-group">
-
-          
-
-          <li class="list-group-item border-0 d-flex pr-3 pl-3 pt-0 pb-3 mb-2 bg-gray-100 border-radius-lg">
-            <div class="d-flex flex-column">
-              <h6 class="mb-1 text-md text-primary">Upload Information<span><a class="btn btn-link text-dark px-3 mb-0" href="{% url 'edit_uploads' %}"><i class="material-icons text-sm me-2"></i>Edit</a></span></h6>
-              
-              <span class="mb-1 text-sm">IPA Certificate: <span class="text-dark ms-sm-2 font-weight-bold"><a href="{{ user.ipa_url }}" target="_blank">{% if user.ipa_url %} <button type="button" class="btn btn-sm btn-success p-1 m-0">View IPA Cert.</button><i classs="fa fas fa-arrow"></i>{% endif %}</a></span></span>
-              <span class="mb-1 text-sm">TIN: <span class="text-dark ms-sm-2 font-weight-bold"><a href="{{ user.tin_url }}" target="_blank">{% if user.tin_url %} <button type="button" class="btn btn-sm btn-success p-1 m-0">View TIN</button><i classs="fa fas fa-arrow"></i>{% endif %}</a></span></span>
-              
-            </div>
-          </li>
-
-        </ul>
-      </div>
-      </div>
-
-      
-      </div>
-    </div><!-- row -->
-  </div><!-- card body -->
-</div><!-- Container Card-->
-
-
-
-
-
-
-  
-
-
-
-
-  <!-- Content Ends Here -->
-  
-
+</div>
 
 {% endblock %}

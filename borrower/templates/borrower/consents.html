@@ -1,0 +1,28 @@
+{% extends "borrower/base.html" %}
+{% block title %}Consents — DCC Borrower Portal{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:16px;">Consent History</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Records of consent you have given to lenders or DCC for credit data access.</p>
+<div class="sa-card">
+  <table>
+    <thead><tr><th>Type</th><th>Given To</th><th>Method</th><th>Date</th><th>Expires</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for c in consents %}
+      <tr>
+        <td>{{ c.get_consent_type_display }}</td>
+        <td>{{ c.tenant.organisation|default:"Third Party" }}</td>
+        <td>{{ c.get_method_display }}</td>
+        <td style="color:var(--muted);">{{ c.consented_at|date:"d M Y" }}</td>
+        <td style="color:var(--muted);">{{ c.expires_at|date:"d M Y"|default:"Never" }}</td>
+        <td>
+          {% if c.is_active %}<span class="badge-status badge-resolved">Active</span>
+          {% else %}<span class="badge-status badge-dismissed">Withdrawn</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No consent records.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -30,8 +30,8 @@
         <p>Personal, contact and employment details, plus the full cross-lender loan and repayment
            history, are included in the unlocked record.</p>
       </div>
-      <div style="position: absolute; inset: 0; background: rgba(33,37,41,.55); display: flex; align-items: center; justify-content: center;">
-        <div class="text-center bg-white p-4" style="border-radius: 12px; max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,.35);">
+      <div style="position: absolute; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center;">
+        <div class="text-center p-4" style="background: var(--sa-card); border: 1px solid var(--sa-border); border-radius: 12px; max-width: 460px; box-shadow: 0 10px 40px rgba(0,0,0,.5);">
           <i class="bi bi-lock" style="font-size: 1.6rem;"></i>
           <h5 class="mt-2 mb-1">Credit data available</h5>
           <p class="text-muted mb-1" style="font-size:.9rem;">
@@ -61,27 +61,27 @@
 <!-- Status summary -->
 <div class="row g-2 mb-3">
   <div class="col-md-3">
-    <div class="card p-2 text-center {% if client.dcc_flagged %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
-      <small>DCC Status</small>
-      <strong>{{ client.dcc_status|default:"CLEAR" }}</strong>
+    <div class="sa-stat" style="{% if client.dcc_flagged %}border-left:3px solid #f85149;{% else %}border-left:3px solid #3fb950;{% endif %}">
+      <div class="sa-stat-label">DCC Status</div>
+      <div class="sa-stat-value" style="font-size:15px; {% if client.dcc_flagged %}color:#f85149;{% else %}color:#3fb950;{% endif %}">{{ client.dcc_status|default:"CLEAR" }}</div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card p-2 text-center">
-      <small class="text-muted">Credit Rating</small>
-      <strong class="text-primary">{{ client.credit_rating|default:"—" }}/100</strong>
+    <div class="sa-stat">
+      <div class="sa-stat-label">Credit Rating</div>
+      <div class="sa-stat-value">{{ client.credit_rating|default:"—" }}<span style="font-size:14px; color:var(--sa-muted);">/100</span></div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card p-2 text-center">
-      <small class="text-muted">Loans on Record</small>
-      <strong>{{ loans|length }}</strong>
+    <div class="sa-stat">
+      <div class="sa-stat-label">Loans on Record</div>
+      <div class="sa-stat-value">{{ loans|length }}</div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card p-2 text-center">
-      <small class="text-muted">Last Updated</small>
-      <strong class="text-primary">{{ client.updated_at|date:"d M Y"|default:"—" }}</strong>
+    <div class="sa-stat">
+      <div class="sa-stat-label">Last Updated</div>
+      <div class="sa-stat-value" style="font-size:14px;">{{ client.updated_at|date:"d M Y"|default:"—" }}</div>
     </div>
   </div>
 </div>
@@ -156,12 +156,12 @@
 
 <!-- DCC Credit Check section -->
 {% if dcc_enabled %}
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white fw-semibold">
-    <i class="bi bi-shield-check"></i> DCC Credit Check
+<div class="card mb-3" style="border-left: 3px solid var(--sa-accent2);">
+  <div class="card-header" style="display:flex; align-items:center; gap:10px;">
+    <i class="bi bi-shield-check" style="color:var(--sa-accent2);"></i> DCC Credit Check
     {% if dcc_access_valid %}
-    <span class="badge bg-success ms-2">Access Active</span>
-    <small class="ms-2 fw-normal">Expires: {{ dcc_expires_at|date:"d M Y H:i" }}</small>
+    <span class="sa-badge sa-badge-green ms-2">Access Active</span>
+    <small style="color:var(--sa-muted);">Expires: {{ dcc_expires_at|date:"d M Y H:i" }}</small>
     {% endif %}
   </div>
   <div class="card-body">
@@ -270,7 +270,7 @@
         </thead>
         <tbody>
           {% for loan in loans %}
-          <tr onclick="window.location.href='{% url 'loan_detail' loan.ref %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+          <tr onclick="window.location.href='{% url 'loan_detail' loan.ref %}';" style="cursor:pointer;">
             <td><code>{{ loan.ref }}</code></td>
             <td>
               <span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">

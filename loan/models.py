@@ -350,3 +350,27 @@ class RecoveryRecord(models.Model):
     amount = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, default=0)
 
     
+
+# ============================================================================
+# Guarantor — links a guarantor/co-borrower ClientProfile to a Loan
+# ============================================================================
+
+class Guarantor(models.Model):
+    GUARANTEE_TYPES = [
+        ('PERSONAL', 'Personal Guarantee'),
+        ('JOINT',    'Joint Borrower'),
+        ('PARTIAL',  'Partial Guarantee'),
+    ]
+
+    loan            = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name='guarantors')
+    guarantor       = models.ForeignKey('client.ClientProfile', on_delete=models.CASCADE, related_name='guarantor_loans')
+    guarantee_type  = models.CharField(max_length=10, choices=GUARANTEE_TYPES, default='PERSONAL')
+    guarantee_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    notes           = models.CharField(max_length=255, blank=True)
+    created_at      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('loan', 'guarantor')]
+
+    def __str__(self):
+        return f'{self.guarantor} → {self.loan.ref} ({self.guarantee_type})'

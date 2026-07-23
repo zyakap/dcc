@@ -34,27 +34,27 @@
 <!-- Summary stat cards -->
 <div class="row g-2 mb-3">
   <div class="col-6 col-md-3">
-    <div class="card p-2 text-center">
-      <small class="text-muted">Loan Amount</small>
-      <strong class="fs-5">K {{ loan.amount|default:"0" }}</strong>
+    <div class="sa-stat">
+      <div class="sa-stat-label">Loan Amount</div>
+      <div class="sa-stat-value" style="font-size:18px;">K {{ loan.amount|default:"0" }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card p-2 text-center">
-      <small class="text-muted">Total Outstanding</small>
-      <strong class="fs-5 {% if loan.total_outstanding > 0 %}text-warning{% endif %}">K {{ loan.total_outstanding|default:"0" }}</strong>
+    <div class="sa-stat" {% if loan.total_outstanding > 0 %}style="border-left:3px solid #e3b341;"{% endif %}>
+      <div class="sa-stat-label">Outstanding</div>
+      <div class="sa-stat-value" style="font-size:18px; {% if loan.total_outstanding > 0 %}color:#e3b341;{% endif %}">K {{ loan.total_outstanding|default:"0" }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card p-2 text-center">
-      <small class="text-muted">Total Arrears</small>
-      <strong class="fs-5 {% if loan.total_arrears > 0 %}text-danger{% endif %}">K {{ loan.total_arrears|default:"0" }}</strong>
+    <div class="sa-stat" {% if loan.total_arrears > 0 %}style="border-left:3px solid #f85149;"{% endif %}>
+      <div class="sa-stat-label">Total Arrears</div>
+      <div class="sa-stat-value" style="font-size:18px; {% if loan.total_arrears > 0 %}color:#f85149;{% endif %}">K {{ loan.total_arrears|default:"0" }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card p-2 text-center">
-      <small class="text-muted">Repayment</small>
-      <strong class="fs-5">K {{ loan.repayment_amount|default:"0" }}</strong>
+    <div class="sa-stat">
+      <div class="sa-stat-label">Repayment</div>
+      <div class="sa-stat-value" style="font-size:18px;">K {{ loan.repayment_amount|default:"0" }}</div>
     </div>
   </div>
 </div>

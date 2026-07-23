@@ -1,109 +1,92 @@
-<!-- add_business.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
 
-{% block title %} New Business Record {% endblock %}
-
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Business Records {% endblock %}
-{% block dashboard_title %} New Business Record {% endblock %}
-
- 
+{% block title %}New Business Record{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a>{% endblock %}
+{% block breadcrumb_active %}New Business{% endblock %}
+{% block dashboard_title %}New Business Record{% endblock %}
 
 {% block content %}
+<div class="row">
+  <div class="col-lg-7">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-building-add"></i> Add Business Record</div>
+      <p style="font-size:13px; color:var(--sa-muted); margin-bottom:16px;">
+        Fill in any relevant information about the business. You can always add more detail later.
+      </p>
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
 
-
-
-  <!-- Content Goes Here -->
-
-  <h3>+ Add Record</h3>
-  <p>Fill in any relevant information about the business. You can always add more detail(s) later.</p>
-  <hr>
-
-  <div class="card p-3">
-    <form method="POST" enctype="multipart/form-data">
-      {% csrf_token %}
-      
-      <div class="form-group mb-3">
-        <label for="business_owner">Business Owner</label>
-        <select name="business_owner" class="form-select">
-          {% for client in clients %}
-          <option value="{{ client.id }}" class="form-control">{{ client.first_name }} {{ client.last_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group mb-3">
-        <label for="category">Category</label>
-        <select name="category" class="form-select">
-          <option value="SOLE TRADER" class="form-control">SOLE TRADER</option>
-          <option value="SME" class="form-control">SME</option>
-          <option value="MSME" class="form-control">MSME</option>
-          <option value="COMPANY" class="form-control">COMPANY</option>
+        <div class="mb-3">
+          <label class="sa-form-label">Business Owner</label>
+          <select name="business_owner" class="form-select">
+            {% for client in clients %}
+            <option value="{{ client.id }}">{{ client.first_name }} {{ client.last_name }}</option>
+            {% endfor %}
           </select>
-      </div>
-      <div class="form-group mb-3">
-        <label for="trading_name">Trading Name</label>
-        <input type="text" name="trading_name" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="registered_name">Registered Name</label>
-        <input type="text" name="registered_name" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="business_address">Business Address</label>
-        <input type="text" name="business_address" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="email">Email</label>
-        <input type="email" name="email" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="phone">Phone</label>
-        <input type="text" name="phone" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="website">Website</label>
-        <input type="text" name="website" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="ipa_registration_number">IPA Registration Number</label>
-        <input type="text" name="ipa_registration_number" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="tin_number">TIN Number</label>
-        <input type="text" name="tin_number" class="form-control">
-      </div>
-      <hr>
-      <div class="form-group mb-3">
-        <label for="business_amount">Amount</label>
-        <input name="business_amount" class="form-control">
-      </div>
-      <div class="form-group mb-3">
-        <label for="date_of_committment">Date of Committment</label>
-        <input type="date" name="date_of_committment" class="form-control">
-      </div>
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Category</label>
+          <select name="category" class="form-select">
+            <option value="SOLE TRADER">Sole Trader</option>
+            <option value="SME">SME</option>
+            <option value="MSME">MSME</option>
+            <option value="COMPANY">Company</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Trading Name</label>
+          <input type="text" name="trading_name" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Registered Name</label>
+          <input type="text" name="registered_name" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Business Address</label>
+          <input type="text" name="business_address" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Email</label>
+          <input type="email" name="email" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Phone</label>
+          <input type="text" name="phone" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Website</label>
+          <input type="text" name="website" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">IPA Registration Number</label>
+          <input type="text" name="ipa_registration_number" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">TIN Number</label>
+          <input type="text" name="tin_number" class="form-control">
+        </div>
 
-      <div class="form-group mb-3">
-        <label for="public_listing">Public Listing</label>
-        <input type="checkbox" class="form-check-input" id="public_listing" name="public_listing">
-      </div>
-      
-      <br>
-      <button type="submit" class="btn btn-primary">CREATE</button>
-    </form>
+        <div style="height:1px; background:var(--sa-border); margin:20px 0;"></div>
+
+        <div class="mb-3">
+          <label class="sa-form-label">Amount</label>
+          <input name="business_amount" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="sa-form-label">Date of Commitment</label>
+          <input type="date" name="date_of_committment" class="form-control">
+        </div>
+        <div class="mb-3 d-flex align-items-center gap-2">
+          <input type="checkbox" class="form-check-input" id="public_listing" name="public_listing" style="margin-top:0;">
+          <label for="public_listing" class="sa-form-label mb-0">Public Listing</label>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+          <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-plus-circle"></i> Create</button>
+          <a href="{% url 'business_records' %}" class="sa-btn sa-btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
   </div>
- 
-  
-
-
-
-
-  <!-- Content Ends Here -->
-  
-
- 
+</div>
 {% endblock %}
-
-
-
-

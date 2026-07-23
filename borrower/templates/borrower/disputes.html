@@ -1,0 +1,57 @@
+{% extends "borrower/base.html" %}
+{% block title %}Disputes — DCC Borrower Portal{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:16px;">My Disputes</h2>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-flag"></i> Submit a New Dispute</div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <label class="form-label">Dispute Type</label>
+        <select name="dispute_type" class="form-control">
+          {% for val, label in type_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Field / Record in Question (optional)</label>
+        <input type="text" name="field_disputed" class="form-control" placeholder="e.g. loan amount, employer name">
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <label class="form-label">Description <span style="color:var(--danger);">*</span></label>
+      <textarea name="description" class="form-control" rows="4" required placeholder="Describe the issue in detail..."></textarea>
+    </div>
+    <div style="margin-top:12px;">
+      <label class="form-label">Supporting Document (optional)</label>
+      <input type="file" name="supporting_doc" class="form-control">
+    </div>
+    <button type="submit" class="sa-btn sa-btn-primary" style="margin-top:16px;"><i class="bi bi-send"></i> Submit Dispute</button>
+  </form>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-list-check"></i> Existing Disputes</div>
+  <table>
+    <thead><tr><th>#</th><th>Type</th><th>Status</th><th>Submitted</th><th>Resolution</th></tr></thead>
+    <tbody>
+      {% for d in disputes %}
+      <tr>
+        <td>{{ d.pk }}</td>
+        <td>{{ d.get_dispute_type_display }}</td>
+        <td>
+          <span class="badge-status {% if d.status == 'OPEN' %}badge-open{% elif d.status == 'RESOLVED' %}badge-resolved{% else %}badge-dismissed{% endif %}">
+            {{ d.status }}
+          </span>
+        </td>
+        <td style="color:var(--muted);">{{ d.created_at|date:"d M Y" }}</td>
+        <td style="color:var(--muted);">{{ d.resolution|default:"Pending review" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No disputes submitted.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

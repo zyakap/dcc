@@ -1,0 +1,97 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Disputes{% endblock %}
+{% block topbar_title %}Dispute Queue{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Disputes</h1>
+    <div class="sa-page-sub">Review and resolve borrower challenges to credit record accuracy</div>
+  </div>
+  <a href="{% url 'sa_default_notices' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-bell"></i> Default Notices</a>
+</div>
+
+<!-- Status filter -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="?" class="sa-btn {% if not status_filter %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">All</a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}" class="sa-btn {% if status_filter == val %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="sa-card">
+  {% if disputes %}
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Borrower</th>
+          <th>Type</th>
+          <th>Field</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in disputes %}
+        <tr>
+          <td>{{ d.pk }}</td>
+          <td>
+            <strong>{{ d.client.first_name }} {{ d.client.last_name }}</strong>
+            <div style="font-size:11px;color:var(--sa-muted);">
+              {% if d.filed_by_tenant %}via {{ d.filed_by_tenant.organisation|default:d.filed_by_tenant.email }}{% elif d.borrower_email %}{{ d.borrower_email }}{% endif %}
+            </div>
+          </td>
+          <td style="font-size:12px;">{{ d.get_dispute_type_display }}</td>
+          <td style="font-size:12px;color:var(--sa-muted);">{{ d.field_disputed|default:"—" }}</td>
+          <td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ d.description }}">
+            {{ d.description }}
+          </td>
+          <td>
+            {% if d.status == 'OPEN' %}<span class="sa-badge" style="background:#5a7fcf;">Open</span>
+            {% elif d.status == 'UNDER_REVIEW' %}<span class="sa-badge" style="background:#e09b3d;">Under Review</span>
+            {% elif d.status == 'RESOLVED' %}<span class="sa-badge sa-badge-success">Resolved</span>
+            {% else %}<span class="sa-badge" style="background:var(--sa-border);">{{ d.status }}</span>{% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--sa-muted);">{{ d.created_at|date:"d M Y" }}</td>
+          <td>
+            {% if d.status in 'OPEN,UNDER_REVIEW' %}
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="dispute_id" value="{{ d.pk }}">
+              {% if d.status == 'OPEN' %}
+              <button type="submit" name="action" value="under_review" class="sa-btn sa-btn-outline sa-btn-sm" style="margin-bottom:4px;width:100%;">
+                <i class="bi bi-search"></i> Review
+              </button>
+              {% endif %}
+              <textarea name="resolution" class="sa-form-control" rows="2" placeholder="Resolution notes…"
+                style="font-size:11px;resize:none;margin-bottom:4px;"></textarea>
+              <div style="display:flex;gap:4px;">
+                <button type="submit" name="action" value="resolve" class="sa-btn sa-btn-sm" style="background:var(--sa-success);color:#fff;border:none;flex:1;">
+                  Resolve
+                </button>
+                <button type="submit" name="action" value="dismiss" class="sa-btn sa-btn-sm" style="background:var(--sa-danger);color:#fff;border:none;flex:1;">
+                  Dismiss
+                </button>
+              </div>
+            </form>
+            {% else %}
+            <div style="font-size:12px;color:var(--sa-muted);">
+              {% if d.resolution %}{{ d.resolution|truncatechars:80 }}{% endif %}
+              {% if d.resolved_by %}<div style="font-size:11px;">by {{ d.resolved_by }}</div>{% endif %}
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--sa-muted);padding:20px 0;">No disputes{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+  {% endif %}
+</div>
+{% endblock %}

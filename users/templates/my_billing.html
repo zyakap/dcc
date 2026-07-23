@@ -33,23 +33,19 @@
         </div>
       </form>
 
-      <div class="row">
+      <div class="row g-3 mb-3">
         <div class="col-md-4">
-          <div class="card info-card sales-card">
-            <div class="card-body">
-              <h5 class="card-title">Total this period</h5>
-              <h3>{{ summary.currency }} {{ summary.total|floatformat:2|intcomma }}</h3>
-              <span class="text-muted small">includes base fee {{ summary.currency }} {{ summary.base_fee|floatformat:2 }}</span>
-            </div>
+          <div class="sa-stat">
+            <div class="sa-stat-label"><i class="bi bi-receipt"></i> Total This Period</div>
+            <div class="sa-stat-value" style="font-size:20px;">{{ summary.currency }} {{ summary.total|floatformat:2|intcomma }}</div>
+            <div class="sa-stat-sub">includes base fee {{ summary.currency }} {{ summary.base_fee|floatformat:2 }}</div>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card info-card revenue-card">
-            <div class="card-body">
-              <h5 class="card-title">Paid views</h5>
-              <h3>{{ views_count }}</h3>
-              <span class="text-muted small">each view stays open for {{ window_hours }} hour{{ window_hours|pluralize }}</span>
-            </div>
+          <div class="sa-stat">
+            <div class="sa-stat-label"><i class="bi bi-eye"></i> Paid Views</div>
+            <div class="sa-stat-value">{{ views_count }}</div>
+            <div class="sa-stat-sub">window: {{ window_hours }} hour{{ window_hours|pluralize }}</div>
           </div>
         </div>
       </div>

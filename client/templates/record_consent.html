@@ -1,0 +1,71 @@
+{% extends "dashboard_base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <nav aria-label="breadcrumb" style="margin-bottom:12px;">
+    <ol class="breadcrumb" style="background:none;padding:0;font-size:13px;">
+      <li class="breadcrumb-item"><a href="{% url 'client_record_detail' client.id %}">{{ client.first_name }} {{ client.last_name }}</a></li>
+      <li class="breadcrumb-item active">Record Consent</li>
+    </ol>
+  </nav>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-pen"></i> Record Consent</div>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="sa-form-label">Consent Type</label>
+              <select name="consent_type" class="sa-form-control">
+                {% for val, label in consent_types %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="sa-form-label">Method Obtained</label>
+              <select name="method" class="sa-form-control">
+                {% for val, label in methods %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="sa-form-label">Reference (form number / ID)</label>
+              <input type="text" name="reference" class="sa-form-control" placeholder="e.g. FORM-2024-0012">
+            </div>
+            <div class="col-md-6">
+              <label class="sa-form-label">Expires On (optional)</label>
+              <input type="date" name="expires_at" class="sa-form-control">
+            </div>
+            <div class="col-12">
+              <label class="sa-form-label">Notes</label>
+              <textarea name="notes" class="sa-form-control" rows="3" placeholder="Any additional notes…"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="sa-form-label">Consent Document (optional)</label>
+              <input type="file" name="document" class="sa-form-control">
+            </div>
+          </div>
+          <div style="margin-top:20px;display:flex;gap:8px;">
+            <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-check2"></i> Record Consent</button>
+            <a href="{% url 'client_record_detail' client.id %}" class="sa-btn sa-btn-outline">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-shield-check"></i> Why Record Consent?</div>
+        <div style="font-size:13px;color:var(--sa-muted);line-height:1.9;">
+          <p>PNG's credit bureau framework requires lenders to hold documented consent before sharing borrower data with DCC or third parties.</p>
+          <p>Consent records are stored per client and linked to your organisation. They are viewable in the borrower's credit file audit trail.</p>
+          <p><strong>Credit Check Authorization</strong> — required before running a credit check.<br>
+          <strong>Data Sharing</strong> — required before uploading to DCC.<br>
+          <strong>Third-Party Access</strong> — required before a partner accesses via the API.</p>
+        </div>
+        <a href="{% url 'client_consents' client.id %}" class="sa-btn sa-btn-outline sa-btn-sm" style="margin-top:8px;">
+          <i class="bi bi-list-ul"></i> View Consent History
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -197,6 +197,9 @@ class UserProfile(models.Model):
     credit_check_enabled = models.BooleanField(default=True, help_text='Master switch for this tenant to run credit checks at all.')
     credit_check_window_hours = models.PositiveIntegerField(default=12, help_text='Hours a paid credit-check view remains accessible before requiring a new payment.')
 
+    THEME_CHOICES = [('dark', 'Dark'), ('light', 'Light')]
+    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='dark')
+
     def __str__(self):
         if self.category == 'SOLE TRADER':
             return f'ST - {self.first_name} {self.last_name or ""}'.strip()

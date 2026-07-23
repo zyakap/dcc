@@ -1,0 +1,83 @@
+{% extends "borrower/base.html" %}
+{% block title %}My Credit File — DCC Borrower Portal{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:4px;">{{ client.first_name }} {{ client.last_name }}</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:20px;">CUID: {{ client.CUID|default:"—" }}</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
+  <div class="sa-card" style="padding:16px;border-left:3px solid {% if client.dcc_flagged %}var(--danger){% else %}var(--success){% endif %};">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">DCC Status</div>
+    <div style="font-size:22px;font-weight:700;color:{% if client.dcc_flagged %}var(--danger){% else %}var(--success){% endif %};">
+      {{ client.dcc_status|default:"CLEAR" }}
+    </div>
+  </div>
+  {% if score %}
+  <div class="sa-card" style="padding:16px;border-left:3px solid var(--accent);">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Credit Score</div>
+    <div style="font-size:22px;font-weight:700;">{{ score.score }}</div>
+    <div style="font-size:12px;color:var(--muted);">Grade {{ score.grade }}</div>
+  </div>
+  {% endif %}
+  <div class="sa-card" style="padding:16px;">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Open Disputes</div>
+    <div style="font-size:22px;font-weight:700;">{{ open_disputes }}</div>
+    <a href="{% url 'borrower_disputes' %}" style="font-size:12px;">Submit / View</a>
+  </div>
+  <div class="sa-card" style="padding:16px;">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Recent Enquiries</div>
+    <div style="font-size:22px;font-weight:700;">{{ enquiries|length }}</div>
+    <a href="{% url 'borrower_enquiries' %}" style="font-size:12px;">View all</a>
+  </div>
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-list-ul"></i> Recent Loan History</div>
+  {% if loans %}
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Ref</th><th>Status</th><th>Lender</th><th>Amount</th><th>Outstanding</th><th>Arrears</th></tr></thead>
+      <tbody>
+        {% for loan in loans %}
+        <tr>
+          <td><code>{{ loan.ref }}</code></td>
+          <td>
+            <span class="badge-status {% if loan.status == 'DEFAULTED' %}badge-dismissed{% elif loan.status == 'RUNNING' %}badge-resolved{% else %}badge-open{% endif %}">
+              {{ loan.status }}
+            </span>
+          </td>
+          <td>{{ loan.lender.organisation|default:"—" }}</td>
+          <td>K {{ loan.amount|default:"0" }}</td>
+          <td>K {{ loan.total_outstanding|default:"0" }}</td>
+          <td {% if loan.total_arrears > 0 %}style="color:var(--danger);font-weight:600;"{% endif %}>
+            {% if loan.total_arrears > 0 %}K {{ loan.total_arrears }}{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--muted);font-size:13px;">No loan history available.</p>
+  {% endif %}
+</div>
+
+<div class="sa-card">
+  <div class="sa-card-header"><i class="bi bi-eye"></i> Recent File Enquiries</div>
+  {% if enquiries %}
+  <table>
+    <thead><tr><th>Type</th><th>By</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for eq in enquiries %}
+      <tr>
+        <td>{{ eq.get_query_type_display }}</td>
+        <td>{{ eq.tenant.organisation|default:eq.tp_key_name|default:"DCC System" }}</td>
+        <td style="color:var(--muted);">{{ eq.queried_at|date:"d M Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:var(--muted);font-size:13px;">No enquiries recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

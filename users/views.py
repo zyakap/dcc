@@ -909,6 +909,36 @@ def credit_rating(request):
 def support(request):
     return render(request, 'support.html', {'nav': 'support',})
 
+
+@login_check
+def tenant_settings(request):
+    from django.http import HttpResponseNotAllowed
+    user_profile = UserProfile.objects.get(user=request.user)
+    if request.method == 'POST':
+        theme = request.POST.get('theme', 'dark')
+        if theme in ('dark', 'light'):
+            user_profile.theme = theme
+            user_profile.save(update_fields=['theme'])
+            messages.success(request, 'Settings saved.', extra_tags='success')
+        return redirect('tenant_settings')
+    return render(request, 'tenant_settings.html', {
+        'nav': 'tenant_settings',
+        'user': user_profile,
+    })
+
+
+@login_check
+def set_theme(request):
+    from django.http import JsonResponse
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+    user_profile = UserProfile.objects.get(user=request.user)
+    theme = request.POST.get('theme', 'dark')
+    if theme in ('dark', 'light'):
+        user_profile.theme = theme
+        user_profile.save(update_fields=['theme'])
+    return JsonResponse({'ok': True, 'theme': user_profile.theme})
+
 def front_search(request):
 
     query = request.GET.get('qf', '').strip()

@@ -22,21 +22,21 @@
   <!-- Status row -->
   <div class="row g-2 mb-3">
     <div class="col-md-4">
-      <div class="card p-2 text-center {% if business.dcc_status == 'DEFAULTED' %}bg-danger text-white{% elif business.dcc_status == 'CLEAR' %}bg-success text-white{% else %}bg-warning text-white{% endif %}">
-        <small>Credit Status</small>
-        <strong>{{ business.dcc_status|default:"—" }}</strong>
+      <div class="sa-stat" style="{% if business.dcc_status == 'DEFAULTED' %}border-left:3px solid #f85149;{% elif business.dcc_status == 'CLEAR' %}border-left:3px solid #3fb950;{% else %}border-left:3px solid #e3b341;{% endif %}">
+        <div class="sa-stat-label">Credit Status</div>
+        <div class="sa-stat-value" style="font-size:15px; {% if business.dcc_status == 'DEFAULTED' %}color:#f85149;{% elif business.dcc_status == 'CLEAR' %}color:#3fb950;{% else %}color:#e3b341;{% endif %}">{{ business.dcc_status|default:"—" }}</div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card p-2 text-center">
-        <small class="text-muted">Credit Rating</small>
-        <strong class="text-primary">{{ business.credit_rating|default:"—" }}</strong>
+      <div class="sa-stat">
+        <div class="sa-stat-label">Credit Rating</div>
+        <div class="sa-stat-value">{{ business.credit_rating|default:"—" }}</div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card p-2 text-center">
-        <small class="text-muted">Last Updated</small>
-        <strong class="text-primary">{{ business.updated_at|date:"d/m/Y"|default:"—" }}</strong>
+      <div class="sa-stat">
+        <div class="sa-stat-label">Last Updated</div>
+        <div class="sa-stat-value" style="font-size:14px;">{{ business.updated_at|date:"d/m/Y"|default:"—" }}</div>
       </div>
     </div>
   </div>

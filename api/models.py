@@ -5,6 +5,30 @@ from django.db import models
 from users.models import UserProfile
 
 
+# ============================================================================
+# PlatformSettings — global DCC platform configuration (singleton-style)
+# ============================================================================
+
+class PlatformSettings(models.Model):
+    updated_at                  = models.DateTimeField(auto_now=True)
+    borrower_portal_enabled     = models.BooleanField(default=False, help_text='Allow borrowers to log in to the self-service portal to view their credit file and submit disputes.')
+    default_expiry_years        = models.PositiveIntegerField(default=7, help_text='Defaults older than this many years are automatically archived.')
+    require_consent_before_share = models.BooleanField(default=False, help_text='Block cross-tenant data sharing unless a valid ClientConsent exists.')
+    alert_on_status_change      = models.BooleanField(default=True, help_text='Email the originating lender when their borrower\'s DCC status changes.')
+    alert_on_new_view           = models.BooleanField(default=False, help_text='Email the originating lender when another tenant pays to view their borrower\'s credit report.')
+
+    class Meta:
+        verbose_name        = 'Platform settings'
+        verbose_name_plural = 'Platform settings'
+
+    def __str__(self):
+        return f'DCC platform settings (updated {self.updated_at:%Y-%m-%d})'
+
+    @classmethod
+    def current(cls):
+        return cls.objects.order_by('-updated_at').first() or cls()
+
+
 class PricingSettings(models.Model):
     """DCC service pricing. One row (the latest is used) — editable from the
     control panel so usage cost can be computed per tenant."""

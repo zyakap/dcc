@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404
 from datetime import datetime
+from django.utils import timezone
 
 import requests
 from .models import ClientProfile, BusinessProfile, ClientContact, ClientAddress, ClientEmployer, ClientBankAccount, ClientUpload, ClientCreditScore
@@ -203,6 +204,12 @@ def dcc_credit_check_access(request, client_id):
         try:
             profiles = matched_profiles(ClientProfile.objects.filter(pk=client.pk))
             ClientCreditScore.ensure(client, profiles=profiles)
+        except Exception:
+            pass
+        # Audit trail: log the enquiry
+        try:
+            from client.models import EnquiryLog
+            EnquiryLog.objects.create(client=client, tenant=tenant, query_type='CREDIT_CHECK')
         except Exception:
             pass
         window_hours = tenant.credit_check_window_hours or 12
@@ -885,3 +892,266 @@ def filtered_loan_records_dcc_recovery(request):
         'descriptor': 'DCC Loans in Recovery',
     }
     return render(request, 'filtered_loan_list.html', context)
+
+# ============================================================================
+# Default Notice workflow
+# ============================================================================
+
+@login_check
+def submit_default_notice(request, client_id):
+    from client.models import DefaultNotice
+    user_profile = UserProfile.objects.get(user=request.user)
+    client = get_object_or_404(ClientProfile, pk=client_id)
+
+    if request.method == 'POST':
+        amount = request.POST.get('amount_owed', '').strip()
+        reason = request.POST.get('reason', '').strip()
+        loan_ref = request.POST.get('loan_ref', '').strip()
+        grace   = int(request.POST.get('grace_days', 14))
+
+        if not amount or not reason:
+            messages.error(request, 'Amount and reason are required.', extra_tags='danger')
+        else:
+            from decimal import Decimal, InvalidOperation
+            try:
+                amount_dec = Decimal(amount)
+            except InvalidOperation:
+                messages.error(request, 'Invalid amount.', extra_tags='danger')
+                amount_dec = None
+            if amount_dec:
+                notice = DefaultNotice.objects.create(
+                    client=client,
+                    tenant=user_profile,
+                    loan_ref=loan_ref,
+                    amount_owed=amount_dec,
+                    reason=reason,
+                    grace_days=grace,
+                    status='SUBMITTED',
+                    submitted_at=timezone.now(),
+                )
+                _send_credit_alert(
+                    client, user_profile,
+                    f'Default notice submitted for {client.first_name} {client.last_name} '
+                    f'(CUID {client.CUID}) — K {amount_dec:.2f}.',
+                )
+                messages.success(request, 'Default notice submitted. DCC will review and notify the borrower.', extra_tags='success')
+                return redirect('client_record_detail', client_id=client.id)
+
+    return render(request, 'client/submit_default_notice.html', {
+        'client': client,
+        'nav':    'client_records',
+    })
+
+
+@login_check
+def my_default_notices(request):
+    from client.models import DefaultNotice
+    user_profile = UserProfile.objects.get(user=request.user)
+    notices = DefaultNotice.objects.filter(tenant=user_profile).select_related('client')
+    return render(request, 'client/my_default_notices.html', {
+        'notices': notices,
+        'nav':     'client_records',
+    })
+
+
+# ============================================================================
+# Dispute workflow  (tenant-side submission)
+# ============================================================================
+
+@login_check
+def submit_dispute(request, client_id):
+    from client.models import Dispute
+    user_profile = UserProfile.objects.get(user=request.user)
+    client = get_object_or_404(ClientProfile, pk=client_id)
+
+    if request.method == 'POST':
+        dtype = request.POST.get('dispute_type', 'OTHER')
+        field = request.POST.get('field_disputed', '').strip()
+        desc  = request.POST.get('description', '').strip()
+        doc   = request.FILES.get('supporting_doc')
+
+        if not desc:
+            messages.error(request, 'Please describe the issue.', extra_tags='danger')
+        else:
+            Dispute.objects.create(
+                client=client,
+                filed_by_tenant=user_profile,
+                dispute_type=dtype,
+                field_disputed=field,
+                description=desc,
+                supporting_doc=doc,
+            )
+            messages.success(request, 'Dispute submitted. DCC will review within 5 business days.', extra_tags='success')
+            return redirect('client_record_detail', client_id=client.id)
+
+    return render(request, 'client/submit_dispute.html', {
+        'client':       client,
+        'type_choices': Dispute.TYPE_CHOICES,
+        'nav':          'client_records',
+    })
+
+
+# ============================================================================
+# Consent management
+# ============================================================================
+
+@login_check
+def record_consent(request, client_id):
+    from client.models import ClientConsent
+    user_profile = UserProfile.objects.get(user=request.user)
+    client = get_object_or_404(ClientProfile, pk=client_id)
+
+    if request.method == 'POST':
+        ctype  = request.POST.get('consent_type', 'CREDIT_CHECK')
+        method = request.POST.get('method', 'PAPER')
+        ref    = request.POST.get('reference', '').strip()
+        notes  = request.POST.get('notes', '').strip()
+        doc    = request.FILES.get('document')
+        from django.utils.dateparse import parse_datetime, parse_date
+        expires_raw = request.POST.get('expires_at', '').strip()
+        expires = None
+        if expires_raw:
+            from datetime import datetime
+            try:
+                expires = timezone.make_aware(datetime.strptime(expires_raw, '%Y-%m-%d'))
+            except ValueError:
+                pass
+
+        ClientConsent.objects.create(
+            client=client,
+            tenant=user_profile,
+            consent_type=ctype,
+            method=method,
+            reference=ref,
+            notes=notes,
+            document=doc,
+            expires_at=expires,
+        )
+        messages.success(request, 'Consent recorded.', extra_tags='success')
+        return redirect('client_record_detail', client_id=client.id)
+
+    return render(request, 'client/record_consent.html', {
+        'client':        client,
+        'consent_types': ClientConsent.CONSENT_TYPES,
+        'methods':       ClientConsent.METHODS,
+        'nav':           'client_records',
+    })
+
+
+@login_check
+def client_consents(request, client_id):
+    from client.models import ClientConsent
+    user_profile = UserProfile.objects.get(user=request.user)
+    client = get_object_or_404(ClientProfile, pk=client_id)
+    consents = ClientConsent.objects.filter(client=client, tenant=user_profile)
+    return render(request, 'client/client_consents.html', {
+        'client':   client,
+        'consents': consents,
+        'nav':      'client_records',
+    })
+
+
+# ============================================================================
+# Credit Report PDF
+# ============================================================================
+
+@login_check
+def credit_report_pdf(request, client_id):
+    from wkhtmltopdf.views import PDFTemplateResponse
+    from client.models import matched_profiles
+    from loan.models import Loan
+
+    user_profile = UserProfile.objects.get(user=request.user)
+    client = get_object_or_404(ClientProfile, pk=client_id)
+    all_profiles = matched_profiles(ClientProfile.objects.filter(pk=client_id))
+    primary = sorted(all_profiles, key=lambda p: p.updated_at or p.created_at, reverse=True)[0]
+    score  = getattr(primary, 'credit_score', None)
+    loans  = Loan.objects.filter(owner__in=all_profiles).order_by('-funding_date')
+
+    # Log enquiry
+    from client.models import EnquiryLog
+    EnquiryLog.objects.create(client=primary, tenant=user_profile, query_type='CREDIT_CHECK')
+
+    context = {
+        'client':   primary,
+        'score':    score,
+        'loans':    loans,
+        'tenant':   user_profile,
+        'generated_at': timezone.now(),
+    }
+    filename = f'DCC_CreditReport_{primary.CUID or primary.pk}.pdf'
+    return PDFTemplateResponse(request, 'client/credit_report_pdf.html', context=context, filename=filename)
+
+
+# ============================================================================
+# Portfolio analytics helpers
+# ============================================================================
+
+@login_check
+def portfolio_analytics(request):
+    from django.db.models import Sum, Count, Q
+    from loan.models import Loan
+
+    user_profile = UserProfile.objects.get(user=request.user)
+    loans = Loan.objects.filter(lender=user_profile)
+
+    aging = {
+        '0_30':   loans.filter(days_in_default__gt=0, days_in_default__lte=30).aggregate(n=Count('id'), amt=Sum('total_arrears')),
+        '31_60':  loans.filter(days_in_default__gt=30, days_in_default__lte=60).aggregate(n=Count('id'), amt=Sum('total_arrears')),
+        '61_90':  loans.filter(days_in_default__gt=60, days_in_default__lte=90).aggregate(n=Count('id'), amt=Sum('total_arrears')),
+        '91_120': loans.filter(days_in_default__gt=90, days_in_default__lte=120).aggregate(n=Count('id'), amt=Sum('total_arrears')),
+        '120p':   loans.filter(days_in_default__gt=120).aggregate(n=Count('id'), amt=Sum('total_arrears')),
+    }
+
+    agg = loans.aggregate(
+        total_portfolio=Sum('amount'),
+        total_outstanding=Sum('total_outstanding'),
+        total_arrears=Sum('total_arrears'),
+    )
+
+    running   = loans.filter(status='RUNNING').count()
+    defaulted = loans.filter(status='DEFAULTED').count()
+    recovery  = loans.filter(funded_category='RECOVERY').count()
+    completed = loans.filter(status='COMPLETED').count()
+
+    top_arrears = loans.filter(total_arrears__gt=0).order_by('-total_arrears')[:10]
+
+    return render(request, 'users/portfolio_analytics.html', {
+        'nav':             'dashboard',
+        'user':            user_profile,
+        'aging':           aging,
+        'agg':             agg,
+        'running':         running,
+        'defaulted':       defaulted,
+        'recovery':        recovery,
+        'completed':       completed,
+        'top_arrears':     top_arrears,
+    })
+
+
+# ============================================================================
+# Shared alert helper
+# ============================================================================
+
+def _send_credit_alert(client, triggering_tenant, message_body):
+    """Email the originating tenant(s) when a credit event occurs on their borrower."""
+    from api.models import PlatformSettings
+    settings_obj = PlatformSettings.current()
+    if not settings_obj.alert_on_status_change:
+        return
+    try:
+        from django.conf import settings as dj_settings
+        from django.core.mail import send_mail
+        owners = list(ClientProfile.objects.filter(CUID=client.CUID).values_list('user_profile__work_email', flat=True).distinct())
+        recipients = [e for e in owners if e]
+        if not recipients:
+            return
+        send_mail(
+            subject=f'DCC Credit Alert — {client.first_name} {client.last_name}',
+            message=message_body,
+            from_email=dj_settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipients,
+            fail_silently=True,
+        )
+    except Exception:
+        pass

@@ -9,6 +9,13 @@
     <div class="sa-page-sub">LUID: {{ tenant.LUID|default:"—" }} &nbsp;·&nbsp; {{ tenant.endpoint }}</div>
   </div>
   <div class="d-flex gap-2">
+    <form method="post" action="{% url 'sa_sync_tenant' tenant.id %}">
+      {% csrf_token %}
+      <button type="submit" class="sa-btn sa-btn-primary"
+              {% if not tenant.api_key %}disabled title="No API key set"{% endif %}>
+        <i class="bi bi-arrow-repeat"></i> Sync
+      </button>
+    </form>
     <form method="post" action="{% url 'sa_tenant_toggle_active' tenant.id %}"
           onsubmit="return confirm('Toggle active status?');">
       {% csrf_token %}

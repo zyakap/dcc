@@ -18,7 +18,6 @@ urlpatterns = [
     #tenant integration
     path('tenants/', views.admin_tenants, name='admin_tenants'),
     path('tenants/<int:tenant_id>/', views.admin_tenant_config, name='admin_tenant_config'),
-    path('tenants/<int:tenant_id>/sync/', views.admin_sync_tenant, name='admin_sync_tenant'),
     path('usage/', views.admin_usage_metrics, name='admin_usage_metrics'),
     path('dcc-report/', views.admin_dcc_report, name='admin_dcc_report'),
 

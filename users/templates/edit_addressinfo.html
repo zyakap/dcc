@@ -12,19 +12,17 @@
 
   <!-- Content Goes Here -->
   <div class="row">
-    <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-xs-12">
-      <div class="card mt-2 p-1">
-        <div class="card-header bg-secondary m-0 pt-2 pr-1 pb-0 pl-2">
-          <h5 class="text-light"> Address Information </h5>
-        </div>
-        <div class="card-body m-0 p-2">
-          <form method="post">
-            {% csrf_token %}
-            {{ form|crispy }}
-            <br>
-            <button type="submit" class="btn btn-primary">UPDATE</button>
-          </form>
-        </div>
+    <div class="col-xl-5 col-lg-7 col-md-8">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-geo-alt"></i> Address Information</div>
+        <form method="post">
+          {% csrf_token %}
+          {{ form|crispy }}
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="sa-btn sa-btn-primary">Update</button>
+            <a href="{% url 'profile' %}" class="sa-btn sa-btn-outline">Cancel</a>
+          </div>
+        </form>
       </div>
     </div>
   </div>

@@ -1,39 +1,43 @@
-<!-- add_business.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} Upload Client Record {% endblock %}
-
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Client {% endblock %}
-{% block dashboard_title %} Upload Records {% endblock %}
-
+{% block title %}Upload Records{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a>{% endblock %}
+{% block breadcrumb_active %}Upload Records{% endblock %}
+{% block dashboard_title %}Upload Records{% endblock %}
 
 {% block content %}
-
-    
-    <p>Select .xlsx file to upload. If you do not have the file yet, <a href="{% static 'website/files/DCC_Default_Upload_Template.xlsx' %}">click to download excel template.</a></p>
-    <hr>
-    <div class="card p-3">
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-upload"></i> Upload Client Records</div>
+      <p style="font-size:13px; color:var(--sa-muted); margin-bottom:16px;">
+        Select an <code>.xlsx</code> file to upload.
+        <a href="{% static 'website/files/DCC_Default_Upload_Template.xlsx' %}">Download the Excel template</a> if you don't have it yet.
+      </p>
       <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
-        <h2>Upload Excel File</h2>
-        <div class="form-group mb-3">
-        <label for="client_records_data">Select .xlsx file with data:</label>
-        <input type="file" class="form-control" id="client_records_data" name="client_records_data">
+        <div class="mb-3">
+          <label class="sa-form-label">Select .xlsx file</label>
+          <input type="file" class="form-control" name="client_records_data" accept=".xlsx">
         </div>
-        <div class="text-end">
-        <a href="#" class="btn btn-secondary">CANCEL</a>
-        <button type="submit" class="btn btn-primary px-4">UPLOAD</button>
-      </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-upload"></i> Upload</button>
+          <a href="{% url 'client_records' %}" class="sa-btn sa-btn-outline">Cancel</a>
+        </div>
       </form>
     </div>
-
-  <!-- Content Ends Here -->
-
+  </div>
+  <div class="col-lg-5">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-info-circle"></i> Instructions</div>
+      <ul style="font-size:13px; color:var(--sa-muted); padding-left:18px; line-height:2;">
+        <li>Download the template and fill in your data</li>
+        <li>Do not add or remove columns</li>
+        <li>Each row is one client record</li>
+        <li>Records will be reviewed before appearing in the DCC database</li>
+      </ul>
+    </div>
+  </div>
+</div>
 {% endblock %}
-
-
-
-

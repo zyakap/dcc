@@ -1,0 +1,22 @@
+{% extends "borrower/base.html" %}
+{% block title %}File Enquiries — DCC Borrower Portal{% endblock %}
+{% block content %}
+<h2 style="margin-bottom:16px;">File Enquiry History</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Every time a lender or third party accessed your credit file, a record is logged here.</p>
+<div class="sa-card">
+  <table>
+    <thead><tr><th>Type</th><th>Accessed By</th><th>Date & Time</th></tr></thead>
+    <tbody>
+      {% for eq in enquiries %}
+      <tr>
+        <td>{{ eq.get_query_type_display }}</td>
+        <td>{{ eq.tenant.organisation|default:eq.tp_key_name|default:"DCC System" }}</td>
+        <td style="color:var(--muted);">{{ eq.queried_at|date:"d M Y H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px;">No enquiries recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -9,6 +9,7 @@ urlpatterns = [
     path('tenants/', views.sa_tenants, name='sa_tenants'),
     path('tenants/create/', views.sa_tenant_create, name='sa_tenant_create'),
     path('tenants/<int:tenant_id>/', views.sa_tenant_detail, name='sa_tenant_detail'),
+    path('tenants/<int:tenant_id>/sync/', views.sa_sync_tenant, name='sa_sync_tenant'),
     path('tenants/<int:tenant_id>/toggle-active/', views.sa_tenant_toggle_active, name='sa_tenant_toggle_active'),
     path('tenants/<int:tenant_id>/delete/', views.sa_tenant_delete, name='sa_tenant_delete'),
 
@@ -36,4 +37,11 @@ urlpatterns = [
 
     # Platform settings
     path('settings/', views.sa_settings, name='sa_settings'),
+
+    # Third-party API key management
+    path('tp-api-keys/', views.sa_tp_api_keys, name='sa_tp_api_keys'),
+
+    # Default notices & disputes
+    path('default-notices/', views.sa_default_notices, name='sa_default_notices'),
+    path('disputes/', views.sa_disputes, name='sa_disputes'),
 ]

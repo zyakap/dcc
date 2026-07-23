@@ -66,7 +66,7 @@
     </div>
   </div>
   <div class="col-lg-5">
-    <div class="card mb-3">
+    <div class="card">
       <div class="card-body">
         <h5 class="card-title">Sync Status</h5>
         <p class="mb-1"><strong>Records ingested (all time):</strong> {{ tenant.record_count }}</p>
@@ -79,26 +79,6 @@
             <i class="bi bi-arrow-repeat"></i> Sync Now
           </button>
         </form>
-      </div>
-    </div>
-
-    <div class="card border-danger">
-      <div class="card-body">
-        <h5 class="card-title text-danger">Danger Zone</h5>
-        <form method="post" class="mb-2">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-success w-100" name="action" value="sync_now"
-                  {% if not tenant.api_key %}disabled title="Set an API key first"{% endif %}>
-            <i class="bi bi-arrow-repeat"></i> Sync This Tenant
-          </button>
-        </form>
-        <a href="{% url 'suspend_user' tenant.user_id %}" class="btn btn-warning w-100 mb-2">
-          <i class="bi bi-pause-circle"></i> Suspend
-        </a>
-        <a href="{% url 'deactivate_user' tenant.user_id %}" class="btn btn-danger w-100"
-           onclick="return confirm('Deactivate {{ tenant }}? This will disable their account.')">
-          <i class="bi bi-trash"></i> Deactivate
-        </a>
       </div>
     </div>
   </div>

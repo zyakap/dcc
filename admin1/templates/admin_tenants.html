@@ -21,11 +21,10 @@
               <tr>
                 <th>Tenant</th>
                 <th>LUID</th>
-                <th>Plan</th>
-                <th class="text-end">Clients</th>
-                <th class="text-end">Loans</th>
+                <th>Endpoint</th>
                 <th>Feed</th>
                 <th>API Key</th>
+                <th>Records</th>
                 <th>Last Sync</th>
                 <th></th>
               </tr>
@@ -35,9 +34,7 @@
               <tr>
                 <td>{{ t }}</td>
                 <td><code>{{ t.LUID }}</code></td>
-                <td><span class="badge bg-secondary">{{ t.plan|default:"—" }}</span></td>
-                <td class="text-end">{{ t.dcc_client_count }}</td>
-                <td class="text-end">{{ t.dcc_loan_count }}</td>
+                <td>{{ t.endpoint }}</td>
                 <td>
                   {% if t.feed_enabled %}<span class="badge bg-success">ENABLED</span>
                   {% else %}<span class="badge bg-secondary">OFF</span>{% endif %}
@@ -46,20 +43,12 @@
                   {% if t.api_key %}<span class="badge bg-success">SET</span>
                   {% else %}<span class="badge bg-danger">MISSING</span>{% endif %}
                 </td>
+                <td>{{ t.record_count }}</td>
                 <td><small>{{ t.last_sync_status|default:"never" }}</small></td>
-                <td class="text-end" style="white-space:nowrap;">
-                  <form method="post" action="{% url 'admin_sync_tenant' t.id %}" class="d-inline">
-                    {% csrf_token %}
-                    <button class="btn btn-sm btn-outline-success me-1"
-                            {% if not t.api_key %}disabled title="Set an API key first"{% endif %}>
-                      <i class="bi bi-arrow-repeat"></i> Sync
-                    </button>
-                  </form>
-                  <a class="btn btn-sm btn-primary" href="{% url 'admin_tenant_config' t.id %}">Manage</a>
-                </td>
+                <td><a class="btn btn-sm btn-primary" href="{% url 'admin_tenant_config' t.id %}">Configure</a></td>
               </tr>
               {% empty %}
-              <tr><td colspan="9" class="text-center text-muted">No tenants yet. Create one under Users, then configure it here.</td></tr>
+              <tr><td colspan="8" class="text-center text-muted">No tenants yet. Create one under Users, then configure it here.</td></tr>
               {% endfor %}
             </tbody>
           </table>

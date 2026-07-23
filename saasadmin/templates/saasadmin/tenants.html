@@ -49,6 +49,8 @@
           <th>LUID</th>
           <th>Endpoint</th>
           <th>Plan</th>
+          <th class="text-end">Clients</th>
+          <th class="text-end">Loans</th>
           <th>DCC</th>
           <th>Feed</th>
           <th>Status</th>
@@ -69,6 +71,8 @@
               {{ t.plan }}
             </span>
           </td>
+          <td class="text-end">{{ t.dcc_client_count }}</td>
+          <td class="text-end">{{ t.dcc_loan_count }}</td>
           <td>
             {% if t.credit_check_enabled %}
               <span class="sa-badge sa-badge-green">ON</span>
@@ -90,12 +94,20 @@
               <span class="sa-badge sa-badge-red"><i class="bi bi-circle-fill" style="font-size:7px;"></i> Suspended</span>
             {% endif %}
           </td>
-          <td>
+          <td style="white-space:nowrap;">
+            <form method="post" action="{% url 'sa_sync_tenant' t.id %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="list">
+              <button class="sa-btn sa-btn-outline sa-btn-sm me-1"
+                      {% if not t.api_key %}disabled title="No API key set"{% endif %}>
+                <i class="bi bi-arrow-repeat"></i> Sync
+              </button>
+            </form>
             <a href="{% url 'sa_tenant_detail' t.id %}" class="sa-btn sa-btn-outline sa-btn-sm">Manage</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" style="text-align:center; color:var(--sa-muted); padding:24px;">No tenants found.</td></tr>
+        <tr><td colspan="10" style="text-align:center; color:var(--sa-muted); padding:24px;">No tenants found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

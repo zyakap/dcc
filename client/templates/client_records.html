@@ -33,7 +33,7 @@
           </thead>
           <tbody>
             {% for client in clients %}
-            <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor:pointer;" onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+            <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor:pointer;">
               <td><strong>{{ client.first_name }} {{ client.last_name }}</strong></td>
               <td><code>{{ client.CUID|default:"—" }}</code></td>
               <td>

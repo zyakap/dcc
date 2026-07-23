@@ -1,0 +1,143 @@
+{% extends "dashboard_base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <h4 style="margin-bottom:16px;"><i class="bi bi-bar-chart-line" style="margin-right:8px;"></i>Portfolio Analytics</h4>
+
+  <!-- Summary tiles -->
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="sa-card" style="padding:16px;border-left:3px solid var(--sa-accent);">
+        <div style="font-size:11px;color:var(--sa-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Total Portfolio (K)</div>
+        <div style="font-size:22px;font-weight:700;">{{ agg.total_portfolio|floatformat:0|default:"0" }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="sa-card" style="padding:16px;border-left:3px solid #5a7fcf;">
+        <div style="font-size:11px;color:var(--sa-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Outstanding (K)</div>
+        <div style="font-size:22px;font-weight:700;">{{ agg.total_outstanding|floatformat:0|default:"0" }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="sa-card" style="padding:16px;border-left:3px solid var(--sa-danger);">
+        <div style="font-size:11px;color:var(--sa-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Total Arrears (K)</div>
+        <div style="font-size:22px;font-weight:700;color:var(--sa-danger);">{{ agg.total_arrears|floatformat:0|default:"0" }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="sa-card" style="padding:16px;border-left:3px solid var(--sa-success);">
+        <div style="font-size:11px;color:var(--sa-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Active / Default</div>
+        <div style="font-size:22px;font-weight:700;">{{ running }} / <span style="color:var(--sa-danger);">{{ defaulted }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Aging buckets -->
+    <div class="col-lg-5">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-hourglass-split"></i> Arrears Aging</div>
+        <table style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="padding:6px 0;color:var(--sa-muted);font-weight:500;">Bucket</th>
+              <th style="padding:6px 0;color:var(--sa-muted);font-weight:500;text-align:right;">Loans</th>
+              <th style="padding:6px 0;color:var(--sa-muted);font-weight:500;text-align:right;">Arrears (K)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for bucket, label in aging.items %}
+            {% with data=aging|get_item:bucket %}
+            <tr style="border-bottom:1px solid var(--sa-border);">
+              <td style="padding:8px 0;">
+                {% if bucket == '0_30' %}1–30 days
+                {% elif bucket == '31_60' %}31–60 days
+                {% elif bucket == '61_90' %}61–90 days
+                {% elif bucket == '91_120' %}91–120 days
+                {% else %}120+ days{% endif %}
+              </td>
+              <td style="text-align:right;padding:8px 0;">{{ data.n|default:"0" }}</td>
+              <td style="text-align:right;padding:8px 0;">{{ data.amt|floatformat:0|default:"0" }}</td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr><td colspan="3" style="text-align:center;color:var(--sa-muted);padding:20px;">No arrears data.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sa-card" style="margin-top:12px;">
+        <div class="sa-card-header"><i class="bi bi-pie-chart"></i> Loan Status Breakdown</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+          {% for label, count, color in status_data %}
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span>{{ label }}</span>
+            <span style="font-weight:600;color:{{ color }};">{{ count }}</span>
+          </div>
+          {% endfor %}
+          <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--sa-border);padding-top:8px;">
+            <span>Running</span><span style="font-weight:600;color:var(--sa-success);">{{ running }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Defaulted</span><span style="font-weight:600;color:var(--sa-danger);">{{ defaulted }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Recovery</span><span style="font-weight:600;color:#e09b3d;">{{ recovery }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Completed</span><span style="font-weight:600;color:var(--sa-muted);">{{ completed }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top arrears table -->
+    <div class="col-lg-7">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-sort-down"></i> Top 10 Arrears</div>
+        {% if top_arrears %}
+        <div style="overflow-x:auto;">
+          <table class="table" style="font-size:13px;margin:0;">
+            <thead class="table-dark">
+              <tr>
+                <th>Borrower</th>
+                <th>Loan Ref</th>
+                <th>Status</th>
+                <th style="text-align:right;">Arrears (K)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for loan in top_arrears %}
+              <tr>
+                <td>
+                  {% if loan.owner %}<a href="{% url 'client_record_detail' loan.owner.id %}">{{ loan.owner.first_name }} {{ loan.owner.last_name }}</a>{% else %}—{% endif %}
+                </td>
+                <td><code>{{ loan.ref }}</code></td>
+                <td>
+                  {% if loan.status == 'DEFAULTED' %}<span class="badge bg-danger">Default</span>
+                  {% elif loan.status == 'RUNNING' %}<span class="badge bg-success">Running</span>
+                  {% else %}<span class="badge bg-secondary">{{ loan.status }}</span>{% endif %}
+                </td>
+                <td style="text-align:right;font-weight:700;color:var(--sa-danger);">K {{ loan.total_arrears }}</td>
+                <td>
+                  {% if loan.owner %}
+                  <a href="{% url 'submit_default_notice' loan.owner.id %}" class="sa-btn sa-btn-outline sa-btn-sm"
+                    title="Submit default notice">
+                    <i class="bi bi-exclamation-triangle"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p style="color:var(--sa-muted);padding:16px 0;">No arrears in your portfolio.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

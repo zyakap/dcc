@@ -1,282 +1,187 @@
 {% extends "dashboard_base.html" %}
 {% load static %}
 {% load site_filter %}
-{% block title %} Search Database | DCC {% endblock %}
-
-{% block css %}
-
-<style>
-  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap");
-
-
-    body{
-      background-color: #eee;
-      font-family: "Poppins", sans-serif;
-      font-weight: 300;
-    }
-  .container{
-      height:10vh;
-  }
-
-  .progresses{
-      display: flex;
-          align-items: center;
-    }
-
-    .line{
-
-      width: 2rem;
-      height: 1rem;
-      background: #63d19e;
-    }
-    .steps{
-
-      display: flex;
-      background-color: #63d19e;
-      color: #fff;
-      font-size: 14px;
-      width: 6rem;
-      height: 3rem;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-
-    }
-</style>
-
-{% endblock %}
-
-{% block breadcrumb %} Dashboard {% endblock %}
-{% block breadcrumb_active %} Database {% endblock %}
-{% block dashboard_title %} Search {% endblock %}
+{% block title %}Search Database{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block breadcrumb_active %}Search{% endblock %}
+{% block dashboard_title %}Search{% endblock %}
 
 {% block content %}
 
-  <!-- Content Goes Here -->
-
-<div class="row">
-  <div class="col-lg-12">
-    <div class="card">
-        <h4 class="px-3 py-3 m-0">Search for any piece of Information</h4>
-       
-        <div class="card-body">
-            <form method="get" action="{% url 'database_search' %}" class="d-flex">
-              <input type="text" class="form-control me-2" name="q" value="{{ query }}" style="width: 100%;" class="px-1 py-2 mb-3">
-                <button type="submit" class="btn btn-primary">Search</button>
-            </form>
-        </div>
-    </div>
-  </div>
+<div class="sa-card mb-4">
+  <form method="get" action="{% url 'database_search' %}" class="d-flex gap-2">
+    <input type="text" class="sa-form-control" name="q" value="{{ query }}" placeholder="Name, CUID, NID, email, phone, employer…">
+    <button type="submit" class="sa-btn sa-btn-primary" style="white-space:nowrap;"><i class="bi bi-search"></i> Search</button>
+  </form>
 </div>
 
+{% if client_results or sme_results or address_results or contact_results or employer_results or bank_results or upload_results %}
 
-<h3>Search Results</h3>
-<hr class="p-0 my-3" style="border: 1px solid #63d19e; width:100%;">
-    
-<!-- 
-        'sme_results': sme_results,
-        'upload_results': upload_results,
-        'address_results': address_results,
-        'contact_results': contact_results,
-        'employer_results': employer_results,
-        'bank_results': bank_results,
-        'payslip_results': payslip_results,
--->
-<div class="card p-3"><!-- card start -->
+{% if client_results %}
+<div class="sa-card mb-3">
+  <div class="sa-card-header"><i class="bi bi-person-vcard"></i> Client Records ({{ client_results|length }})</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead><tr><th>Name</th><th>Email</th><th>Mobile</th><th></th></tr></thead>
+      <tbody>
+        {% for client in client_results %}
+        <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor:pointer;">
+          <td><strong>{{ client.first_name }} {{ client.last_name }}</strong></td>
+          <td>{{ client.email|default:"—" }}</td>
+          <td>{{ client.mobile1|default:"—" }}</td>
+          <td><a href="{% url 'client_record_detail' client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
-    {% if client_results %}
-    <h2><span class="text-primary">Client</span> Records</h2>
-        <table border="1" class="table table-striped">
-            <thead>
-                
-                <tr>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Email</th>
-                    <th>Mobile 1</th>
-                    <th>Mobile 2</th>
-                    <th>Work Email</th>
-                </tr>
-               
-            </thead>
-            <tbody>
-                {% for client in client_results %}
-                
-                    <tr onclick="window.location.href='{% url 'client_record_detail' client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ client.first_name }}</td>
-                        <td>{{ client.last_name }}</td>
-                        <td>{{ client.email }}</td>
-                        <td>{{ client.mobile1 }}</td>
-                        <td>{{ client.mobile2 }}</td>
-                        <td>{{ client.work_email }}</td>
-                    </tr>
-                
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+{% if sme_results %}
+<div class="sa-card mb-3">
+  <div class="sa-card-header"><i class="bi bi-building"></i> Business Records ({{ sme_results|length }})</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead><tr><th>Trading Name</th><th>Registered Name</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+      <tbody>
+        {% for sme in sme_results %}
+        <tr onclick="window.location.href='{% url 'business_record_detail' sme.id %}';" style="cursor:pointer;">
+          <td><strong>{{ sme.trading_name }}</strong></td>
+          <td>{{ sme.registered_name|default:"—" }}</td>
+          <td>{{ sme.email|default:"—" }}</td>
+          <td>{{ sme.phone|default:"—" }}</td>
+          <td><a href="{% url 'business_record_detail' sme.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
-    {% if sme_results %}
-    <h2><span class="text-primary">Business</span> Records</h2>
-        <table border="1" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Trading Name</th>
-                    <th>Registered Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for sme in sme_results %}
-                    <tr onclick="window.location.href='{% url 'client_record_detail' sme.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ sme.trading_name }}</td>
-                        <td>{{ sme.registered_name }}</td>
-                        <td>{{ sme.email }}</td>
-                        <td>{{ sme.phone }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+{% if address_results %}
+<div class="sa-card mb-3">
+  <div class="sa-card-header"><i class="bi bi-geo-alt"></i> Address Records ({{ address_results|length }})</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead><tr><th>Client</th><th>Address</th><th>City</th><th>State</th><th></th></tr></thead>
+      <tbody>
+        {% for address in address_results %}
+        <tr onclick="window.location.href='{% url 'client_record_detail' address.client.id %}';" style="cursor:pointer;">
+          <td><strong>{{ address.client }}</strong></td>
+          <td>{{ address.address|default:"—" }}</td>
+          <td>{{ address.city|default:"—" }}</td>
+          <td>{{ address.state|default:"—" }}</td>
+          <td><a href="{% url 'client_record_detail' address.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
-    {% if address_results %}
-    <h2><span class="text-primary">Address</span> Records</h2>
-        <table border="1" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>Address</th>
-                    <th>City</th>
-                    <th>State</th>
-                    <th>Postcode</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for address in address_results %}
-                    <tr onclick="window.location.href='{% url 'client_record_detail' address.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ address.client }}</td>
-                        <td>{{ address.address }}</td>
-                        <td>{{ address.city }}</td>
-                        <td>{{ address.state }}</td>
-                        <td>{{ address.postcode }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+{% if contact_results %}
+<div class="sa-card mb-3">
+  <div class="sa-card-header"><i class="bi bi-person-lines-fill"></i> Contact Records ({{ contact_results|length }})</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead><tr><th>Client</th><th>Name</th><th>Relationship</th><th>Mobile</th><th>Email</th><th></th></tr></thead>
+      <tbody>
+        {% for contact in contact_results %}
+        <tr onclick="window.location.href='{% url 'client_record_detail' contact.client.id %}';" style="cursor:pointer;">
+          <td><strong>{{ contact.client }}</strong></td>
+          <td>{{ contact.name|default:"—" }}</td>
+          <td>{{ contact.relationship|default:"—" }}</td>
+          <td>{{ contact.mobile|default:"—" }}</td>
+          <td>{{ contact.email|default:"—" }}</td>
+          <td><a href="{% url 'client_record_detail' contact.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
+{% if employer_results %}
+<div class="sa-card mb-3">
+  <div class="sa-card-header"><i class="bi bi-briefcase"></i> Employment Records ({{ employer_results|length }})</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead><tr><th>Client</th><th>Employer</th><th>Position</th><th>Start</th><th>End</th><th></th></tr></thead>
+      <tbody>
+        {% for employer in employer_results %}
+        <tr onclick="window.location.href='{% url 'client_record_detail' employer.client.id %}';" style="cursor:pointer;">
+          <td><strong>{{ employer.client }}</strong></td>
+          <td>{{ employer.employer|default:"—" }}</td>
+          <td>{{ employer.position|default:"—" }}</td>
+          <td>{{ employer.start_date|default:"—" }}</td>
+          <td>{{ employer.end_date|default:"—" }}</td>
+          <td><a href="{% url 'client_record_detail' employer.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
-    {% if contact_results %}
-    <h2><span class="text-primary">Contact</span> Records</h2>
-        <table border="1" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>Name</th>
-                    <th>Relationship</th>
-                    <th>Mobile</th>
-                    <th>Email</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for contact in contact_results %}
-                    <tr onclick="window.location.href='{% url 'client_record_detail' contact.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ contact.client }}</td>
-                        <td>{{ contact.name }}</td>
-                        <td>{{ contact.relationship }}</td>
-                        <td>{{ contact.mobile }}</td>
-                        <td>{{ contact.email }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+{% if bank_results %}
+<div class="sa-card mb-3">
+  <div class="sa-card-header"><i class="bi bi-bank"></i> Bank Account Records ({{ bank_results|length }})</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead><tr><th>Client</th><th>Bank</th><th>Account Number</th><th>BSB</th><th></th></tr></thead>
+      <tbody>
+        {% for bank in bank_results %}
+        <tr onclick="window.location.href='{% url 'client_record_detail' bank.client.id %}';" style="cursor:pointer;">
+          <td><strong>{{ bank.client }}</strong></td>
+          <td>{{ bank.bank|default:"—" }}</td>
+          <td>{{ bank.account_number|default:"—" }}</td>
+          <td>{{ bank.bsb|default:"—" }}</td>
+          <td><a href="{% url 'client_record_detail' bank.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
-    {% if employer_results %}
-    <h2><span class="text-primary">Employment</span> Records</h2>
-        <table border="1" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>Employer</th>
-                    <th>Position</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for employer in employer_results %}
-                    <tr onclick="window.location.href='{% url 'client_record_detail' employer.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ employer.client }}</td>
-                        <td>{{ employer.employer }}</td>
-                        <td>{{ employer.position }}</td>
-                        <td>{{ employer.start_date }}</td>
-                        <td>{{ employer.end_date }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+{% if upload_results %}
+<div class="sa-card mb-3">
+  <div class="sa-card-header"><i class="bi bi-file-earmark"></i> Document Records ({{ upload_results|length }})</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead><tr><th>Client</th><th>File</th><th>Upload Date</th><th></th></tr></thead>
+      <tbody>
+        {% for upload in upload_results %}
+        <tr onclick="window.location.href='{% url 'client_record_detail' upload.client.id %}';" style="cursor:pointer;">
+          <td><strong>{{ upload.client }}</strong></td>
+          <td>{{ upload.file|default:"—" }}</td>
+          <td>{{ upload.upload_date|default:"—" }}</td>
+          <td><a href="{% url 'client_record_detail' upload.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
-    {% if bank_results %}
-    <h2><span class="text-primary">Bank Account</span> Records</h2>
-        <table border="1" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>Bank</th>
-                    <th>Account Number</th>
-                    <th>BSB</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for bank in bank_results %}
-                    <tr onclick="window.location.href='{% url 'client_record_detail' bank.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ bank.client }}</td>
-                        <td>{{ bank.bank }}</td>
-                        <td>{{ bank.account_number }}</td>
-                        <td>{{ bank.bsb }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% else %}
+  {% if query %}
+  <div class="sa-card" style="text-align:center; padding:40px; color:var(--sa-muted);">
+    <i class="bi bi-search" style="font-size:2rem; display:block; margin-bottom:10px;"></i>
+    <div>No results for <strong style="color:var(--sa-text);">{{ query }}</strong>. Try a different name, CUID, or mobile number.</div>
+  </div>
+  {% endif %}
+{% endif %}
 
-    {% endif %}
-
-    {% if upload_results %}
-    <h2><span class="text-primary">Client Upload</span> Records</h2>
-        <table border="1" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>File</th>
-                    <th>Upload Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for upload in upload_results %}
-                    <tr onclick="window.location.href='{% url 'client_record_detail' upload.client.id %}';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ upload.client }}</td>
-                        <td>{{ upload.file }}</td>
-                        <td>{{ upload.upload_date }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-    {% endif %}
-
-    {% if display_message %}
-        <p class="m-0 p-0">{{ display_message }}</p>
-    {% endif %}
-</div><!-- card end -->
-  <!-- Content Ends Here -->
-
-{% endblock %}
-
-{% block scripts %}
-
-
+{% if display_message %}
+<div class="sa-alert sa-alert-info">{{ display_message }}</div>
+{% endif %}
 
 {% endblock %}

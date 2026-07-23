@@ -1,0 +1,57 @@
+{% extends "dashboard_base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <nav aria-label="breadcrumb" style="margin-bottom:12px;">
+    <ol class="breadcrumb" style="background:none;padding:0;font-size:13px;">
+      <li class="breadcrumb-item"><a href="{% url 'client_record_detail' client.id %}">{{ client.first_name }} {{ client.last_name }}</a></li>
+      <li class="breadcrumb-item active">Consent Records</li>
+    </ol>
+  </nav>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <h4 style="margin:0;"><i class="bi bi-shield-check" style="margin-right:8px;"></i>Consent Records</h4>
+    <a href="{% url 'record_consent' client.id %}" class="sa-btn sa-btn-primary">
+      <i class="bi bi-plus"></i> Record New
+    </a>
+  </div>
+
+  <div class="sa-card">
+    {% if consents %}
+    <div style="overflow-x:auto;">
+      <table class="table datatable" style="width:100%;">
+        <thead class="table-dark">
+          <tr>
+            <th>Type</th>
+            <th>Method</th>
+            <th>Reference</th>
+            <th>Consented</th>
+            <th>Expires</th>
+            <th>Active</th>
+            <th>Notes</th>
+            <th>Document</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in consents %}
+          <tr>
+            <td>{{ c.get_consent_type_display }}</td>
+            <td>{{ c.get_method_display }}</td>
+            <td>{{ c.reference|default:"—" }}</td>
+            <td>{{ c.consented_at|date:"d M Y" }}</td>
+            <td>{{ c.expires_at|date:"d M Y"|default:"Never" }}</td>
+            <td>{% if c.is_active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+            <td>{{ c.notes|truncatechars:60|default:"—" }}</td>
+            <td>
+              {% if c.document %}<a href="{{ c.document.url }}" target="_blank" class="sa-btn sa-btn-outline sa-btn-sm">View</a>{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:var(--sa-muted);padding:20px 0;">No consent records for this client from your organisation.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "dashboard_base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <h4 style="margin-bottom:16px;"><i class="bi bi-exclamation-triangle" style="margin-right:8px;"></i>My Default Notices</h4>
+
+  <div class="sa-card">
+    {% if notices %}
+    <div style="overflow-x:auto;">
+      <table class="table datatable" style="width:100%;">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Borrower</th>
+            <th>Amount (K)</th>
+            <th>Loan Ref</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th>Grace Expires</th>
+            <th>Listed At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for n in notices %}
+          <tr>
+            <td>{{ n.pk }}</td>
+            <td>
+              <a href="{% url 'client_record_detail' n.client.id %}">{{ n.client.first_name }} {{ n.client.last_name }}</a>
+              <div style="font-size:11px;color:var(--sa-muted);">{{ n.client.CUID|default:"" }}</div>
+            </td>
+            <td>K {{ n.amount_owed }}</td>
+            <td>{{ n.loan_ref|default:"—" }}</td>
+            <td>
+              {% if n.status == 'SUBMITTED' %}<span class="badge bg-primary">Submitted</span>
+              {% elif n.status == 'NOTIFIED' %}<span class="badge bg-warning text-dark">Notified</span>
+              {% elif n.status == 'LISTED' %}<span class="badge bg-danger">Listed</span>
+              {% elif n.status == 'SETTLED' %}<span class="badge bg-success">Settled</span>
+              {% elif n.status == 'CANCELLED' %}<span class="badge bg-secondary">Cancelled</span>
+              {% else %}<span class="badge bg-secondary">{{ n.status }}</span>{% endif %}
+            </td>
+            <td>{{ n.submitted_at|date:"d M Y"|default:"—" }}</td>
+            <td>{{ n.grace_expires_at|date:"d M Y"|default:"—" }}</td>
+            <td>{{ n.listed_at|date:"d M Y"|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:var(--sa-muted);padding:20px 0;">You have not submitted any default notices.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "dashboard_base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <nav aria-label="breadcrumb" style="margin-bottom:12px;">
+    <ol class="breadcrumb" style="background:none;padding:0;font-size:13px;">
+      <li class="breadcrumb-item"><a href="{% url 'client_record_detail' client.id %}">{{ client.first_name }} {{ client.last_name }}</a></li>
+      <li class="breadcrumb-item active">Submit Dispute</li>
+    </ol>
+  </nav>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-flag"></i> Submit a Dispute</div>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="sa-form-label">Dispute Type <span style="color:var(--sa-danger);">*</span></label>
+              <select name="dispute_type" class="sa-form-control">
+                {% for val, label in type_choices %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="sa-form-label">Field or Record in Question</label>
+              <input type="text" name="field_disputed" class="sa-form-control" placeholder="e.g. Loan amount, employer name">
+            </div>
+            <div class="col-12">
+              <label class="sa-form-label">Description <span style="color:var(--sa-danger);">*</span></label>
+              <textarea name="description" class="sa-form-control" rows="5" required
+                placeholder="Describe the issue and why this record is incorrect…"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="sa-form-label">Supporting Document (optional)</label>
+              <input type="file" name="supporting_doc" class="sa-form-control">
+              <div style="font-size:11px;color:var(--sa-muted);margin-top:4px;">PDF, image, or scanned form (max 10 MB)</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;display:flex;gap:8px;">
+            <button type="submit" class="sa-btn sa-btn-primary"><i class="bi bi-send"></i> Submit Dispute</button>
+            <a href="{% url 'client_record_detail' client.id %}" class="sa-btn sa-btn-outline">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="sa-card">
+        <div class="sa-card-header"><i class="bi bi-person"></i> Borrower</div>
+        <div style="font-size:13px;line-height:2;">
+          <div><strong>{{ client.first_name }} {{ client.last_name }}</strong></div>
+          <div style="color:var(--sa-muted);">CUID: {{ client.CUID|default:"—" }}</div>
+        </div>
+      </div>
+      <div class="sa-card" style="margin-top:12px;">
+        <div class="sa-card-header"><i class="bi bi-clock-history"></i> Review Timeline</div>
+        <div style="font-size:13px;color:var(--sa-muted);line-height:2;">
+          <div><i class="bi bi-1-circle" style="margin-right:6px;"></i>Dispute logged — OPEN</div>
+          <div><i class="bi bi-2-circle" style="margin-right:6px;"></i>DCC marks UNDER REVIEW</div>
+          <div><i class="bi bi-3-circle" style="margin-right:6px;"></i>Decision: RESOLVED or DISMISSED</div>
+          <div style="margin-top:8px;">Target: <strong>5 business days</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

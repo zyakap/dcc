@@ -1,0 +1,101 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Default Notices{% endblock %}
+{% block topbar_title %}Default Notice Workflow{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Default Notices</h1>
+    <div class="sa-page-sub">Review, notify borrowers, and formally list or settle defaults</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'sa_disputes' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-flag"></i> Disputes</a>
+  </div>
+</div>
+
+<!-- Status filter -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="?" class="sa-btn {% if not status_filter %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">All</a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}" class="sa-btn {% if status_filter == val %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="sa-card">
+  {% if notices %}
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Borrower</th>
+          <th>Lender</th>
+          <th>Amount (K)</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Grace Expires</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for notice in notices %}
+        <tr>
+          <td>{{ notice.pk }}</td>
+          <td>
+            <strong>{{ notice.client.first_name }} {{ notice.client.last_name }}</strong>
+            <div style="font-size:11px;color:var(--sa-muted);">{{ notice.client.CUID|default:"" }}</div>
+          </td>
+          <td style="font-size:12px;">{{ notice.tenant.organisation|default:notice.tenant.email }}</td>
+          <td><strong>K {{ notice.amount_owed }}</strong>
+            {% if notice.loan_ref %}<div style="font-size:11px;color:var(--sa-muted);">Ref: {{ notice.loan_ref }}</div>{% endif %}
+          </td>
+          <td>
+            {% if notice.status == 'DRAFT' %}<span class="sa-badge" style="background:var(--sa-muted);">Draft</span>
+            {% elif notice.status == 'SUBMITTED' %}<span class="sa-badge" style="background:#5a7fcf;">Submitted</span>
+            {% elif notice.status == 'NOTIFIED' %}<span class="sa-badge" style="background:#e09b3d;">Notified</span>
+            {% elif notice.status == 'LISTED' %}<span class="sa-badge sa-badge-danger">Listed</span>
+            {% elif notice.status == 'SETTLED' %}<span class="sa-badge sa-badge-success">Settled</span>
+            {% elif notice.status == 'CANCELLED' %}<span class="sa-badge" style="background:var(--sa-border);">Cancelled</span>
+            {% else %}<span class="sa-badge">{{ notice.status }}</span>{% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--sa-muted);">{{ notice.submitted_at|date:"d M Y"|default:"—" }}</td>
+          <td style="font-size:12px;color:var(--sa-muted);">{{ notice.grace_expires_at|date:"d M Y"|default:"—" }}</td>
+          <td>
+            <form method="post" style="display:flex;gap:4px;flex-wrap:wrap;">
+              {% csrf_token %}
+              <input type="hidden" name="notice_id" value="{{ notice.pk }}">
+              {% if notice.status == 'SUBMITTED' %}
+              <button type="submit" name="action" value="notify" class="sa-btn sa-btn-outline sa-btn-sm"
+                title="Notify borrower via email and start grace period">
+                <i class="bi bi-envelope"></i> Notify
+              </button>
+              {% endif %}
+              {% if notice.status == 'NOTIFIED' %}
+              <button type="submit" name="action" value="list" class="sa-btn sa-btn-sm sa-btn-sm"
+                style="background:var(--sa-danger);color:#fff;border:none;"
+                onclick="return confirm('List this default on the borrower\'s credit file?')">
+                <i class="bi bi-exclamation-circle"></i> List
+              </button>
+              {% endif %}
+              {% if notice.status == 'LISTED' %}
+              <button type="submit" name="action" value="settle" class="sa-btn sa-btn-sm"
+                style="background:var(--sa-success);color:#fff;border:none;">
+                <i class="bi bi-check-circle"></i> Settle
+              </button>
+              {% endif %}
+              {% if notice.status in 'DRAFT,SUBMITTED,NOTIFIED' %}
+              <button type="submit" name="action" value="cancel" class="sa-btn sa-btn-outline sa-btn-sm"
+                onclick="return confirm('Cancel this notice?')">Cancel</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--sa-muted);padding:20px 0;">No default notices{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+  {% endif %}
+</div>
+{% endblock %}

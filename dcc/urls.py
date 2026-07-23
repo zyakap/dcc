@@ -23,6 +23,8 @@ urlpatterns = [
     path('transaction/', include('transaction.urls')),
     path('admin/', include('admin1.urls')),
     path('saasadmin/', include('saasadmin.urls')),
+    path('borrower/',  include('borrower.urls')),
+    path('tpapi/v1/', include('thirdparty_api.urls')),
     path('about/', about, name='about'),
     path('contact/', contact, name='contact'),
     path('public-listing/', public_listing, name='public_listing'),

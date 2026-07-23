@@ -10,12 +10,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from api.models import (
-    ApiUsageLog, BillingSettings, CreditCheckAccess, Invoice, PricingSettings,
+    ApiUsageLog, BillingSettings, CreditCheckAccess, Invoice, PlatformSettings, PricingSettings,
     generate_invoice, send_invoice, usage_summary,
 )
 from api.sync import sync_all_tenants
 from client.models import (
-    ClientCreditScore, ClientProfile, IdentityCase, IdentityExclusion,
+    ClientCreditScore, ClientProfile, DefaultNotice, Dispute, IdentityCase, IdentityExclusion,
     RatingRule, matched_profiles, merge_profiles, scan_identity_cases,
 )
 from loan.models import Loan
@@ -149,6 +149,11 @@ def sa_tenants(request):
     if plan_filter:
         tenants = tenants.filter(plan=plan_filter)
 
+    tenants = list(tenants)
+    for t in tenants:
+        t.dcc_client_count = ClientProfile.objects.filter(user_profile=t).count()
+        t.dcc_loan_count = Loan.objects.filter(lender=t).count()
+
     context = {
         'nav': 'sa_tenants',
         'tenants': tenants,
@@ -267,6 +272,27 @@ def sa_tenant_create(request):
 
 @superuser_required
 @require_POST
+@superuser_required
+@require_POST
+def sa_sync_tenant(request, tenant_id):
+    from api.sync import sync_tenant
+    tenant = get_object_or_404(UserProfile, pk=tenant_id)
+    result = sync_tenant(tenant)
+    if result['ok']:
+        messages.success(
+            request,
+            f"Sync complete: {result['profiles']} profiles, {result['loans']} loans, "
+            f"{result['statements']} statements.",
+            extra_tags='info')
+    else:
+        messages.error(request, f"Sync failed: {result['error']}", extra_tags='danger')
+    next_url = request.POST.get('next', '')
+    if next_url == 'list':
+        return redirect('sa_tenants')
+    return redirect('sa_tenant_detail', tenant_id=tenant.id)
+
+
+@superuser_required
 def sa_tenant_toggle_active(request, tenant_id):
     tenant = get_object_or_404(UserProfile.objects.select_related('user'), pk=tenant_id)
     user = tenant.user
@@ -826,9 +852,203 @@ def sa_dcc_report(request):
 
 @superuser_required
 def sa_settings(request):
-    pricing = PricingSettings.current()
+    platform = PlatformSettings.current()
+    pricing  = PricingSettings.current()
+
+    if request.method == 'POST':
+        if platform.pk is None:
+            platform = PlatformSettings()
+        platform.borrower_portal_enabled      = request.POST.get('borrower_portal_enabled') == 'on'
+        platform.require_consent_before_share  = request.POST.get('require_consent_before_share') == 'on'
+        platform.alert_on_status_change        = request.POST.get('alert_on_status_change') == 'on'
+        platform.alert_on_new_view             = request.POST.get('alert_on_new_view') == 'on'
+        try:
+            platform.default_expiry_years = max(1, int(request.POST.get('default_expiry_years', 7)))
+        except (ValueError, TypeError):
+            pass
+        platform.save()
+        messages.success(request, 'Platform settings saved.', extra_tags='info')
+        return redirect('sa_settings')
+
     context = {
-        'nav': 'sa_settings',
-        'pricing': pricing,
+        'nav':      'sa_settings',
+        'platform': platform,
+        'pricing':  pricing,
     }
     return render(request, 'saasadmin/settings.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Third-party API key management
+# ---------------------------------------------------------------------------
+
+@superuser_required
+def sa_tp_api_keys(request):
+    from thirdparty_api.models import ThirdPartyApiKey
+    keys    = ThirdPartyApiKey.objects.order_by('-created_at')
+    new_key = request.session.pop('new_tp_key_raw', None)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'create':
+            name    = request.POST.get('name', '').strip()
+            email   = request.POST.get('contact_email', '').strip()
+            perms   = request.POST.getlist('permissions')
+            limit   = int(request.POST.get('rate_limit_per_day', 1000) or 1000)
+            _, raw  = ThirdPartyApiKey.generate(name=name, contact_email=email, permissions=perms)
+            ThirdPartyApiKey.objects.filter(key_prefix=raw[:10]).update(rate_limit_per_day=limit)
+            request.session['new_tp_key_raw'] = raw
+            messages.success(request, f'API key for "{name}" created. Copy it now — it will not be shown again.', extra_tags='info')
+            return redirect('sa_tp_api_keys')
+
+        elif action == 'toggle':
+            from thirdparty_api.models import ThirdPartyApiKey as TpKey
+            key = get_object_or_404(TpKey, pk=request.POST.get('key_id'))
+            key.is_active = not key.is_active
+            key.save(update_fields=['is_active'])
+            messages.success(request, f'Key {key.key_prefix}… {"enabled" if key.is_active else "disabled"}.', extra_tags='info')
+            return redirect('sa_tp_api_keys')
+
+        elif action == 'delete':
+            from thirdparty_api.models import ThirdPartyApiKey as TpKey
+            key = get_object_or_404(TpKey, pk=request.POST.get('key_id'))
+            key.delete()
+            messages.success(request, 'API key deleted.', extra_tags='info')
+            return redirect('sa_tp_api_keys')
+
+    from thirdparty_api.models import ThirdPartyApiKey
+    return render(request, 'saasadmin/tp_api_keys.html', {
+        'nav':      'sa_settings',
+        'keys':     ThirdPartyApiKey.objects.order_by('-created_at'),
+        'new_key':  new_key,
+        'perm_choices': ThirdPartyApiKey.PERMISSIONS_CHOICES,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Default notice & dispute admin
+# ---------------------------------------------------------------------------
+
+@superuser_required
+def sa_default_notices(request):
+    from client.models import DefaultNotice
+    status_filter = request.GET.get('status', '')
+    notices = DefaultNotice.objects.select_related('client', 'tenant').order_by('-created_at')
+    if status_filter:
+        notices = notices.filter(status=status_filter)
+
+    if request.method == 'POST':
+        action    = request.POST.get('action')
+        notice_id = request.POST.get('notice_id')
+        notice    = get_object_or_404(DefaultNotice, pk=notice_id)
+
+        if action == 'notify':
+            from datetime import timedelta
+            notice.status               = 'NOTIFIED'
+            notice.borrower_notified_at = timezone.now()
+            notice.notification_method  = 'EMAIL'
+            notice.grace_expires_at     = timezone.now() + timedelta(days=notice.grace_days)
+            notice.save(update_fields=['status', 'borrower_notified_at', 'notification_method', 'grace_expires_at'])
+            # Send email to borrower
+            _sa_send_default_notice_email(notice)
+            messages.success(request, f'Borrower notified. Grace period expires {notice.grace_expires_at:%Y-%m-%d}.', extra_tags='info')
+
+        elif action == 'list':
+            notice.status    = 'LISTED'
+            notice.listed_at = timezone.now()
+            notice.listed_by = request.user.email
+            notice.save(update_fields=['status', 'listed_at', 'listed_by'])
+            # Update ClientProfile status
+            client = notice.client
+            client.dcc_status  = 'DEFAULT'
+            client.dcc_flagged = True
+            client.save(update_fields=['dcc_status', 'dcc_flagged'])
+            messages.success(request, 'Default listed — ClientProfile updated.', extra_tags='info')
+
+        elif action == 'settle':
+            notice.status     = 'SETTLED'
+            notice.settled_at = timezone.now()
+            notice.save(update_fields=['status', 'settled_at'])
+            # Only clear profile if no other active listed notice
+            still_active = DefaultNotice.objects.filter(client=notice.client, status='LISTED').exists()
+            if not still_active:
+                notice.client.dcc_status  = 'SETTLED'
+                notice.client.dcc_flagged = False
+                notice.client.save(update_fields=['dcc_status', 'dcc_flagged'])
+            messages.success(request, 'Default marked settled. ClientProfile updated.', extra_tags='info')
+
+        elif action == 'cancel':
+            notice.status = 'CANCELLED'
+            notice.save(update_fields=['status'])
+            messages.success(request, 'Notice cancelled.', extra_tags='info')
+
+        return redirect(f'{request.path}?status={status_filter}')
+
+    return render(request, 'saasadmin/default_notices.html', {
+        'nav':           'sa_clients',
+        'notices':       notices,
+        'status_filter': status_filter,
+        'status_choices': DefaultNotice.STATES,
+    })
+
+
+def _sa_send_default_notice_email(notice):
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    client = notice.client
+    recipients = [e for e in [client.email] if e]
+    if not recipients:
+        return
+    body = (
+        f'Dear {client.first_name} {client.last_name},\n\n'
+        f'A credit default notice has been submitted against your record by {notice.tenant}.\n\n'
+        f'Amount: K {notice.amount_owed:.2f}\n'
+        f'Reason: {notice.reason}\n\n'
+        f'You have {notice.grace_days} days from today to resolve this matter before it '
+        f'is formally listed on your DCC credit file. Grace period expires: '
+        f'{notice.grace_expires_at:%Y-%m-%d %H:%M} (POM time).\n\n'
+        f'To dispute this notice or for assistance, contact DCC.\n\nDCC — Dinau Control Center'
+    )
+    send_mail(
+        subject='DCC — Credit Default Notice',
+        message=body,
+        from_email=dj_settings.DEFAULT_FROM_EMAIL,
+        recipient_list=recipients,
+        fail_silently=True,
+    )
+
+
+@superuser_required
+def sa_disputes(request):
+    from client.models import Dispute
+    status_filter = request.GET.get('status', '')
+    disputes = Dispute.objects.select_related('client', 'filed_by_tenant').order_by('-created_at')
+    if status_filter:
+        disputes = disputes.filter(status=status_filter)
+
+    if request.method == 'POST':
+        action     = request.POST.get('action')
+        dispute_id = request.POST.get('dispute_id')
+        dispute    = get_object_or_404(Dispute, pk=dispute_id)
+
+        if action in ('resolve', 'dismiss'):
+            dispute.status      = 'RESOLVED' if action == 'resolve' else 'DISMISSED'
+            dispute.resolution  = request.POST.get('resolution', '').strip()
+            dispute.resolved_by = request.user.email
+            dispute.resolved_at = timezone.now()
+            dispute.save(update_fields=['status', 'resolution', 'resolved_by', 'resolved_at'])
+            messages.success(request, f'Dispute #{dispute.pk} {dispute.status}.', extra_tags='info')
+        elif action == 'under_review':
+            dispute.status = 'UNDER_REVIEW'
+            dispute.save(update_fields=['status'])
+            messages.success(request, f'Dispute #{dispute.pk} marked Under Review.', extra_tags='info')
+
+        return redirect(f'{request.path}?status={status_filter}')
+
+    return render(request, 'saasadmin/disputes.html', {
+        'nav':           'sa_clients',
+        'disputes':      disputes,
+        'status_filter': status_filter,
+        'status_choices': Dispute.STATUS_CHOICES,
+    })

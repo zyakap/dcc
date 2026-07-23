@@ -1,102 +1,72 @@
-<!-- add_Client.html -->
 {% extends "dashboard_base.html" %}
-{% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %} Client Records{% endblock %}
-
-
-
-{% block breadcrumb %} <a href="{% url 'dashboard' %}">Dashboard</a>  /  <a href="{% url 'profile' %}">Profile</a> {% endblock %}
-{% block breadcrumb_active %} Records {% endblock %}
-{% block dashboard_title %} Recent Records {% endblock %}
-
+{% block title %}Recent Records{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a>{% endblock %}
+{% block breadcrumb_active %}Recent Records{% endblock %}
+{% block dashboard_title %}Recent Records{% endblock %}
 
 {% block content %}
-  <!-- Content Ends Here -->
 
-  
-    <div class="row">
-      <div class="col-lg-4">
-        <div class="card bg-primary">
-          <h3 class="px-3 pt-3 pb-0 m-0 text-light">New Records</h3>
-          <hr class="p-0 my-2" style="border: 1px solid #a9c2b7; width:100%;">
-          <div class="card-body">
-                <h2 class="text-light">300</h2>
-                <p class="text-light">from <span class="text-light">58</span> Records | <a href="#" class="text-light"><u>View Records</u></a></p>
-          </div>
-        </div>
+  <div class="row g-2 mb-3">
+    <div class="col-md-4">
+      <div class="sa-stat" style="border-left:3px solid var(--sa-accent2);">
+        <div class="sa-stat-label"><i class="bi bi-file-earmark-plus"></i> New Records</div>
+        <div class="sa-stat-value">300</div>
+        <div class="sa-stat-sub">from 58 records &nbsp;<a href="#">View</a></div>
       </div>
-      
-
-      <div class="col-lg-4">
-        <div class="card bg-warning">
-          <h3 class="px-3 pt-3 pb-0 m-0 text-light">Modified</h3>
-          <hr class="p-0 my-2" style="border: 1px solid #07223f; width:100%;">
-          <div class="card-body">
-                <h2 class="text-light">30.00</h2>
-                <p class="text-light">from <span class="text-light">58</span> Records | <a href="#" class="text-light"><u>View Records</u></a></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-4">
-        <div class="card bg-success">
-          <h3 class="px-3 pt-3 pb-0 m-0 text-light">Total</h3>
-          <hr class="p-0 my-2" style="border: 1px solid #ceff09; width:100%;">
-          <div class="card-body">
-                <h2 class="text-light">30</h2>
-                <p class="text-light">from <span class="text-light">58</span> Records | <a href="#" class="text-light"><u>View Records</u></a></p>
-          </div>
-        </div>
-      </div>
-
     </div>
-  
-    <div class="row">
-        <div class="col-lg-12">
-          
-          <div class="card">
-            <div class="card-body">
-              
-               <!-- Table with stripped rows -->
-               <table class="table datatable">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>C.Rating</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Email</th>
-                    <th>Mobile</th>
-                    <th>Owner</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for client in clients %}
-                    <tr onclick="window.location.href='#';" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#65a2f7'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor=''; this.style.color='';">
-                        <td>{{ client.client.first_name }} {{ client.client.last_name }}</td>
-                        <td>{{ client.credit_rating }}</td>
-                        <td>{{ client.status }}</td>
-                        <td>{{ client.date }}</td>
-                        <td>{{ client.amount }}</td>
-                        <td>{{ client.email }}</td>
-                        <td>{{ client.mobile }}</td>
-                        <td>{{ client.owner }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-              </table>
-              <!-- End Table with stripped rows -->
-
-            </div>
-          </div>
-
-        </div>
+    <div class="col-md-4">
+      <div class="sa-stat" style="border-left:3px solid #e3b341;">
+        <div class="sa-stat-label"><i class="bi bi-pencil-square"></i> Modified</div>
+        <div class="sa-stat-value">30</div>
+        <div class="sa-stat-sub">from 58 records &nbsp;<a href="#">View</a></div>
+      </div>
     </div>
-   
+    <div class="col-md-4">
+      <div class="sa-stat" style="border-left:3px solid #3fb950;">
+        <div class="sa-stat-label"><i class="bi bi-database"></i> Total</div>
+        <div class="sa-stat-value">30</div>
+        <div class="sa-stat-sub">from 58 records &nbsp;<a href="#">View</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle mb-0 datatable">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>Credit Rating</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Email</th>
+              <th>Mobile</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in clients %}
+            <tr style="cursor:pointer;">
+              <td>{{ client.client.first_name }} {{ client.client.last_name }}</td>
+              <td>{{ client.credit_rating }}</td>
+              <td>{{ client.status }}</td>
+              <td>{{ client.date }}</td>
+              <td>{{ client.amount }}</td>
+              <td>{{ client.email }}</td>
+              <td>{{ client.mobile }}</td>
+              <td>{{ client.owner }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">No recent records.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
 {% endblock %}
-
-

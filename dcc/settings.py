@@ -84,8 +84,8 @@ INSTALLED_APPS = [
     'client',
     'loan',
     'transaction',
-   
-
+    'borrower',
+    'thirdparty_api',
 ]
 
 MIDDLEWARE = [
@@ -252,6 +252,12 @@ CELERY_BEAT_SCHEDULE = {
     'auto_send_invoices': {
         'task': 'api.tasks.auto_send_invoices',
         'schedule': crontab(hour=7, minute=0),
+    },
+
+    # Monthly pass: archive defaults older than PlatformSettings.default_expiry_years.
+    'expire_old_defaults': {
+        'task': 'api.tasks.expire_old_defaults',
+        'schedule': crontab(hour=3, minute=0, day_of_month=1),
     },
 
 }

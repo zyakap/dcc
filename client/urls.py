@@ -46,7 +46,22 @@ urlpatterns = [
     path('filtered-loan-records/dcc-defaults/', views.filtered_loan_records_dcc_defaults, name='filtered_loan_records_dcc_defaults'),
     path('filtered-loan-records/your-recovery/', views.filtered_loan_records_your_recovery, name='filtered_loan_records_your_recovery'),
     path('filtered-loan-records/dcc-recovery/', views.filtered_loan_records_dcc_recovery, name='filtered_loan_records_dcc_recovery'),
-    
-    
+
+    # Default notice workflow
+    path('view/<int:client_id>/default-notice/submit/', views.submit_default_notice, name='submit_default_notice'),
+    path('default-notices/', views.my_default_notices, name='my_default_notices'),
+
+    # Disputes
+    path('view/<int:client_id>/dispute/submit/', views.submit_dispute, name='submit_dispute'),
+
+    # Consent
+    path('view/<int:client_id>/consent/record/', views.record_consent, name='record_consent'),
+    path('view/<int:client_id>/consents/', views.client_consents, name='client_consents'),
+
+    # Credit report PDF
+    path('view/<int:client_id>/credit-report.pdf', views.credit_report_pdf, name='credit_report_pdf'),
+
+    # Portfolio analytics
+    path('portfolio-analytics/', views.portfolio_analytics, name='portfolio_analytics'),
 ]
 

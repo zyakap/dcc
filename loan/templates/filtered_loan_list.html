@@ -9,9 +9,11 @@
 
 {% block content %}
 
-  <div class="card bg-secondary mb-3">
-    <div class="card-body py-3">
-      <h4 class="text-white mb-0"><i class="bi bi-list-ul"></i> {{ count }} &nbsp;<span class="fw-light">{{ descriptor }}</span></h4>
+  <div class="sa-card mb-3" style="display:flex; align-items:center; gap:12px; padding:14px 20px;">
+    <i class="bi bi-list-ul" style="font-size:20px; color:var(--sa-accent2);"></i>
+    <div>
+      <span style="font-size:22px; font-weight:700; color:var(--sa-text);">{{ count }}</span>
+      <span style="font-size:14px; color:var(--sa-muted); margin-left:8px;">{{ descriptor }}</span>
     </div>
   </div>
 
@@ -35,7 +37,7 @@
           </thead>
           <tbody>
             {% for loan in loans %}
-            <tr {% if loan.owner %}onclick="window.location.href='{% url 'client_record_detail' loan.owner.id %}';" style="cursor:pointer;"{% endif %} onmouseover="this.style.backgroundColor='#e8f0fe';" onmouseout="this.style.backgroundColor='';">
+            <tr {% if loan.owner %}onclick="window.location.href='{% url 'client_record_detail' loan.owner.id %}';" style="cursor:pointer;"{% endif %}>
               <td><code>{{ loan.ref }}</code></td>
               <td>{{ loan.owner.first_name|default:"" }} {{ loan.owner.last_name|default:"—" }}</td>
               <td><small>{{ loan.lender.organisation|default:"—" }}</small></td>

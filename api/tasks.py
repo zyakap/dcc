@@ -63,3 +63,43 @@ def recompute_credit_scores():
         done.update(p.id for p in profiles)
         computed += 1
     return {'persons_scored': computed, 'profiles_covered': len(done)}
+
+
+@shared_task
+def expire_old_defaults():
+    """Monthly: archive ClientProfile defaults older than PlatformSettings.default_expiry_years.
+
+    Sets dcc_status to 'SETTLED' and dcc_flagged to False, preserving the history
+    entry via ClientProfileHistory so the expiry is auditable."""
+    import datetime
+    from django.utils import timezone
+    from .models import PlatformSettings
+    from client.models import ClientProfile, DefaultNotice
+
+    settings_obj = PlatformSettings.current()
+    cutoff_years = settings_obj.default_expiry_years or 7
+    cutoff_date  = timezone.now() - datetime.timedelta(days=cutoff_years * 365)
+
+    # Find notices older than the retention period that are still LISTED
+    old_notices = DefaultNotice.objects.filter(
+        status='LISTED',
+        listed_at__lt=cutoff_date,
+    ).select_related('client')
+
+    archived = 0
+    for notice in old_notices:
+        notice.status = 'SETTLED'
+        notice.settled_at = timezone.now()
+        notice.notes = (notice.notes or '') + f'\n[Auto-archived after {cutoff_years}y retention period]'
+        notice.save(update_fields=['status', 'settled_at', 'notes'])
+
+        client = notice.client
+        # Only update if no other active listed notice exists
+        still_active = DefaultNotice.objects.filter(client=client, status='LISTED').exclude(pk=notice.pk).exists()
+        if not still_active:
+            client.dcc_status  = 'SETTLED'
+            client.dcc_flagged = False
+            client.save(update_fields=['dcc_status', 'dcc_flagged'])
+        archived += 1
+
+    return {'archived_notices': archived, 'cutoff_years': cutoff_years}

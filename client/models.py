@@ -78,6 +78,7 @@ class ClientProfile(_AuditedModel):
 
     DCC_STATUS_CHOICES = [
         ('DEFAULT','DEFAULT'),
+        ('SETTLED','SETTLED DEFAULT'),
         ('RECOVERY','RECOVERY'),
         ('BAD','BAD'),
         ('BACKLIST','BLACKLIST')
@@ -835,3 +836,153 @@ class Payslip(models.Model):
     pay_slip = models.FileField(upload_to='uploads/', null=True, blank=True)
     pay_slip_url = models.CharField(max_length=255, null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
+
+# ============================================================================
+# Default Notice — formal default listing workflow
+# ============================================================================
+
+class DefaultNotice(models.Model):
+    STATES = [
+        ('DRAFT',      'Draft'),
+        ('SUBMITTED',  'Submitted to DCC'),
+        ('NOTIFIED',   'Borrower Notified'),
+        ('LISTED',     'Default Listed'),
+        ('SETTLED',    'Settled — Default Removed'),
+        ('CANCELLED',  'Cancelled'),
+        ('WITHDRAWN',  'Withdrawn by Lender'),
+    ]
+
+    client       = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='default_notices')
+    tenant       = models.ForeignKey(UserProfile,   on_delete=models.CASCADE, related_name='default_notices_filed')
+    loan_ref     = models.CharField(max_length=100, blank=True, help_text='Loan reference (optional)')
+
+    amount_owed  = models.DecimalField(max_digits=12, decimal_places=2)
+    reason       = models.TextField()
+    status       = models.CharField(max_length=12, choices=STATES, default='DRAFT')
+
+    submitted_at         = models.DateTimeField(null=True, blank=True)
+    borrower_notified_at = models.DateTimeField(null=True, blank=True)
+    notification_method  = models.CharField(max_length=20, blank=True)   # EMAIL / SMS / POST
+    grace_days           = models.PositiveIntegerField(default=14)
+    grace_expires_at     = models.DateTimeField(null=True, blank=True)
+    listed_at            = models.DateTimeField(null=True, blank=True)
+    listed_by            = models.CharField(max_length=100, blank=True)
+    settled_at           = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes      = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'DefaultNotice #{self.pk} — {self.client} [{self.status}]'
+
+
+# ============================================================================
+# Dispute — borrower or lender challenges a credit record
+# ============================================================================
+
+class Dispute(models.Model):
+    STATUS_CHOICES = [
+        ('OPEN',         'Open'),
+        ('UNDER_REVIEW', 'Under Review'),
+        ('RESOLVED',     'Resolved'),
+        ('DISMISSED',    'Dismissed'),
+    ]
+    TYPE_CHOICES = [
+        ('INCORRECT_DATA', 'Incorrect Data'),
+        ('WRONG_PERSON',   'Wrong Person / Identity Error'),
+        ('SETTLED_DEBT',   'Debt Already Settled'),
+        ('FRAUD',          'Fraudulent Record'),
+        ('OTHER',          'Other'),
+    ]
+
+    client             = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='disputes')
+    filed_by_tenant    = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='disputes_filed')
+    # borrower disputes filled in once borrower app is wired
+    borrower_email     = models.EmailField(blank=True)
+
+    dispute_type   = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    field_disputed = models.CharField(max_length=100, blank=True)
+    description    = models.TextField()
+    supporting_doc = models.FileField(upload_to='disputes/', null=True, blank=True)
+
+    status      = models.CharField(max_length=15, choices=STATUS_CHOICES, default='OPEN')
+    resolution  = models.TextField(blank=True)
+    resolved_by = models.CharField(max_length=100, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Dispute #{self.pk} — {self.client} [{self.status}]'
+
+
+# ============================================================================
+# ClientConsent — documented borrower consent record
+# ============================================================================
+
+class ClientConsent(models.Model):
+    CONSENT_TYPES = [
+        ('CREDIT_CHECK', 'Credit Check Authorization'),
+        ('DATA_SHARE',   'Data Sharing to DCC'),
+        ('THIRD_PARTY',  'Third-Party Access'),
+        ('MARKETING',    'Marketing'),
+    ]
+    METHODS = [
+        ('PAPER',   'Paper Form'),
+        ('DIGITAL', 'Digital Signature'),
+        ('VERBAL',  'Verbal (Recorded)'),
+        ('APP',     'Mobile App'),
+    ]
+
+    client        = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='consents')
+    tenant        = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='consents_obtained', null=True, blank=True)
+    consent_type  = models.CharField(max_length=20, choices=CONSENT_TYPES)
+    consented_at  = models.DateTimeField(auto_now_add=True)
+    expires_at    = models.DateTimeField(null=True, blank=True)
+    method        = models.CharField(max_length=10, choices=METHODS, default='PAPER')
+    reference     = models.CharField(max_length=100, blank=True)
+    document      = models.FileField(upload_to='consents/', null=True, blank=True)
+    is_active     = models.BooleanField(default=True)
+    withdrawn_at  = models.DateTimeField(null=True, blank=True)
+    notes         = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-consented_at']
+
+    def __str__(self):
+        return f'{self.consent_type} — {self.client} via {self.tenant}'
+
+
+# ============================================================================
+# EnquiryLog — every time a client file is accessed, one row is written here
+# ============================================================================
+
+class EnquiryLog(models.Model):
+    QUERY_TYPES = [
+        ('CREDIT_CHECK',    'Credit Report View'),
+        ('SCORE_CHECK',     'Credit Score Check'),
+        ('PROFILE_LOOKUP',  'Profile Lookup'),
+        ('TPAPI_CHECK',     'Third-Party API Check'),
+    ]
+
+    client       = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='enquiry_logs')
+    tenant       = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='enquiries_made')
+    tp_key_name  = models.CharField(max_length=100, blank=True)   # set for third-party API calls
+    query_type   = models.CharField(max_length=20, choices=QUERY_TYPES)
+    queried_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering  = ['-queried_at']
+        indexes   = [models.Index(fields=['client', '-queried_at'])]
+
+    def __str__(self):
+        who = self.tenant or self.tp_key_name or 'unknown'
+        return f'{self.query_type} on {self.client} by {who} @ {self.queried_at:%Y-%m-%d %H:%M}'

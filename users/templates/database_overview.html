@@ -1,386 +1,141 @@
 {% extends "dashboard_base.html" %}
 {% load static %}
-{% load site_filter %}
-{% block title %} Dashboard {% endblock %}
-
-{% block css %}
-
-<style>
-  @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap");
-
-
-    body{
-      background-color: #eee;
-      font-family: "Poppins", sans-serif;
-      font-weight: 300;
-    }
-  .container{
-      height:10vh;
-  }
-
-  .progresses{
-      display: flex;
-          align-items: center;
-    }
-
-    .line{
-
-      width: 2rem;
-      height: 1rem;
-      background: #63d19e;
-    }
-    .steps{
-
-      display: flex;
-      background-color: #63d19e;
-      color: #fff;
-      font-size: 14px;
-      width: 6rem;
-      height: 3rem;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-
-    }
-</style>
-
-{% endblock %}
-
-{% block breadcrumb %} Dashboard {% endblock %}
-{% block breadcrumb_active %} Overview {% endblock %}
-{% block dashboard_title %} DCC Database {% endblock %}
+{% block title %}DCC Database Overview{% endblock %}
+{% block breadcrumb %}Database{% endblock %}
+{% block breadcrumb_active %}Overview{% endblock %}
+{% block dashboard_title %}DCC Database{% endblock %}
 
 {% block content %}
 
+<!-- Totals -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-people-fill"></i> Client Records</div>
+      <div class="sa-stat-value">{{ dcc_total_client_records|default:"0" }}</div>
+      <div class="sa-stat-sub">Vetted &amp; DCC approved · <a href="{% url 'client_records_dcc' %}" style="color:var(--sa-accent2);">Browse</a></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-building"></i> Business Records</div>
+      <div class="sa-stat-value">{{ dcc_total_business_records|default:"0" }}</div>
+      <div class="sa-stat-sub">All business profiles · <a href="{% url 'business_records_dcc' %}" style="color:var(--sa-accent2);">Browse</a></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-database-fill"></i> Total Database</div>
+      <div class="sa-stat-value">{{ dcc_total_client_records|add:dcc_total_business_records }}</div>
+      <div class="sa-stat-sub">Combined DCC database size</div>
+    </div>
+  </div>
+</div>
 
-  <!-- Database Totals Summary -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card text-center p-3">
-        <div class="text-muted small mb-1"><i class="bi bi-people-fill text-primary"></i> Total Client Records</div>
-        <div class="fs-3 fw-bold text-primary">{{ dcc_total_client_records|default:"0" }}</div>
-        <div class="text-muted small">Vetted &amp; DCC approved</div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card text-center p-3">
-        <div class="text-muted small mb-1"><i class="bi bi-building text-success"></i> Total Business Records</div>
-        <div class="fs-3 fw-bold text-success">{{ dcc_total_business_records|default:"0" }}</div>
-        <div class="text-muted small">All business profiles in DCC</div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card text-center p-3">
-        <div class="text-muted small mb-1"><i class="bi bi-database-fill text-info"></i> Total Database Records</div>
-        <div class="fs-3 fw-bold text-info">{{ dcc_total_client_records|add:dcc_total_business_records }}</div>
-        <div class="text-muted small">Combined DCC database size</div>
+<!-- Client records activity -->
+<div style="font-size:11px; font-weight:600; color:var(--sa-muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">Client Records — Today</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-person-fill-add"></i> New Records</div>
+      <div class="sa-stat-value">{{ dcc_records_today_count }}</div>
+      <div class="sa-stat-sub">
+        <span class="{% if dcc_records_percentage_change < 0 %}text-danger{% elif dcc_records_percentage_change == 0 %}text-muted{% else %}text-success{% endif %}">
+          {{ dcc_records_percentage_change }}% {% if dcc_records_percentage_change < 0 %}↓{% elif dcc_records_percentage_change > 0 %}↑{% endif %}
+        </span>
+        · <a href="{% url 'filtered_client_records_dcc_records_today' %}" style="color:var(--sa-accent2);">View</a>
       </div>
     </div>
   </div>
-
-  <!-- Content Goes Here -->
-  <h3 class="">Client Records</h3>
-  <hr class="p-0 my-3" style="border: 1px solid #0cf; width:100%;">
-  <div class="row">
-    <!-- col 1 -->
-    <div class="col-md-4">
-
-      <div class="card info-card sales-card">
-
-        <div class="filter">
-          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-            <li class="dropdown-header text-start">
-              <h6>Filter</h6>
-            </li>
-
-            <li><a class="dropdown-item" href="#">Today</a></li>
-            <li><a class="dropdown-item" href="#">This Month</a></li>
-            <li><a class="dropdown-item" href="#">This Year</a></li>
-          </ul>
-        </div>
-        <div class="card-header py-2">
-          <h5 class="card-title py-2 m-0">New Records <span>| Today</span></h5>
-        </div>
-        <div class="card-body py-3">
-
-          <div class="d-flex align-items-center">
-            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-              <i class="bi bi-person-fill-add"></i>
-            </div>
-
-            <div class="ps-3">
-              <h6 style="display: inline-block;">{{ dcc_records_today_count }}</h6>
-              <a href="{% url 'filtered_client_records_dcc_records_today' %}" style="display: inline-block;"> View Records</a>
-              <br>
-              <span class="text-{% if dcc_records_percentage_change < 0 %}danger{% elif dcc_records_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_records_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_records_percentage_change < 0 %}decrease{% elif dcc_records_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
-
-            </div>
-          </div>
-        </div>
-
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-person-up"></i> Records Updated</div>
+      <div class="sa-stat-value">{{ dcc_updated_today_count }}</div>
+      <div class="sa-stat-sub">
+        <span class="{% if dcc_updated_percentage_change < 0 %}text-danger{% elif dcc_updated_percentage_change == 0 %}text-muted{% else %}text-success{% endif %}">
+          {{ dcc_updated_percentage_change }}% {% if dcc_updated_percentage_change < 0 %}↓{% elif dcc_updated_percentage_change > 0 %}↑{% endif %}
+        </span>
+        · <a href="{% url 'filtered_client_records_dcc_updated_today' %}" style="color:var(--sa-accent2);">View</a>
       </div>
-
     </div>
-    <!--endcol1-->
-    <!-- col 1 -->
-    <div class="col-md-4">
-
-      <div class="card info-card sales-card">
-
-        <div class="filter">
-          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-            <li class="dropdown-header text-start">
-              <h6>Filter</h6>
-            </li>
-
-            <li><a class="dropdown-item" href="#">Today</a></li>
-            <li><a class="dropdown-item" href="#">This Month</a></li>
-            <li><a class="dropdown-item" href="#">This Year</a></li>
-          </ul>
-        </div>
-        <div class="card-header py-2">
-          <h5 class="card-title py-2 m-0">Records Updated <span>| Today</span></h5>
-        </div>
-        <div class="card-body py-3">
-
-          <div class="d-flex align-items-center">
-            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-              <i class="bi bi-person-up"></i>
-            </div>
-
-            <div class="ps-3">
-              <h6 style="display: inline-block;">{{ dcc_updated_today_count }}</h6>
-              <a href="{% url 'filtered_client_records_dcc_updated_today' %}" style="display: inline-block;"> View Records</a>
-              <br>
-              <span class="text-{% if dcc_updated_percentage_change < 0 %}danger{% elif dcc_updated_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_updated_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_updated_percentage_change < 0 %}decrease{% elif dcc_updated_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
-
-            </div>
-          </div>
-        </div>
-
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-arrow-repeat"></i> Recovered</div>
+      <div class="sa-stat-value" style="font-size:16px;">K {{ dcc_total_client_recovered_today }}</div>
+      <div class="sa-stat-sub">
+        <span class="{% if dcc_client_recovered_percentage_change < 0 %}text-danger{% elif dcc_client_recovered_percentage_change == 0 %}text-muted{% else %}text-success{% endif %}">
+          {{ dcc_client_recovered_percentage_change }}% {% if dcc_client_recovered_percentage_change < 0 %}↓{% elif dcc_client_recovered_percentage_change > 0 %}↑{% endif %}
+        </span>
       </div>
-
     </div>
-    <!--endcol1-->
-    <!-- col 1 -->
-    <div class="col-md-4">
+  </div>
+</div>
 
-      <div class="card info-card sales-card">
-
-        <div class="filter">
-          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-            <li class="dropdown-header text-start">
-              <h6>Filter</h6>
-            </li>
-
-            <li><a class="dropdown-item" href="#">Today</a></li>
-            <li><a class="dropdown-item" href="#">This Month</a></li>
-            <li><a class="dropdown-item" href="#">This Year</a></li>
-          </ul>
-        </div>
-        <div class="card-header py-2">
-          <h5 class="card-title py-2 m-0">Recovered <span>| Today</span></h5>
-        </div>
-        <div class="card-body py-3">
-
-          <div class="d-flex align-items-center">
-            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-              <i class="bi bi-person-check"></i>
-            </div>
-
-            <div class="ps-3">
-              <h6 style="display: inline-block;">K {{ dcc_total_client_recovered_today }}</h6>
-              
-              <br>
-              <span class="text-{% if dcc_client_recovered_percentage_change < 0 %}danger{% elif dcc_client_recovered_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_client_recovered_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_client_recovered_percentage_change < 0 %}decrease{% elif dcc_client_recovered_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
-
-            </div>
-          </div>
-        </div>
-
+<!-- Business records activity -->
+<div style="font-size:11px; font-weight:600; color:var(--sa-muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">Business Records — Today</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-building-add"></i> New Business</div>
+      <div class="sa-stat-value">{{ business_records_today_count }}</div>
+      <div class="sa-stat-sub">
+        <span class="{% if business_records_percentage_change < 0 %}text-danger{% elif business_records_percentage_change == 0 %}text-muted{% else %}text-success{% endif %}">
+          {{ business_records_percentage_change }}% {% if business_records_percentage_change < 0 %}↓{% elif business_records_percentage_change > 0 %}↑{% endif %}
+        </span>
+        · <a href="{% url 'filtered_business_records_dcc_today' %}" style="color:var(--sa-accent2);">View</a>
       </div>
-
     </div>
-    <!--endcol1-->
-  </div><!-- end row -->
-
-  <h3 class="">Business Records</h3>
-  <hr class="p-0 my-3" style="border: 1px solid #0cf; width:100%;">
-
-  <div class="row">
-    <!-- col 1 -->
-    <div class="col-md-4">
-
-      <div class="card info-card sales-card">
-
-        <div class="filter">
-          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-            <li class="dropdown-header text-start">
-              <h6>Filter</h6>
-            </li>
-
-            <li><a class="dropdown-item" href="#">Today</a></li>
-            <li><a class="dropdown-item" href="#">This Month</a></li>
-            <li><a class="dropdown-item" href="#">This Year</a></li>
-          </ul>
-        </div>
-        <div class="card-header py-2">
-          <h5 class="card-title py-2 m-0">New Business <span>| Today</span></h5>
-        </div>
-        <div class="card-body py-3">
-
-          <div class="d-flex align-items-center">
-            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-              <i class="bi bi-person-check"></i>
-            </div>
-
-            <div class="ps-3">
-              <h6 style="display: inline-block;">{{ business_records_today_count }}</h6> 
-              <a href="{% url 'filtered_business_records_dcc_today' %}" style="display: inline-block;"> View Records</a>
-              <br>
-              <span class="text-{% if business_records_percentage_change < 0 %}danger{% elif business_records_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ business_records_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if business_records_percentage_change < 0 %}decrease{% elif business_records_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
-
-            </div>
-          </div>
-        </div>
-
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-building-up"></i> Business Updated</div>
+      <div class="sa-stat-value">{{ business_updated_today_count }}</div>
+      <div class="sa-stat-sub">
+        <span class="{% if business_updated_percentage_change < 0 %}text-danger{% elif business_updated_percentage_change == 0 %}text-muted{% else %}text-success{% endif %}">
+          {{ business_updated_percentage_change }}% {% if business_updated_percentage_change < 0 %}↓{% elif business_updated_percentage_change > 0 %}↑{% endif %}
+        </span>
+        · <a href="{% url 'filtered_business_records_dcc_updated_today' %}" style="color:var(--sa-accent2);">View</a>
       </div>
-
     </div>
-    <!--endcol1-->
-    <!-- col 1 -->
-    <div class="col-md-4">
-
-      <div class="card info-card sales-card">
-
-        <div class="filter">
-          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-            <li class="dropdown-header text-start">
-              <h6>Filter</h6>
-            </li>
-
-            <li><a class="dropdown-item" href="#">Today</a></li>
-            <li><a class="dropdown-item" href="#">This Month</a></li>
-            <li><a class="dropdown-item" href="#">This Year</a></li>
-          </ul>
-        </div>
-        <div class="card-header py-2">
-          <h5 class="card-title py-2 m-0">Business Updated <span>| Today</span></h5>
-        </div>
-        <div class="card-body py-3">
-
-          <div class="d-flex align-items-center">
-            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-              <i class="bi bi-person-check"></i>
-            </div>
-
-            <div class="ps-3">
-              <h6 style="display: inline-block;">{{ business_updated_today_count }}</h6> 
-              <a href="{% url 'filtered_business_records_dcc_updated_today' %}" style="display: inline-block;"> View Records</a>
-              <br>
-              <span class="text-{% if business_updated_percentage_change < 0 %}danger{% elif business_updated_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ business_updated_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if business_updated_percentage_change < 0 %}decrease{% elif business_updated_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
-
-            </div>
-          </div>
-        </div>
-
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat">
+      <div class="sa-stat-label"><i class="bi bi-arrow-repeat"></i> Recovered</div>
+      <div class="sa-stat-value" style="font-size:16px;">K {{ dcc_total_business_recovered_today }}</div>
+      <div class="sa-stat-sub">
+        <span class="{% if dcc_business_recovered_percentage_change < 0 %}text-danger{% elif dcc_business_recovered_percentage_change == 0 %}text-muted{% else %}text-success{% endif %}">
+          {{ dcc_business_recovered_percentage_change }}% {% if dcc_business_recovered_percentage_change < 0 %}↓{% elif dcc_business_recovered_percentage_change > 0 %}↑{% endif %}
+        </span>
       </div>
-
     </div>
-    <!--endcol1-->
-    <!-- col 1 -->
-    <div class="col-md-4">
+  </div>
+</div>
 
-      <div class="card info-card sales-card">
-
-        <div class="filter">
-          <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-            <li class="dropdown-header text-start">
-              <h6>Filter</h6>
-            </li>
-
-            <li><a class="dropdown-item" href="#">Today</a></li>
-            <li><a class="dropdown-item" href="#">This Month</a></li>
-            <li><a class="dropdown-item" href="#">This Year</a></li>
-          </ul>
-        </div>
-        <div class="card-header py-2">
-          <h5 class="card-title py-2 m-0">Recovered <span>| Today</span></h5>
-        </div>
-        <div class="card-body py-3">
-
-          <div class="d-flex align-items-center">
-            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-              <i class="bi bi-person-check"></i>
-            </div>
-
-            <div class="ps-3">
-              <h6 style="display: inline-block;">K {{ dcc_total_business_recovered_today }}</h6>
-              
-              <br>
-              <span class="text-{% if dcc_business_recovered_percentage_change < 0 %}danger{% elif dcc_business_recovered_percentage_change == 0 %}secondary{% else %}success{% endif %} small pt-1 fw-bold">{{ dcc_business_recovered_percentage_change }}%</span> <span class="text-muted small pt-2 ps-1">{% if dcc_business_recovered_percentage_change < 0 %}decrease{% elif dcc_business_recovered_percentage_change == 0 %}no change{% else %}increase{% endif %}</span>
-
-            </div>
-          </div>
-        </div>
-
-      </div>
-
+<!-- Snapshot totals -->
+<div style="font-size:11px; font-weight:600; color:var(--sa-muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;">DCC Snapshots</div>
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="sa-stat" style="border-left: 3px solid var(--sa-muted);">
+      <div class="sa-stat-label"><i class="bi bi-clock-history"></i> In Arrears</div>
+      <div class="sa-stat-value" style="font-size:20px; color:var(--sa-muted);">K {{ dcc_total_arrears }}</div>
+      <div class="sa-stat-sub">{{ dcc_arrears_count }} records · <a href="{% url 'filtered_loan_records_dcc_arrears' %}" style="color:var(--sa-accent2);">View</a></div>
     </div>
-    <!--endcol1-->
-  </div><!-- end row -->
-
-  <h3 class="">DCC Snapshots</h3>
-  <hr class="p-0 my-3" style="border: 1px solid #0cf; width:100%;">
-    <div class="row">
-      <div class="col-lg-4">
-        <div class="card bg-secondary">
-          <h2 class="px-3 pt-3 pb-0 m-0 text-light">In Arrears</h2>
-          <hr class="p-0 my-3" style="border: 1px solid #ceff09; width:100%;">
-          <div class="card-body">
-                <h2 class="text-light">K {{ dcc_total_arrears }}</h2>
-                <p class="text-light">from <span class="text-light">{{ dcc_arrears_count }}</span> Records | <a href="{% url 'filtered_loan_records_dcc_arrears' %}" class="text-light"><u>View Records</u></a></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-4">
-        <div class="card bg-warning">
-          <h2 class="px-3 pt-3 pb-0 m-0 text-light">In Defaults</h2>
-          <hr class="p-0 my-3" style="border: 1px solid #07223f; width:100%;">
-          <div class="card-body">
-                <h2 class="text-light">K {{ dcc_total_defaults }}</h2>
-                <p class="text-light">from <span class="text-light">{{ dcc_defaults_count }}</span> Records | <a href="{% url 'filtered_loan_records_dcc_defaults' %}" class="text-light"><u>View Records</u></a></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-4">
-        <div class="card bg-danger">
-          <h2 class="px-3 pt-3 pb-0 m-0 text-light">In Recovery</h2>
-          <hr class="p-0 my-3" style="border: 1px solid #a9c2b7; width:100%;">
-          <div class="card-body">
-                <h2 class="text-light">K {{ dcc_total_recovery}}</h2>
-                <p class="text-light">from <span class="text-light">{{ dcc_recovery_count }}</span> Records | <a href="{% url 'filtered_loan_records_dcc_recovery' %}" class="text-light"><u>View Records</u></a></p>
-          </div>
-        </div>
-      </div>
-
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat" style="border-left: 3px solid #e3b341;">
+      <div class="sa-stat-label"><i class="bi bi-exclamation-triangle"></i> In Defaults</div>
+      <div class="sa-stat-value" style="font-size:20px; color:#e3b341;">K {{ dcc_total_defaults }}</div>
+      <div class="sa-stat-sub">{{ dcc_defaults_count }} records · <a href="{% url 'filtered_loan_records_dcc_defaults' %}" style="color:var(--sa-accent2);">View</a></div>
     </div>
-
-
-  <!-- Content Ends Here -->
-
-{% endblock %}
-
-{% block scripts %}
-
-
+  </div>
+  <div class="col-md-4">
+    <div class="sa-stat" style="border-left: 3px solid #f85149;">
+      <div class="sa-stat-label"><i class="bi bi-x-circle"></i> In Recovery</div>
+      <div class="sa-stat-value" style="font-size:20px; color:#f85149;">K {{ dcc_total_recovery }}</div>
+      <div class="sa-stat-sub">{{ dcc_recovery_count }} records · <a href="{% url 'filtered_loan_records_dcc_recovery' %}" style="color:var(--sa-accent2);">View</a></div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
