@@ -301,6 +301,110 @@
 </div>
 {% endif %}{# not dcc_access_valid #}
 
+<!-- Watch List -->
+{% if tenant %}
+<div class="card mb-3" style="border-left:3px solid var(--sa-accent);">
+  <div class="card-header d-flex align-items-center gap-2 fw-semibold">
+    <i class="bi bi-bell" style="color:var(--sa-accent);"></i> Watch List
+    {% if watch_obj %}
+    <span class="badge bg-success ms-1">Watching</span>
+    <small class="text-muted">Since {{ watch_obj.added_at|date:"d M Y" }}</small>
+    {% if watch_obj.last_alerted_at %}
+    &nbsp;·&nbsp;<small class="text-muted">Last alerted {{ watch_obj.last_alerted_at|date:"d M Y H:i" }}</small>
+    {% endif %}
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if watch_obj %}
+    <!-- Currently watching — show summary and remove option -->
+    <div class="mb-2">
+      <strong>Alerting on:</strong>
+      {% if watch_obj.alert_types %}
+        {% for at in watch_obj.alert_types %}
+        <span class="badge bg-secondary me-1">{{ at }}</span>
+        {% endfor %}
+      {% else %}
+        <span class="badge bg-secondary">Any change</span>
+      {% endif %}
+      {% if watch_obj.notes %}
+      <div class="text-muted mt-1" style="font-size:.85rem;">{{ watch_obj.notes }}</div>
+      {% endif %}
+    </div>
+    <form method="post" action="{% url 'toggle_watch' client.id %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="remove">
+      <button type="submit" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-bell-slash"></i> Remove Watch
+      </button>
+    </form>
+    {% else %}
+    <!-- Not watching — show add form -->
+    <p class="text-muted mb-2" style="font-size:.9rem;">
+      Get email alerts when this client's details change — any update to status, contact, address or employer will notify you to check their latest credit file.
+    </p>
+    <form method="post" action="{% url 'toggle_watch' client.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add">
+      <div class="mb-2">
+        <label class="fw-semibold" style="font-size:.875rem;">Alert me on:</label>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+          {% for code, label in alert_type_choices %}
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input" type="checkbox" name="alert_types" value="{{ code }}" id="at_{{ code }}"
+              {% if code == 'ANY' %}checked{% endif %}>
+            <label class="form-check-label" for="at_{{ code }}" style="font-size:.85rem;">{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mb-2">
+        <label class="fw-semibold" style="font-size:.875rem;">Notes (optional)</label>
+        <input type="text" name="notes" class="form-control form-control-sm" maxlength="255"
+          placeholder="e.g. defaulted on loan #REF123">
+      </div>
+      <button type="submit" class="btn btn-sm" style="background:var(--sa-accent);color:#fff;border:none;">
+        <i class="bi bi-bell-fill"></i> Watch This Client
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Public Credit Score Widget embed -->
+{% if client.CUID %}
+<div class="card mb-3" style="border-left:3px solid #58a6ff;">
+  <div class="card-header d-flex align-items-center gap-2 fw-semibold">
+    <i class="bi bi-code-slash" style="color:#58a6ff;"></i> Embeddable Credit Score Widget
+  </div>
+  <div class="card-body">
+    <p class="text-muted mb-2" style="font-size:.875rem;">
+      Embed a live public credit status badge for this borrower on your website or portal.
+      No sensitive details are exposed — only the DCC status and score band.
+    </p>
+    <div class="mb-2">
+      <label class="fw-semibold" style="font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--sa-muted);">Widget Preview</label>
+      <div style="margin-top:6px;">
+        <iframe src="{% url 'credit_score_widget' client.CUID %}"
+                style="border:none;width:260px;height:80px;border-radius:8px;overflow:hidden;"
+                scrolling="no" title="Credit Score Widget"></iframe>
+      </div>
+    </div>
+    <div class="mb-1">
+      <label class="fw-semibold" style="font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--sa-muted);">Embed Code</label>
+    </div>
+    <div style="position:relative;">
+      <textarea id="widgetCode" class="sa-form-control" rows="3" readonly
+        style="font-family:monospace; font-size:11px; resize:none; background:var(--sa-hover);">&lt;iframe src="{{ request.scheme }}://{{ request.get_host }}{% url 'credit_score_widget' client.CUID %}" style="border:none;width:260px;height:80px;border-radius:8px;overflow:hidden;" scrolling="no" title="DCC Credit Score"&gt;&lt;/iframe&gt;</textarea>
+      <button onclick="var t=document.getElementById('widgetCode');t.select();document.execCommand('copy');this.innerHTML='<i class=\'bi bi-check-lg\'></i> Copied!';"
+        class="sa-btn sa-btn-outline sa-btn-sm" style="position:absolute;top:6px;right:6px;font-size:11px;">
+        <i class="bi bi-clipboard"></i> Copy
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endif %}{# locked_page #}
 
 {% endblock %}

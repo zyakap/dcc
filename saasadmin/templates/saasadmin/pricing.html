@@ -1,58 +1,240 @@
 {% extends "saasadmin/base.html" %}
-{% block title %}Pricing{% endblock %}
-{% block topbar_title %}Platform Pricing{% endblock %}
+{% load sa_filters %}
+{% block title %}Pricing Plans{% endblock %}
+{% block topbar_title %}Subscription Plan Pricing{% endblock %}
 
 {% block content %}
 <div class="sa-page-header">
   <div>
-    <h1 class="sa-page-title">Pricing Configuration</h1>
-    <div class="sa-page-sub">Set the rates charged to tenants for DCC services</div>
+    <h1 class="sa-page-title">Plan Pricing</h1>
+    <div class="sa-page-sub">Configure rates for each subscription tier — matches the plans displayed on dc.com.pg</div>
   </div>
-  <a href="{% url 'sa_billing' %}" class="sa-btn sa-btn-outline"><i class="bi bi-arrow-left"></i> Billing</a>
+  <a href="{% url 'sa_billing' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-arrow-left"></i> Billing</a>
 </div>
 
-<div class="row justify-content-center">
-  <div class="col-lg-6">
-    <div class="sa-card">
-      <div class="sa-card-header"><i class="bi bi-tag"></i> Rate Sheet</div>
+<!-- Plan cards side by side -->
+<div class="row g-3">
+
+  <!-- FREE PLAN -->
+  {% with p=plans.FREE %}
+  <div class="col-lg-4">
+    <div class="sa-card" style="border-top:3px solid var(--sa-muted);">
+      <div style="text-align:center;padding:12px 0 16px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--sa-muted);margin-bottom:4px;">Free Plan</div>
+        <div style="font-size:32px;font-weight:800;">K0<span style="font-size:14px;font-weight:400;color:var(--sa-muted);">/month</span></div>
+        <div style="font-size:12px;color:var(--sa-muted);">K0 joining fee</div>
+        <div style="font-size:12px;color:var(--sa-muted);margin-top:4px;">
+          Automated for LoanMasta &bull; Upload Defaults &bull; Search Database &bull; Monitoring
+        </div>
+      </div>
       <form method="post">
         {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="sa-form-label">Currency Code</label>
-            <input type="text" name="currency" value="{{ pricing.currency }}" class="sa-form-control" maxlength="10" placeholder="PGK">
+        <input type="hidden" name="plan" value="FREE">
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="sa-form-label">Currency</label>
+            <input type="text" name="currency" value="{{ p.currency }}" class="sa-form-control" maxlength="10">
           </div>
-          <div class="col-md-6">
-            <label class="sa-form-label">Monthly Base Fee (per tenant)</label>
-            <input type="number" step="0.01" name="monthly_base_fee" value="{{ pricing.monthly_base_fee }}" class="sa-form-control">
+          <div class="col-6">
+            <label class="sa-form-label">Joining Fee (K)</label>
+            <input type="number" step="0.01" name="joining_fee" value="{{ p.joining_fee }}" class="sa-form-control">
           </div>
-          <div class="col-md-6">
-            <label class="sa-form-label">Price per Credit Check</label>
-            <input type="number" step="0.01" name="price_per_credit_check" value="{{ pricing.price_per_credit_check }}" class="sa-form-control">
+          <div class="col-6">
+            <label class="sa-form-label">Monthly Base Fee (K)</label>
+            <input type="number" step="0.01" name="monthly_base_fee" value="{{ p.monthly_base_fee }}" class="sa-form-control">
           </div>
-          <div class="col-md-6">
-            <label class="sa-form-label">Price per Profile Lookup</label>
-            <input type="number" step="0.01" name="price_per_profile_lookup" value="{{ pricing.price_per_profile_lookup }}" class="sa-form-control">
+          <div class="col-6">
+            <label class="sa-form-label">Billing Period</label>
+            <select name="billing_period" class="sa-form-control">
+              <option value="MONTHLY" {% if p.billing_period == 'MONTHLY' %}selected{% endif %}>Monthly</option>
+              <option value="FORTNIGHTLY" {% if p.billing_period == 'FORTNIGHTLY' %}selected{% endif %}>Fortnightly</option>
+            </select>
           </div>
-          <div class="col-md-6">
-            <label class="sa-form-label">Price per Feed Record Synced</label>
-            <input type="number" step="0.0001" name="price_per_record_synced" value="{{ pricing.price_per_record_synced }}" class="sa-form-control">
+          <div class="col-6">
+            <label class="sa-form-label">Free Credit Checks</label>
+            <input type="number" name="free_credit_checks" value="{{ p.free_credit_checks }}" class="sa-form-control" min="0">
           </div>
-          {% if pricing.updated_at %}
-          <div class="col-12">
-            <div style="font-size:12px; color:var(--sa-muted);">
-              <i class="bi bi-clock"></i> Last updated: {{ pricing.updated_at|date:"Y-m-d H:i" }}
-            </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Credit Check (K)</label>
+            <input type="number" step="0.01" name="price_per_credit_check" value="{{ p.price_per_credit_check }}" class="sa-form-control">
           </div>
-          {% endif %}
-          <div class="col-12">
-            <button type="submit" class="sa-btn sa-btn-primary">
-              <i class="bi bi-check-lg"></i> Save Pricing
-            </button>
+          <div class="col-6">
+            <label class="sa-form-label">Per Profile Lookup (K)</label>
+            <input type="number" step="0.01" name="price_per_profile_lookup" value="{{ p.price_per_profile_lookup }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Feed Record (K)</label>
+            <input type="number" step="0.0001" name="price_per_record_synced" value="{{ p.price_per_record_synced }}" class="sa-form-control">
           </div>
         </div>
+        <button type="submit" class="sa-btn sa-btn-outline" style="margin-top:12px;width:100%;">
+          <i class="bi bi-save"></i> Save Free Plan
+        </button>
+        {% if p.updated_at %}
+        <div style="font-size:11px;color:var(--sa-muted);text-align:center;margin-top:6px;">Updated {{ p.updated_at|date:"d M Y H:i" }}</div>
+        {% endif %}
       </form>
     </div>
+  </div>
+  {% endwith %}
+
+  <!-- SME PLAN -->
+  {% with p=plans.SME %}
+  <div class="col-lg-4">
+    <div class="sa-card" style="border-top:3px solid var(--sa-accent);">
+      <div style="text-align:center;padding:12px 0 16px;">
+        <div style="display:inline-block;background:var(--sa-accent);color:#fff;font-size:10px;padding:2px 10px;border-radius:20px;margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;">Most Popular</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--sa-muted);margin-bottom:4px;">SME Plan</div>
+        <div style="font-size:32px;font-weight:800;">K{{ p.monthly_base_fee }}<span style="font-size:14px;font-weight:400;color:var(--sa-muted);">/month</span></div>
+        <div style="font-size:12px;color:var(--sa-muted);">K{{ p.joining_fee }} joining fee</div>
+        <div style="font-size:12px;color:var(--sa-muted);margin-top:4px;">
+          All Free features &bull; Detailed Credit History &bull; Debt Recovery Assistance
+        </div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="plan" value="SME">
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="sa-form-label">Currency</label>
+            <input type="text" name="currency" value="{{ p.currency }}" class="sa-form-control" maxlength="10">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Joining Fee (K)</label>
+            <input type="number" step="0.01" name="joining_fee" value="{{ p.joining_fee }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Base Fee (K)</label>
+            <input type="number" step="0.01" name="monthly_base_fee" value="{{ p.monthly_base_fee }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Billing Period</label>
+            <select name="billing_period" class="sa-form-control">
+              <option value="MONTHLY" {% if p.billing_period == 'MONTHLY' %}selected{% endif %}>Monthly</option>
+              <option value="FORTNIGHTLY" {% if p.billing_period == 'FORTNIGHTLY' %}selected{% endif %}>Fortnightly</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Free Credit Checks</label>
+            <input type="number" name="free_credit_checks" value="{{ p.free_credit_checks }}" class="sa-form-control" min="0">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Credit Check (K)</label>
+            <input type="number" step="0.01" name="price_per_credit_check" value="{{ p.price_per_credit_check }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Profile Lookup (K)</label>
+            <input type="number" step="0.01" name="price_per_profile_lookup" value="{{ p.price_per_profile_lookup }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Feed Record (K)</label>
+            <input type="number" step="0.0001" name="price_per_record_synced" value="{{ p.price_per_record_synced }}" class="sa-form-control">
+          </div>
+        </div>
+        <button type="submit" class="sa-btn sa-btn-primary" style="margin-top:12px;width:100%;">
+          <i class="bi bi-save"></i> Save SME Plan
+        </button>
+        {% if p.updated_at %}
+        <div style="font-size:11px;color:var(--sa-muted);text-align:center;margin-top:6px;">Updated {{ p.updated_at|date:"d M Y H:i" }}</div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  {% endwith %}
+
+  <!-- BUSINESS PLAN -->
+  {% with p=plans.BUSINESS %}
+  <div class="col-lg-4">
+    <div class="sa-card" style="border-top:3px solid var(--sa-success);">
+      <div style="text-align:center;padding:12px 0 16px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--sa-muted);margin-bottom:4px;">Business Plan</div>
+        <div style="font-size:32px;font-weight:800;">K{{ p.monthly_base_fee }}<span style="font-size:14px;font-weight:400;color:var(--sa-muted);">/fortnight</span></div>
+        <div style="font-size:12px;color:var(--sa-muted);">K{{ p.joining_fee }} joining fee</div>
+        <div style="font-size:12px;color:var(--sa-muted);margin-top:4px;">
+          First {{ p.free_credit_checks }} checks free &bull; K{{ p.price_per_credit_check }} after &bull; All SME features
+        </div>
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="plan" value="BUSINESS">
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="sa-form-label">Currency</label>
+            <input type="text" name="currency" value="{{ p.currency }}" class="sa-form-control" maxlength="10">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Joining Fee (K)</label>
+            <input type="number" step="0.01" name="joining_fee" value="{{ p.joining_fee }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Base Fee (K)</label>
+            <input type="number" step="0.01" name="monthly_base_fee" value="{{ p.monthly_base_fee }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Billing Period</label>
+            <select name="billing_period" class="sa-form-control">
+              <option value="MONTHLY" {% if p.billing_period == 'MONTHLY' %}selected{% endif %}>Monthly</option>
+              <option value="FORTNIGHTLY" {% if p.billing_period == 'FORTNIGHTLY' %}selected{% endif %}>Fortnightly</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Free Credit Checks / period</label>
+            <input type="number" name="free_credit_checks" value="{{ p.free_credit_checks }}" class="sa-form-control" min="0">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Check After Free (K)</label>
+            <input type="number" step="0.01" name="price_per_credit_check" value="{{ p.price_per_credit_check }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Profile Lookup (K)</label>
+            <input type="number" step="0.01" name="price_per_profile_lookup" value="{{ p.price_per_profile_lookup }}" class="sa-form-control">
+          </div>
+          <div class="col-6">
+            <label class="sa-form-label">Per Feed Record (K)</label>
+            <input type="number" step="0.0001" name="price_per_record_synced" value="{{ p.price_per_record_synced }}" class="sa-form-control">
+          </div>
+        </div>
+        <button type="submit" class="sa-btn sa-btn-sm" style="margin-top:12px;width:100%;background:var(--sa-success);color:#fff;border:none;">
+          <i class="bi bi-save"></i> Save Business Plan
+        </button>
+        {% if p.updated_at %}
+        <div style="font-size:11px;color:var(--sa-muted);text-align:center;margin-top:6px;">Updated {{ p.updated_at|date:"d M Y H:i" }}</div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  {% endwith %}
+
+</div>
+
+<!-- Summary table -->
+<div class="sa-card" style="margin-top:16px;">
+  <div class="sa-card-header"><i class="bi bi-table"></i> Plan Comparison (live values)</div>
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Plan</th><th>Joining Fee</th><th>Base Fee</th><th>Period</th>
+          <th>Free Checks</th><th>Per Check</th><th>Per Lookup</th><th>Per Feed Record</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for code, label in plan_choices %}
+        {% with p=plans|get_item:code %}
+        <tr>
+          <td><strong>{{ label }}</strong></td>
+          <td>K {{ p.joining_fee }}</td>
+          <td>K {{ p.monthly_base_fee }}</td>
+          <td>{{ p.get_billing_period_display }}</td>
+          <td>{{ p.free_credit_checks }}</td>
+          <td>K {{ p.price_per_credit_check }}</td>
+          <td>K {{ p.price_per_profile_lookup }}</td>
+          <td>K {{ p.price_per_record_synced }}</td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

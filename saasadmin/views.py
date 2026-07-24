@@ -230,7 +230,7 @@ def sa_tenant_create(request):
         last_name = request.POST.get('last_name', '').strip()
         LUID = request.POST.get('LUID', '').strip()
         endpoint = request.POST.get('endpoint', '').strip()
-        plan = request.POST.get('plan', 'BASIC')
+        plan = request.POST.get('plan', 'FREE')
 
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Email already in use.', extra_tags='danger')
@@ -256,7 +256,7 @@ def sa_tenant_create(request):
             organisation=organisation,
             LUID=LUID,
             endpoint=endpoint or 'www.loanmasta.com',
-            plan=plan if plan in dict(UserProfile.PLAN_CHOICES) else 'BASIC',
+            plan=plan if plan in dict(UserProfile.PLAN_CHOICES) else 'FREE',
             use_loanmasta=True,
             api_key=api_key,
         )
@@ -328,28 +328,34 @@ def sa_billing(request):
     except (TypeError, ValueError):
         year, month = today.year, today.month
 
-    pricing = PricingSettings.current()
     logs = ApiUsageLog.objects.filter(created_at__year=year, created_at__month=month)
 
     rows = []
     grand_total = decimal.Decimal('0.00')
     for tenant in UserProfile.objects.filter(use_loanmasta=True).order_by('organisation'):
+        tenant_plan = getattr(tenant, 'plan', 'FREE') or 'FREE'
+        pricing = PricingSettings.current(plan=tenant_plan)
         tl = logs.filter(tenant=tenant)
         usage = {}
         for action, _ in ApiUsageLog.ACTION_CHOICES:
             usage[action] = tl.filter(action=action).aggregate(n=Sum('units'))['n'] or 0
+        free_checks = int(pricing.free_credit_checks or 0)
+        billed_checks = max(0, usage.get('CREDIT_CHECK', 0) - free_checks)
         cost = pricing.monthly_base_fee
         for action, units in usage.items():
-            cost += ApiUsageLog.cost_for(action, units, pricing)
+            billable = billed_checks if action == 'CREDIT_CHECK' else units
+            cost += ApiUsageLog.cost_for(action, billable, pricing)
         grand_total += cost
         rows.append({
             'tenant': tenant,
+            'plan': tenant_plan,
             'credit_checks': usage.get('CREDIT_CHECK', 0),
             'profile_lookups': usage.get('PROFILE_LOOKUP', 0) + usage.get('LOANS_LOOKUP', 0) + usage.get('TRANSACTIONS_LOOKUP', 0),
             'feed_records': usage.get('FEED_SYNC', 0),
             'base_fee': pricing.monthly_base_fee,
             'cost': cost,
         })
+    pricing = PricingSettings.current()  # fallback for template display
 
     context = {
         'nav': 'sa_billing',
@@ -366,27 +372,45 @@ def sa_billing(request):
 
 @superuser_required
 def sa_pricing(request):
-    pricing = PricingSettings.current()
-
     if request.method == 'POST':
-        if pricing.pk is None:
-            pricing = PricingSettings()
+        plan_code = request.POST.get('plan')
+        if plan_code not in ('FREE', 'SME', 'BUSINESS'):
+            messages.error(request, 'Invalid plan.', extra_tags='danger')
+            return redirect('sa_pricing')
+
+        pricing = PricingSettings.objects.filter(plan=plan_code).first()
+        if pricing is None:
+            pricing = PricingSettings(plan=plan_code)
+
         for field in ('monthly_base_fee', 'price_per_credit_check',
-                      'price_per_profile_lookup', 'price_per_record_synced'):
+                      'price_per_profile_lookup', 'price_per_record_synced',
+                      'price_per_rating_check', 'joining_fee'):
             val = request.POST.get(field)
             if val not in (None, ''):
                 try:
                     setattr(pricing, field, decimal.Decimal(val))
                 except Exception:
                     pass
+
+        try:
+            pricing.free_credit_checks = max(0, int(request.POST.get('free_credit_checks', 0) or 0))
+        except (ValueError, TypeError):
+            pass
+
+        billing_period = request.POST.get('billing_period')
+        if billing_period in ('MONTHLY', 'FORTNIGHTLY'):
+            pricing.billing_period = billing_period
+
         pricing.currency = request.POST.get('currency', pricing.currency) or pricing.currency
         pricing.save()
-        messages.success(request, 'Pricing updated.', extra_tags='info')
+        messages.success(request, f'{pricing.get_plan_display()} pricing saved.', extra_tags='info')
         return redirect('sa_pricing')
 
+    plans = PricingSettings.all_plans()
     context = {
-        'nav': 'sa_billing',
-        'pricing': pricing,
+        'nav': 'sa_pricing',
+        'plans': plans,
+        'plan_choices': PricingSettings.PLAN_CHOICES,
     }
     return render(request, 'saasadmin/pricing.html', context)
 
@@ -853,7 +877,7 @@ def sa_dcc_report(request):
 @superuser_required
 def sa_settings(request):
     platform = PlatformSettings.current()
-    pricing  = PricingSettings.current()
+    all_plans = PricingSettings.all_plans()
 
     if request.method == 'POST':
         if platform.pk is None:
@@ -873,7 +897,8 @@ def sa_settings(request):
     context = {
         'nav':      'sa_settings',
         'platform': platform,
-        'pricing':  pricing,
+        'pricing':  all_plans.get('FREE') or PricingSettings.current(),
+        'all_plans': all_plans,
     }
     return render(request, 'saasadmin/settings.html', context)
 
@@ -919,7 +944,7 @@ def sa_tp_api_keys(request):
 
     from thirdparty_api.models import ThirdPartyApiKey
     return render(request, 'saasadmin/tp_api_keys.html', {
-        'nav':      'sa_settings',
+        'nav': 'sa_tp_api_keys',
         'keys':     ThirdPartyApiKey.objects.order_by('-created_at'),
         'new_key':  new_key,
         'perm_choices': ThirdPartyApiKey.PERMISSIONS_CHOICES,
@@ -986,7 +1011,7 @@ def sa_default_notices(request):
         return redirect(f'{request.path}?status={status_filter}')
 
     return render(request, 'saasadmin/default_notices.html', {
-        'nav':           'sa_clients',
+        'nav': 'sa_default_notices',
         'notices':       notices,
         'status_filter': status_filter,
         'status_choices': DefaultNotice.STATES,
@@ -1047,8 +1072,672 @@ def sa_disputes(request):
         return redirect(f'{request.path}?status={status_filter}')
 
     return render(request, 'saasadmin/disputes.html', {
-        'nav':           'sa_clients',
+        'nav': 'sa_disputes',
         'disputes':      disputes,
         'status_filter': status_filter,
         'status_choices': Dispute.STATUS_CHOICES,
     })
+
+
+# ===========================================================================
+# Upload Records (mirror of /admin/client-records/upload/)
+# ===========================================================================
+
+@superuser_required
+def sa_upload_records(request):
+    from admin1.functions import admin_upload_client_records_uploader
+    from admin1.models import RecordUploadBatch
+    import pandas as pd
+    from django.core.files.storage import FileSystemStorage
+
+    if request.method == 'POST' and request.FILES.get('recordsexceldata'):
+        userprofile_luid = request.POST.get('userprofile_luid', '').strip()
+        try:
+            from users.models import UserProfile as UP
+            tenant = UP.objects.get(LUID=userprofile_luid)
+        except UP.DoesNotExist:
+            messages.error(request, f'No tenant with LUID "{userprofile_luid}" found.', extra_tags='danger')
+            return redirect('sa_upload_records')
+
+        uploaded = request.FILES['recordsexceldata']
+        fs = FileSystemStorage()
+        filename = fs.save(uploaded.name, uploaded)
+        import os
+        from django.conf import settings as dj_settings
+        full_path = os.path.join(dj_settings.MEDIA_ROOT, filename)
+        try:
+            records_df = pd.read_excel(full_path)
+        except Exception as e:
+            messages.error(request, f'Could not parse Excel file: {e}', extra_tags='danger')
+            return redirect('sa_upload_records')
+
+        batch = RecordUploadBatch.objects.create(
+            uploaded_by=tenant,
+            record_count=len(records_df),
+        )
+        admin_upload_client_records_uploader(request, records_df, userprofile_luid, _batch=batch)
+        batch.status = 'PENDING_REVIEW'
+        batch.save(update_fields=['status'])
+        messages.success(request, f'{len(records_df)} records uploaded. Non-Loanmasta records are queued for verification.', extra_tags='info')
+        return redirect('sa_records_under_review')
+
+    recent_batches = RecordUploadBatch.objects.order_by('-uploaded_at')[:20]
+    return render(request, 'saasadmin/upload_records.html', {
+        'nav': 'sa_upload_records',
+        'recent_batches': recent_batches,
+    })
+
+
+# ===========================================================================
+# Records Under Review — verification workflow
+# ===========================================================================
+
+@superuser_required
+def sa_records_under_review(request):
+    from client.models import ClientProfile
+    from admin1.models import VerificationCase
+
+    status_filter = request.GET.get('status', '')
+    cases = VerificationCase.objects.select_related('client', 'lender', 'assigned_to').order_by('-created_at')
+    if status_filter:
+        cases = cases.filter(status=status_filter)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        case_id = request.POST.get('case_id')
+        case = get_object_or_404(VerificationCase, pk=case_id)
+
+        if action == 'contact':
+            from admin1.models import VerificationContact
+            method = request.POST.get('contact_method', 'EMAIL')
+            notes  = request.POST.get('contact_notes', '').strip()
+            outcome = request.POST.get('outcome', '').strip()
+            VerificationContact.objects.create(
+                case=case,
+                contacted_by=UserProfile.objects.get(user=request.user),
+                method=method,
+                notes=notes,
+                outcome=outcome,
+            )
+            case.status = 'CONTACTED'
+            case.last_contact_at = timezone.now()
+            case.last_contact_method = method
+            case.save(update_fields=['status', 'last_contact_at', 'last_contact_method'])
+            messages.success(request, f'Contact attempt logged for VC-{case.pk}.', extra_tags='info')
+
+        elif action == 'verify':
+            case.status = 'VERIFIED'
+            case.internal_notes = (case.internal_notes or '') + f'\n[Verified by {request.user.email} on {timezone.now():%Y-%m-%d}]'
+            case.save(update_fields=['status', 'internal_notes'])
+            client = case.client
+            client.vetted = True
+            client.vetting_status = 'VETTED'
+            client.public_search = True
+            client.public_listing = True
+            client.save(update_fields=['vetted', 'vetting_status', 'public_search', 'public_listing'])
+            if case.batch:
+                case.batch.verified_count = VerificationCase.objects.filter(batch=case.batch, status='VERIFIED').count()
+                case.batch.save(update_fields=['verified_count'])
+            # Notify lender
+            _sa_notify_lender_verification(case, approved=True)
+            messages.success(request, f'Record admitted to database. VC-{case.pk} closed.', extra_tags='info')
+
+        elif action == 'reject':
+            feedback = request.POST.get('lender_feedback', '').strip()
+            case.status = 'REJECTED'
+            case.lender_feedback = feedback
+            case.save(update_fields=['status', 'lender_feedback'])
+            client = case.client
+            client.vetted = False
+            client.vetting_status = 'HOLD'
+            client.public_search = False
+            client.public_listing = False
+            client.save(update_fields=['vetted', 'vetting_status', 'public_search', 'public_listing'])
+            if case.batch:
+                case.batch.rejected_count = VerificationCase.objects.filter(batch=case.batch, status='REJECTED').count()
+                case.batch.save(update_fields=['rejected_count'])
+            _sa_notify_lender_verification(case, approved=False)
+            messages.success(request, f'Record rejected. Feedback sent to lender. VC-{case.pk} closed.', extra_tags='info')
+
+        elif action == 'hold':
+            case.status = 'HOLD'
+            case.internal_notes = (case.internal_notes or '') + f'\n[Placed on hold by {request.user.email}: {request.POST.get("hold_reason", "")}]'
+            case.save(update_fields=['status', 'internal_notes'])
+            messages.success(request, f'VC-{case.pk} placed on hold.', extra_tags='info')
+
+        return redirect(f'{request.path}?status={status_filter}')
+
+    return render(request, 'saasadmin/records_under_review.html', {
+        'nav': 'sa_records_under_review',
+        'cases':         cases,
+        'status_filter': status_filter,
+        'status_choices': VerificationCase.STATUS_CHOICES,
+    })
+
+
+@superuser_required
+def sa_verification_case(request, case_id):
+    """Detailed view of a single verification case."""
+    from admin1.models import VerificationCase, VerificationContact
+    case = get_object_or_404(VerificationCase, pk=case_id)
+    contacts = case.contact_attempts.all()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'note':
+            note = request.POST.get('note', '').strip()
+            if note:
+                case.internal_notes = (case.internal_notes or '') + f'\n[{timezone.now():%Y-%m-%d %H:%M} {request.user.email}]: {note}'
+                case.save(update_fields=['internal_notes'])
+                messages.success(request, 'Note added.', extra_tags='info')
+        return redirect('sa_verification_case', case_id=case.pk)
+
+    return render(request, 'saasadmin/verification_case.html', {
+        'nav': 'sa_records_under_review',
+        'case':     case,
+        'contacts': contacts,
+        'contact_methods': VerificationCase.CONTACT_METHODS,
+    })
+
+
+def _sa_notify_lender_verification(case, approved):
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    lender = case.lender
+    if not lender or not getattr(lender, 'work_email', None):
+        return
+    client = case.client
+    subject = f'DCC — Record {"Verified" if approved else "Rejected"}: {client.first_name} {client.last_name}'
+    if approved:
+        body = (
+            f'Dear {lender.organisation},\n\n'
+            f'The credit record for {client.first_name} {client.last_name} (CUID: {client.CUID}) '
+            f'has been verified and admitted to the DCC database.\n\n'
+            f'The record is now publicly searchable.\n\nDCC — Dinau Control Center'
+        )
+    else:
+        body = (
+            f'Dear {lender.organisation},\n\n'
+            f'Following our verification process, the credit record for {client.first_name} {client.last_name} '
+            f'could not be admitted to the DCC database at this time.\n\n'
+            f'Feedback: {case.lender_feedback or "Please contact DCC for details."}\n\n'
+            f'DCC — Dinau Control Center'
+        )
+    send_mail(subject=subject, message=body,
+              from_email=dj_settings.DEFAULT_FROM_EMAIL,
+              recipient_list=[lender.work_email], fail_silently=True)
+
+
+# ===========================================================================
+# Business Records Under Review
+# ===========================================================================
+
+@superuser_required
+def sa_business_records_under_review(request):
+    from client.models import BusinessProfile
+    businesses = BusinessProfile.objects.filter(vetted=False).select_related('user_profile').order_by('-created_at')
+
+    if request.method == 'POST':
+        biz_id = request.POST.get('biz_id')
+        action = request.POST.get('action')
+        biz = get_object_or_404(BusinessProfile, pk=biz_id)
+        if action == 'verify':
+            biz.vetted = True
+            biz.save(update_fields=['vetted'])
+            messages.success(request, f'Business "{biz.business_name}" admitted.', extra_tags='info')
+        elif action == 'reject':
+            biz.vetted = False
+            biz.save(update_fields=['vetted'])
+            messages.success(request, f'Business "{biz.business_name}" rejected.', extra_tags='info')
+        return redirect('sa_business_records_under_review')
+
+    return render(request, 'saasadmin/business_records_under_review.html', {
+        'nav': 'sa_business_records_under_review',
+        'businesses': businesses,
+    })
+
+
+# ===========================================================================
+# Default List Submissions (legacy non-member intake)
+# ===========================================================================
+
+@superuser_required
+def sa_default_submissions(request):
+    from admin1.models import DefaultListSubmission
+    submissions = DefaultListSubmission.objects.order_by('-date')
+
+    if request.method == 'POST':
+        sub_id   = request.POST.get('submission_id')
+        action   = request.POST.get('action')
+        feedback = request.POST.get('feedback', '').strip()
+        sub = get_object_or_404(DefaultListSubmission, pk=sub_id)
+
+        if action == 'approve':
+            sub.is_approved = True
+            sub.approved_by = UserProfile.objects.get(user=request.user)
+            sub.approved_date = timezone.now()
+            sub.save(update_fields=['is_approved', 'approved_by', 'approved_date'])
+            messages.success(request, f'Submission from {sub.business_name} approved.', extra_tags='info')
+        elif action == 'feedback':
+            sub.feedback = feedback
+            sub.feedback_date = timezone.now()
+            sub.is_feedbacked = True
+            sub.save(update_fields=['feedback', 'feedback_date', 'is_feedbacked'])
+            _sa_send_submission_feedback(sub)
+            messages.success(request, f'Feedback sent to {sub.email}.', extra_tags='info')
+
+        return redirect('sa_default_submissions')
+
+    return render(request, 'saasadmin/default_submissions.html', {
+        'nav': 'sa_default_submissions',
+        'submissions': submissions,
+    })
+
+
+def _sa_send_submission_feedback(sub):
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    if not sub.email:
+        return
+    send_mail(
+        subject='DCC — Default List Submission Update',
+        message=(
+            f'Dear {sub.contact_person} ({sub.business_name}),\n\n'
+            f'Regarding your default list submission:\n\n'
+            f'{sub.feedback}\n\n'
+            f'For any questions, please contact DCC directly.\n\nDCC — Dinau Control Center'
+        ),
+        from_email=dj_settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[sub.email],
+        fail_silently=True,
+    )
+
+
+# ===========================================================================
+# Debt Settlement / Brokerage
+# ===========================================================================
+
+@superuser_required
+def sa_settlements(request):
+    from admin1.models import DebtSettlement
+    status_filter = request.GET.get('status', '')
+    settlements = DebtSettlement.objects.select_related('client', 'lender', 'assigned_dcc_officer').order_by('-opened_at')
+    if status_filter:
+        settlements = settlements.filter(status=status_filter)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'open':
+            from client.models import ClientProfile
+            client_id = request.POST.get('client_id')
+            lender_id = request.POST.get('lender_id')
+            amount    = request.POST.get('original_amount', '0')
+            borrower_email = request.POST.get('borrower_email', '').strip()
+            borrower_phone = request.POST.get('borrower_phone', '').strip()
+            notice_id = request.POST.get('default_notice_id', '').strip()
+            client = get_object_or_404(ClientProfile, pk=client_id)
+            lender = get_object_or_404(UserProfile, pk=lender_id)
+            from decimal import Decimal
+            ds = DebtSettlement.objects.create(
+                client=client, lender=lender,
+                original_amount=Decimal(amount or 0),
+                borrower_email=borrower_email,
+                borrower_phone=borrower_phone,
+                default_notice_id=notice_id or None,
+                assigned_dcc_officer=UserProfile.objects.get(user=request.user),
+            )
+            from admin1.models import SettlementMessage
+            SettlementMessage.objects.create(
+                settlement=ds, sender_type='SYSTEM',
+                body=f'Settlement case opened by {request.user.email}.',
+            )
+            messages.success(request, f'Settlement case DS-{ds.pk} opened.', extra_tags='info')
+            return redirect('sa_settlement_detail', settlement_id=ds.pk)
+
+        return redirect('sa_settlements')
+
+    from admin1.models import DebtSettlement
+    from client.models import ClientProfile, DefaultNotice
+    from users.models import UserProfile as UP
+    tenants = UP.objects.filter(is_active=True).order_by('organisation')
+    # Recent clients in default for the open-case form
+    defaulted_clients = ClientProfile.objects.filter(dcc_flagged=True).order_by('first_name')[:200]
+
+    return render(request, 'saasadmin/settlements.html', {
+        'nav': 'sa_settlements',
+        'settlements':   settlements,
+        'status_filter': status_filter,
+        'status_choices': DebtSettlement.STATUS_CHOICES,
+        'tenants':       tenants,
+        'defaulted_clients': defaulted_clients,
+    })
+
+
+@superuser_required
+def sa_settlement_detail(request, settlement_id):
+    from admin1.models import DebtSettlement, SettlementMessage
+    ds = get_object_or_404(DebtSettlement, pk=settlement_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'message':
+            body        = request.POST.get('body', '').strip()
+            sender_type = request.POST.get('sender_type', 'DCC')
+            is_internal = request.POST.get('is_internal') == 'on'
+            attachment  = request.FILES.get('attachment')
+            if body:
+                msg = SettlementMessage.objects.create(
+                    settlement=ds,
+                    sender_type=sender_type,
+                    sender_name=request.user.email if sender_type == 'DCC' else request.POST.get('sender_name', ''),
+                    body=body,
+                    attachment=attachment,
+                    is_internal=is_internal,
+                )
+                # Email external parties if not internal
+                if not is_internal:
+                    _sa_send_settlement_message(ds, msg)
+                messages.success(request, 'Message sent.', extra_tags='info')
+
+        elif action == 'status':
+            new_status = request.POST.get('new_status')
+            if new_status in dict(DebtSettlement.STATUS_CHOICES):
+                ds.status = new_status
+                if new_status in ('ACCEPTED', 'SETTLED'):
+                    from decimal import Decimal
+                    agreed = request.POST.get('agreed_amount', '').strip()
+                    if agreed:
+                        ds.agreed_amount = Decimal(agreed)
+                    if new_status == 'SETTLED':
+                        ds.settled_at = timezone.now()
+                ds.save()
+                SettlementMessage.objects.create(
+                    settlement=ds, sender_type='SYSTEM',
+                    body=f'Status changed to {ds.get_status_display()} by {request.user.email}.',
+                )
+                messages.success(request, f'Settlement status updated to {ds.get_status_display()}.', extra_tags='info')
+
+        elif action == 'offer':
+            from decimal import Decimal
+            offered = request.POST.get('offered_amount', '').strip()
+            if offered:
+                ds.offered_amount = Decimal(offered)
+                ds.status = 'OFFER_MADE'
+                ds.save(update_fields=['offered_amount', 'status'])
+                SettlementMessage.objects.create(
+                    settlement=ds, sender_type='DCC',
+                    sender_name=request.user.email,
+                    body=f'Settlement offer made: K {ds.offered_amount:.2f}',
+                )
+                _sa_send_settlement_offer(ds)
+                messages.success(request, f'Offer of K {ds.offered_amount} sent.', extra_tags='info')
+
+        return redirect('sa_settlement_detail', settlement_id=ds.pk)
+
+    return render(request, 'saasadmin/settlement_detail.html', {
+        'nav': 'sa_settlements',
+        'ds':           ds,
+        'messages_log': ds.messages.all(),
+        'status_choices': DebtSettlement.STATUS_CHOICES,
+        'sender_types': SettlementMessage.SENDER_TYPES,
+    })
+
+
+def _sa_send_settlement_message(ds, msg):
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    recipients = []
+    if msg.sender_type == 'DCC':
+        if ds.lender and getattr(ds.lender, 'work_email', None):
+            recipients.append(ds.lender.work_email)
+        if ds.borrower_email:
+            recipients.append(ds.borrower_email)
+    elif msg.sender_type == 'LENDER':
+        if ds.borrower_email:
+            recipients.append(ds.borrower_email)
+    elif msg.sender_type == 'BORROWER':
+        if ds.lender and getattr(ds.lender, 'work_email', None):
+            recipients.append(ds.lender.work_email)
+    if not recipients:
+        return
+    send_mail(
+        subject=f'DCC Settlement DS-{ds.pk} — Message',
+        message=f'{msg.body}\n\n—\nDCC Debt Settlement Unit',
+        from_email=dj_settings.DEFAULT_FROM_EMAIL,
+        recipient_list=recipients,
+        fail_silently=True,
+    )
+
+
+def _sa_send_settlement_offer(ds):
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    recipients = []
+    if ds.lender and getattr(ds.lender, 'work_email', None):
+        recipients.append(ds.lender.work_email)
+    if ds.borrower_email:
+        recipients.append(ds.borrower_email)
+    if not recipients:
+        return
+    client = ds.client
+    send_mail(
+        subject=f'DCC — Settlement Offer: {client.first_name} {client.last_name}',
+        message=(
+            f'A settlement offer has been made by DCC for the outstanding debt of '
+            f'{client.first_name} {client.last_name}.\n\n'
+            f'Original Amount: K {ds.original_amount:.2f}\n'
+            f'Settlement Offer: K {ds.offered_amount:.2f}\n\n'
+            f'Please contact DCC to accept, reject, or negotiate this offer.\n\nDCC — Dinau Control Center'
+        ),
+        from_email=dj_settings.DEFAULT_FROM_EMAIL,
+        recipient_list=recipients,
+        fail_silently=True,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Client detail (full DCC view)
+# ---------------------------------------------------------------------------
+
+@superuser_required
+def sa_client_detail(request, client_id):
+    """Full client record with cross-tenant DCC credit intelligence.
+    Admin view — no pay-per-view gate; superusers always see full data."""
+    from client.models import ClientCreditScore, matched_profiles
+
+    client = get_object_or_404(
+        ClientProfile.objects.select_related('user_profile'), pk=client_id
+    )
+    loans = Loan.objects.filter(owner=client).select_related('lender')
+
+    # Cross-tenant matches
+    match_q = Q()
+    if client.nid_number:
+        match_q |= Q(nid_number=client.nid_number)
+    if client.first_name and client.last_name:
+        match_q |= Q(first_name__iexact=client.first_name, last_name__iexact=client.last_name)
+
+    other_profiles = (
+        ClientProfile.objects.filter(match_q).exclude(pk=client.pk)
+        .select_related('user_profile').order_by('-updated_at')
+        if match_q else ClientProfile.objects.none()
+    )
+    all_profiles = [client] + list(other_profiles)
+    all_loans = (
+        Loan.objects.filter(owner__in=all_profiles)
+        .select_related('lender', 'owner__user_profile').order_by('-created_at')
+    )
+    loan_summary = all_loans.aggregate(
+        total_borrowed=Sum('amount'),
+        total_outstanding=Sum('total_outstanding'),
+        total_arrears=Sum('total_arrears'),
+    )
+    credit_score_obj, _ = ClientCreditScore.objects.get_or_create(client=client)
+    history = client.history.order_by('-changed_at')[:50]
+
+    context = {
+        'nav': 'sa_clients',
+        'client': client,
+        'loans': loans,
+        'other_profiles': other_profiles,
+        'all_loans': all_loans,
+        'loan_summary': loan_summary,
+        'credit_score': credit_score_obj,
+        'history': history,
+    }
+    return render(request, 'saasadmin/client_detail.html', context)
+
+
+@superuser_required
+def sa_client_history(request, client_id):
+    client = get_object_or_404(
+        ClientProfile.objects.select_related('user_profile'), pk=client_id
+    )
+    history = client.history.order_by('-changed_at')
+    other_profiles = ClientProfile.objects.filter(
+        first_name__iexact=client.first_name,
+        last_name__iexact=client.last_name,
+    ).exclude(pk=client.pk).select_related('user_profile').order_by('-updated_at')
+
+    context = {
+        'nav': 'sa_clients',
+        'client': client,
+        'history': history,
+        'other_profiles': other_profiles,
+    }
+    return render(request, 'saasadmin/client_history.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Loan detail
+# ---------------------------------------------------------------------------
+
+@superuser_required
+def sa_loan_detail(request, ref):
+    loan = get_object_or_404(Loan, ref=ref)
+    transactions = loan.transaction_set.all().order_by('-date')
+    context = {
+        'nav': 'sa_loans',
+        'loan': loan,
+        'transactions': transactions,
+    }
+    return render(request, 'saasadmin/loan_detail.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Transactions
+# ---------------------------------------------------------------------------
+
+@superuser_required
+def sa_transactions(request):
+    from transaction.models import Transaction
+    from django.db.models import Sum
+
+    type_filter = request.GET.get('type', '').strip()
+    tenant_filter = request.GET.get('tenant', '').strip()
+    q = request.GET.get('q', '').strip()
+
+    txns = Transaction.objects.select_related('owner', 'lender', 'loanref').order_by('-date')
+    if type_filter:
+        txns = txns.filter(type=type_filter)
+    if tenant_filter:
+        txns = txns.filter(lender_id=tenant_filter)
+    if q:
+        txns = txns.filter(
+            Q(owner__first_name__icontains=q) |
+            Q(owner__last_name__icontains=q) |
+            Q(ref__icontains=q) |
+            Q(loanref__ref__icontains=q)
+        )
+
+    totals = txns.aggregate(
+        total_credit=Sum('credit'),
+        total_debit=Sum('debit'),
+        total_arrears=Sum('arrears'),
+    )
+    tenants = UserProfile.objects.filter(use_loanmasta=True).order_by('organisation')
+
+    context = {
+        'nav': 'sa_transactions',
+        'transactions': txns[:1000],
+        'total_count': txns.count(),
+        'totals': totals,
+        'type_filter': type_filter,
+        'tenant_filter': tenant_filter,
+        'query': q,
+        'tenants': tenants,
+    }
+    return render(request, 'saasadmin/transactions.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Delist Requests
+# ---------------------------------------------------------------------------
+
+@superuser_required
+def sa_delist_requests(request):
+    from admin1.models import DelistRequest
+
+    if request.method == 'POST':
+        req_id = request.POST.get('request_id')
+        action = request.POST.get('action')
+        dr = get_object_or_404(DelistRequest, pk=req_id)
+        if action == 'approve':
+            dr.is_approved = True
+            dr.is_delisted = True
+            dr.approved_date = timezone.now()
+            dr.feedback = request.POST.get('feedback', '')
+            dr.is_feedbacked = True
+            dr.feedback_date = timezone.now()
+            dr.save()
+            # Mark the client as delisted
+            try:
+                profile = ClientProfile.objects.filter(
+                    email=dr.email_of_requester
+                ).first()
+                if profile:
+                    profile.public_listing = False
+                    profile.save(update_fields=['public_listing'])
+            except Exception:
+                pass
+            messages.success(request, f'Delist request #{req_id} approved.', extra_tags='info')
+        elif action == 'reject':
+            dr.feedback = request.POST.get('feedback', '')
+            dr.is_feedbacked = True
+            dr.feedback_date = timezone.now()
+            dr.save()
+            messages.info(request, f'Delist request #{req_id} rejected with feedback.', extra_tags='info')
+        return redirect('sa_delist_requests')
+
+    status_filter = request.GET.get('status', '')
+    requests_qs = DelistRequest.objects.select_related('profile').order_by('-date')
+    if status_filter == 'pending':
+        requests_qs = requests_qs.filter(is_approved=False, is_feedbacked=False)
+    elif status_filter == 'approved':
+        requests_qs = requests_qs.filter(is_approved=True)
+    elif status_filter == 'rejected':
+        requests_qs = requests_qs.filter(is_feedbacked=True, is_approved=False)
+
+    context = {
+        'nav': 'sa_delist_requests',
+        'delist_requests': requests_qs,
+        'status_filter': status_filter,
+    }
+    return render(request, 'saasadmin/delist_requests.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Subscribers
+# ---------------------------------------------------------------------------
+
+@superuser_required
+def sa_subscribers(request):
+    from admin1.models import Subscriber
+    subscribers = Subscriber.objects.order_by('-date')
+    context = {
+        'nav': 'sa_subscribers',
+        'subscribers': subscribers,
+        'count': subscribers.count(),
+    }
+    return render(request, 'saasadmin/subscribers.html', context)

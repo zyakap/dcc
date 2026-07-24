@@ -1,0 +1,36 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Subscribers{% endblock %}
+{% block topbar_title %}Email Subscribers{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Subscribers</h1>
+    <div class="sa-page-sub">{{ count }} email subscriber{{ count|pluralize }} from the public website</div>
+  </div>
+</div>
+
+<div class="sa-card">
+  {% if subscribers %}
+  <div style="overflow-x:auto;">
+    <table class="sa-table datatable" style="width:100%;">
+      <thead>
+        <tr><th>#</th><th>Name</th><th>Email</th><th>Subscribed</th></tr>
+      </thead>
+      <tbody>
+        {% for sub in subscribers %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ sub.name }}</td>
+          <td>{{ sub.email }}</td>
+          <td style="font-size:12px;color:var(--sa-muted);">{{ sub.date|date:"d M Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--sa-muted);padding:20px 0;">No subscribers yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

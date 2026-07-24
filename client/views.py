@@ -149,6 +149,11 @@ def client_record_detail(request, client_id):
             'loan_summary': loan_summary,
         }
 
+    watch_obj = None
+    if tenant:
+        from .models import ClientWatch
+        watch_obj = ClientWatch.objects.filter(tenant=tenant, client=client, is_active=True).first()
+
     return render(request, 'client_record_detail.html', {
         'nav': 'client_record_detail',
         'client': client,
@@ -163,6 +168,8 @@ def client_record_detail(request, client_id):
         'tenant': tenant,
         'price_per_view': pricing.price_per_credit_check,
         'currency': pricing.currency,
+        'watch_obj': watch_obj,
+        'alert_type_choices': ClientWatch.ALERT_TYPES,
     })
 
 
@@ -1155,3 +1162,147 @@ def _send_credit_alert(client, triggering_tenant, message_body):
         )
     except Exception:
         pass
+
+
+# ============================================================================
+# Watch List — tenant alert subscriptions
+# ============================================================================
+
+@login_check
+def my_watch_list(request):
+    from client.models import ClientWatch
+    user_profile = UserProfile.objects.get(user=request.user)
+    watches = ClientWatch.objects.filter(tenant=user_profile, is_active=True).select_related('client')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        watch_id = request.POST.get('watch_id')
+        watch = get_object_or_404(ClientWatch, pk=watch_id, tenant=user_profile)
+        if action == 'remove':
+            watch.is_active = False
+            watch.save(update_fields=['is_active'])
+            messages.success(request, 'Removed from watch list.', extra_tags='success')
+        return redirect('my_watch_list')
+
+    return render(request, 'client/my_watch_list.html', {
+        'watches': watches,
+        'nav': 'my_watch_list',
+        'alert_type_choices': ClientWatch.ALERT_TYPES,
+    })
+
+
+@login_check
+def toggle_watch(request, client_id):
+    """Add or update a client watch entry. Called from the client detail page."""
+    from client.models import ClientWatch
+    user_profile = UserProfile.objects.get(user=request.user)
+    client = get_object_or_404(ClientProfile, pk=client_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add':
+            alert_types = request.POST.getlist('alert_types')
+            notes = request.POST.get('notes', '').strip()
+            watch, created = ClientWatch.objects.update_or_create(
+                tenant=user_profile, client=client,
+                defaults={'is_active': True, 'alert_types': alert_types or [], 'notes': notes},
+            )
+            messages.success(request,
+                f'{"Added to" if created else "Updated"} Watch List. '
+                f'You\'ll be alerted when {client.first_name}\'s record changes.',
+                extra_tags='success')
+        elif action == 'remove':
+            ClientWatch.objects.filter(tenant=user_profile, client=client).update(is_active=False)
+            messages.success(request, f'{client.first_name} removed from Watch List.', extra_tags='success')
+
+    return redirect('client_record_detail', client_id=client_id)
+
+
+# ── Credit score widget ──────────────────────────────────────────────────────
+
+def credit_score_widget(request, cuid):
+    """Public embeddable widget — shows DCC status + score for a CUID.
+    No auth required; only shows status/score, no PII."""
+    from client.models import ClientProfile, ClientCreditScore, matched_profiles
+    from django.http import HttpResponse
+
+    try:
+        client = ClientProfile.objects.filter(CUID=cuid, public_listing=True).first()
+        if not client:
+            status_text = 'NOT FOUND'
+            status_color = '#8b949e'
+            score = None
+        else:
+            profiles = matched_profiles(ClientProfile.objects.filter(pk=client.pk))
+            cs = ClientCreditScore.ensure(client, profiles=profiles)
+            score = cs.score if cs else None
+            if client.dcc_flagged or client.dcc_status in ('DEFAULT', 'BLACKLISTED', 'RECOVERY'):
+                status_text = client.dcc_status or 'FLAGGED'
+                status_color = '#f85149'
+            elif client.dcc_status == 'ARREARS':
+                status_text = 'ARREARS'
+                status_color = '#e3b341'
+            else:
+                status_text = client.dcc_status or 'CLEAR'
+                status_color = '#3fb950'
+    except Exception:
+        status_text = 'ERROR'
+        status_color = '#8b949e'
+        score = None
+
+    score_block = (
+        f"<div class='score'><div class='lbl'>Score</div>"
+        f"<div style='font-weight:700;color:#333;font-size:15px;'>{score}/100</div></div>"
+        if score is not None else ""
+    )
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>*{{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}}
+body{{background:transparent;}}
+.w{{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;
+border-radius:8px;padding:10px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);}}
+.dot{{width:12px;height:12px;border-radius:50%;background:{status_color};flex-shrink:0;}}
+.lbl{{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;}}
+.val{{font-size:15px;font-weight:700;color:{status_color};}}
+.score{{font-size:13px;color:#555;padding-left:10px;border-left:1px solid #e2e8f0;margin-left:6px;}}
+.brand{{font-size:10px;color:#aaa;margin-top:1px;}} a{{text-decoration:none;}}</style>
+</head><body>
+<a href="https://dc.com.pg" target="_blank" rel="noopener">
+<div class="w"><div class="dot"></div>
+<div><div class="lbl">DCC Status</div><div class="val">{status_text}</div>
+<div class="brand">dc.com.pg</div></div>
+{score_block}</div></a></body></html>"""
+    return HttpResponse(html, content_type='text/html')
+
+
+# ── Watch list CSV export ────────────────────────────────────────────────────
+
+@login_check
+def export_watch_list(request):
+    """Download the tenant's Watch List as a CSV file."""
+    import csv
+    from django.http import HttpResponse
+    from client.models import ClientWatch
+
+    user_profile = UserProfile.objects.get(user=request.user)
+    watches = (ClientWatch.objects
+               .filter(tenant=user_profile, is_active=True)
+               .select_related('client')
+               .order_by('-added_at'))
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="dcc_watch_list.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Client Name', 'CUID', 'DCC Status', 'Flagged',
+                     'Alert Types', 'Notes', 'Added Date', 'Last Alerted'])
+    for w in watches:
+        writer.writerow([
+            f'{w.client.first_name} {w.client.last_name}'.strip(),
+            w.client.CUID or '',
+            w.client.dcc_status or '',
+            'Yes' if w.client.dcc_flagged else 'No',
+            ', '.join(w.alert_types) if w.alert_types else 'Any',
+            w.notes or '',
+            w.added_at.strftime('%Y-%m-%d') if w.added_at else '',
+            w.last_alerted_at.strftime('%Y-%m-%d %H:%M') if w.last_alerted_at else '',
+        ])
+    return response

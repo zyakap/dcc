@@ -1,0 +1,78 @@
+{% extends "dashboard_base.html" %}
+{% block content %}
+<div class="container-fluid">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <h4 style="margin:0;"><i class="bi bi-bell" style="margin-right:8px;"></i>My Watch List</h4>
+    <a href="{% url 'export_watch_list' %}" class="sa-btn sa-btn-outline sa-btn-sm">
+      <i class="bi bi-download"></i> Export CSV
+    </a>
+  </div>
+
+  <div class="sa-card" style="margin-bottom:12px;padding:14px;border-left:3px solid var(--sa-accent);">
+    <div style="font-size:13px;">
+      <strong>How Watch List works:</strong>
+      <span style="color:var(--sa-muted);"> Add clients to your Watch List and DCC will email you when their status, contact details, address or employer changes. Viewing the credit file after an alert is a standard billable credit check.</span>
+    </div>
+  </div>
+
+  {% if watches %}
+  <div class="sa-card">
+    <div style="overflow-x:auto;">
+      <table class="table datatable" style="width:100%;">
+        <thead class="table-dark">
+          <tr>
+            <th>Client</th>
+            <th>CUID</th>
+            <th>Alert Types</th>
+            <th>Notes</th>
+            <th>Added</th>
+            <th>Last Alerted</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in watches %}
+          <tr>
+            <td>
+              <a href="{% url 'client_record_detail' w.client.id %}">
+                {{ w.client.first_name }} {{ w.client.last_name }}
+              </a>
+              {% if w.client.dcc_flagged %}
+              <span class="badge bg-danger" style="font-size:10px;">{{ w.client.dcc_status }}</span>
+              {% endif %}
+            </td>
+            <td><code>{{ w.client.CUID|default:"—" }}</code></td>
+            <td>
+              {% if w.alert_types %}
+                {% for t in w.alert_types %}
+                <span style="background:var(--sa-hover);border-radius:4px;padding:1px 6px;font-size:11px;margin:1px;display:inline-block;">{{ t }}</span>
+                {% endfor %}
+              {% else %}
+              <span style="color:var(--sa-muted);font-size:12px;">ALL changes</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--sa-muted);font-size:12px;">{{ w.notes|default:"—" }}</td>
+            <td style="color:var(--sa-muted);font-size:12px;">{{ w.added_at|date:"d M Y" }}</td>
+            <td style="color:var(--sa-muted);font-size:12px;">{{ w.last_alerted_at|date:"d M Y H:i"|default:"Never" }}</td>
+            <td>
+              <form method="post" action="{% url 'toggle_watch' w.client.id %}">
+                {% csrf_token %}
+                <button type="submit" name="action" value="remove" class="sa-btn sa-btn-outline sa-btn-sm"
+                  style="color:var(--sa-danger);" onclick="return confirm('Remove from Watch List?')">
+                  <i class="bi bi-bell-slash"></i> Remove
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="sa-card">
+    <p style="color:var(--sa-muted);padding:20px 0;">Your Watch List is empty. Open any client record and click <strong>Watch</strong> to add them.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

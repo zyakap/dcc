@@ -260,6 +260,18 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=3, minute=0, day_of_month=1),
     },
 
+    # Monday 7 AM: send weekly Watch List digest to WEEKLY-mode tenants.
+    'send_watch_digest': {
+        'task': 'api.tasks.send_watch_digest',
+        'schedule': crontab(hour=7, minute=0, day_of_week=1),
+    },
+
+    # Daily 8 AM: escalate disputes past their 5-business-day SLA.
+    'check_dispute_slas': {
+        'task': 'api.tasks.check_dispute_slas',
+        'schedule': crontab(hour=8, minute=0),
+    },
+
 }
 
 # Verify TLS certificates when calling tenant LMS endpoints. Leave True in

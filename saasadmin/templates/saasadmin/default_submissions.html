@@ -1,0 +1,72 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Default List Submissions{% endblock %}
+{% block topbar_title %}Default List Submissions{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Default List Submissions</h1>
+    <div class="sa-page-sub">Organisations submitting default lists directly to DCC before becoming registered lenders</div>
+  </div>
+</div>
+
+<div class="sa-card">
+  {% if submissions %}
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>Organisation</th><th>Contact</th><th>Email / Phone</th><th>Submitted</th>
+          <th>File</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in submissions %}
+        <tr>
+          <td><strong>{{ sub.business_name }}</strong><div style="font-size:11px;color:var(--sa-muted);">{{ sub.business_address|truncatechars:40|default:"" }}</div></td>
+          <td>{{ sub.contact_person }}</td>
+          <td><div>{{ sub.email }}</div><div style="font-size:11px;color:var(--sa-muted);">{{ sub.phone }}</div></td>
+          <td style="color:var(--sa-muted);font-size:12px;">{{ sub.date|date:"d M Y" }}</td>
+          <td>
+            {% if sub.submission_spreadsheet_url %}
+            <a href="{{ sub.submission_spreadsheet_url }}" target="_blank" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-download"></i></a>
+            {% elif sub.submission_spreadsheet %}
+            <a href="{{ sub.submission_spreadsheet.url }}" target="_blank" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-download"></i></a>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if sub.is_approved %}<span class="sa-badge sa-badge-success">Approved</span>
+            {% elif sub.is_feedbacked %}<span class="sa-badge" style="background:#e09b3d;color:#fff;">Feedback Sent</span>
+            {% else %}<span class="sa-badge" style="background:var(--sa-border);">Pending</span>{% endif %}
+          </td>
+          <td style="min-width:240px;">
+            {% if not sub.is_approved %}
+            <form method="post" style="display:flex;flex-direction:column;gap:4px;">
+              {% csrf_token %}
+              <input type="hidden" name="submission_id" value="{{ sub.pk }}">
+              <div style="display:flex;gap:4px;">
+                <button type="submit" name="action" value="approve" class="sa-btn sa-btn-sm" style="background:var(--sa-success);color:#fff;border:none;" onclick="return confirm('Approve this submission?')">
+                  <i class="bi bi-check"></i> Approve
+                </button>
+              </div>
+              {% if not sub.is_feedbacked %}
+              <div style="display:flex;gap:4px;margin-top:2px;">
+                <input type="text" name="feedback" class="sa-form-control" placeholder="Feedback for lender…" style="font-size:11px;">
+                <button type="submit" name="action" value="feedback" class="sa-btn sa-btn-outline sa-btn-sm">Send</button>
+              </div>
+              {% endif %}
+            </form>
+            {% else %}
+            <span style="font-size:12px;color:var(--sa-muted);">{{ sub.approved_date|date:"d M Y"|default:"" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--sa-muted);padding:20px 0;">No default list submissions received.</p>
+  {% endif %}
+</div>
+{% endblock %}

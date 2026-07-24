@@ -436,6 +436,9 @@
     <a href="{% url 'recovery_insights' %}" class="{% if nav == 'recovery_insights' %}active{% endif %}">
       <i class="bi bi-graph-up-arrow"></i> Recovery Insights
     </a>
+    <a href="{% url 'my_watch_list' %}" class="{% if nav == 'my_watch_list' %}active{% endif %}">
+      <i class="bi bi-bell"></i> Watch List
+    </a>
 
     <div class="sa-section-label">Account</div>
     <a href="{% url 'upload_records' %}" class="{% if nav == 'upload_records' %}active{% endif %}">
@@ -446,6 +449,9 @@
     </a>
     <a href="{% url 'profile' %}" class="{% if nav == 'profile' %}active{% endif %}">
       <i class="bi bi-person-circle"></i> Profile
+    </a>
+    <a href="{% url 'platform_guide' %}" class="{% if nav == 'platform_guide' %}active{% endif %}">
+      <i class="bi bi-question-circle"></i> Help &amp; Guide
     </a>
     <a href="{% url 'tenant_settings' %}" class="{% if nav == 'tenant_settings' %}active{% endif %}">
       <i class="bi bi-gear"></i> Settings
@@ -492,10 +498,19 @@
   <!-- Content -->
   <div id="sa-content">
 
-    <!-- Django messages (non-SweetAlert) -->
-    {% if messages and swal != 'swal' %}
+    <!-- Django messages -->
+    {% if messages %}
       {% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible" role="alert">
+        {% if 'success' in message.tags %}
+        <div class="alert alert-success alert-dismissible" role="alert">
+        {% elif 'danger' in message.tags or 'error' in message.tags %}
+        <div class="alert alert-danger alert-dismissible" role="alert">
+        {% elif 'warning' in message.tags %}
+        <div class="alert alert-warning alert-dismissible" role="alert">
+        {% else %}
+        <div class="alert alert-info alert-dismissible" role="alert">
+        {% endif %}
+          <i class="bi bi-{% if 'success' in message.tags %}check-circle{% elif 'danger' in message.tags or 'error' in message.tags %}exclamation-circle{% elif 'warning' in message.tags %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
           {{ message }}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>

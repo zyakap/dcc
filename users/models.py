@@ -189,8 +189,8 @@ class UserProfile(models.Model):
 
     #subscription plan + per-tenant API access restrictions. DCC decides what
     #each tenant may view from the credit database when setting up its API access.
-    PLAN_CHOICES = [('BASIC', 'BASIC'), ('STANDARD', 'STANDARD'), ('PREMIUM', 'PREMIUM')]
-    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='BASIC', help_text='Subscription plan; governs default API visibility.')
+    PLAN_CHOICES = [('FREE', 'Free Plan'), ('SME', 'SME Plan'), ('BUSINESS', 'Business Plan')]
+    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='FREE', help_text='Subscription plan — matches website pricing tiers.')
     can_view_loans = models.BooleanField(default=True, help_text='Tenant may view other-lender loan records in credit checks.')
     can_view_transactions = models.BooleanField(default=False, help_text='Tenant may view repayment transaction history in credit checks.')
     can_view_uploads = models.BooleanField(default=False, help_text='Tenant may view client documents held by DCC.')
@@ -199,6 +199,15 @@ class UserProfile(models.Model):
 
     THEME_CHOICES = [('dark', 'Dark'), ('light', 'Light')]
     theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='dark')
+
+    WATCH_DIGEST_CHOICES = [('IMMEDIATE', 'Immediate (one email per change)'), ('WEEKLY', 'Weekly Digest (every Monday)')]
+    watch_digest_mode = models.CharField(max_length=10, choices=WATCH_DIGEST_CHOICES, default='IMMEDIATE',
+        help_text='How Watch List alerts are delivered to this tenant.')
+
+    borrower_onboarding_enabled = models.BooleanField(default=False,
+        help_text='When enabled and the platform borrower portal is active, new client records '
+                  'created by this tenant automatically receive a PIN email so they can log in '
+                  'to the borrower self-service portal.')
 
     def __str__(self):
         if self.category == 'SOLE TRADER':

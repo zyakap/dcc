@@ -1,0 +1,121 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Records Under Review{% endblock %}
+{% block topbar_title %}Verification Queue{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Client Records Under Review</h1>
+    <div class="sa-page-sub">Verify uploaded records before they enter the public DCC database</div>
+  </div>
+  <a href="{% url 'sa_upload_records' %}" class="sa-btn sa-btn-primary sa-btn-sm"><i class="bi bi-upload"></i> Upload New Batch</a>
+</div>
+
+<!-- Status filter -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="?" class="sa-btn {% if not status_filter %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">All</a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}" class="sa-btn {% if status_filter == val %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if cases %}
+<div style="display:flex;flex-direction:column;gap:12px;">
+  {% for case in cases %}
+  <div class="sa-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+      <!-- Left: client info -->
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">
+          {{ case.client.first_name }} {{ case.client.last_name }}
+          <a href="{% url 'sa_verification_case' case.pk %}" style="font-size:12px;margin-left:8px;">VC-{{ case.pk }} →</a>
+        </div>
+        <div style="font-size:12px;color:var(--sa-muted);line-height:2;">
+          <span>CUID: {{ case.client.CUID|default:"—" }}</span> &nbsp;|&nbsp;
+          <span>Email: {{ case.client.email|default:"—" }}</span> &nbsp;|&nbsp;
+          <span>Mobile: {{ case.client.mobile1|default:"—" }}</span>
+        </div>
+        <div style="font-size:12px;color:var(--sa-muted);">
+          Lender: {{ case.lender.organisation|default:case.lender.email|default:"—" }} &nbsp;|&nbsp;
+          Uploaded: {{ case.created_at|date:"d M Y" }}
+          {% if case.last_contact_at %} &nbsp;|&nbsp; Last contact: {{ case.last_contact_at|date:"d M Y" }}{% endif %}
+        </div>
+      </div>
+
+      <!-- Right: status badge + quick actions -->
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        {% if case.status == 'PENDING' %}<span class="sa-badge" style="background:#555;">Pending</span>
+        {% elif case.status == 'CONTACTED' %}<span class="sa-badge" style="background:#e09b3d;color:#fff;">Contacted</span>
+        {% elif case.status == 'WAITING' %}<span class="sa-badge" style="background:#4a6fa5;color:#fff;">Awaiting</span>
+        {% elif case.status == 'VERIFIED' %}<span class="sa-badge sa-badge-success">Verified</span>
+        {% elif case.status == 'REJECTED' %}<span class="sa-badge sa-badge-danger">Rejected</span>
+        {% elif case.status == 'HOLD' %}<span class="sa-badge" style="background:#7a5c00;color:#ffd;">On Hold</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if case.status not in 'VERIFIED,REJECTED' %}
+    <div style="border-top:1px solid var(--sa-border);margin-top:12px;padding-top:12px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+        <!-- Contact attempt form -->
+        <form method="post" style="display:contents;">
+          {% csrf_token %}
+          <input type="hidden" name="case_id" value="{{ case.pk }}">
+          <input type="hidden" name="action" value="contact">
+          <select name="contact_method" class="sa-form-control" style="width:auto;">
+            {% for val, label in case.CONTACT_METHODS %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+          </select>
+          <input type="text" name="outcome" class="sa-form-control" placeholder="Outcome (e.g. answered, no reply)" style="width:180px;">
+          <input type="text" name="contact_notes" class="sa-form-control" placeholder="Notes" style="flex:1;min-width:120px;">
+          <button type="submit" class="sa-btn sa-btn-outline sa-btn-sm">
+            <i class="bi bi-telephone"></i> Log Contact
+          </button>
+        </form>
+
+        <!-- Verify -->
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="case_id" value="{{ case.pk }}">
+          <button type="submit" name="action" value="verify" class="sa-btn sa-btn-sm"
+            style="background:var(--sa-success);color:#fff;border:none;"
+            onclick="return confirm('Admit this record to the database?')">
+            <i class="bi bi-check-circle"></i> Admit
+          </button>
+        </form>
+
+        <!-- Reject with feedback -->
+        <form method="post" style="display:flex;gap:4px;">
+          {% csrf_token %}
+          <input type="hidden" name="case_id" value="{{ case.pk }}">
+          <input type="text" name="lender_feedback" class="sa-form-control" placeholder="Rejection reason (sent to lender)" style="width:220px;">
+          <button type="submit" name="action" value="reject" class="sa-btn sa-btn-sm"
+            style="background:var(--sa-danger);color:#fff;border:none;"
+            onclick="return confirm('Reject this record and notify the lender?')">
+            <i class="bi bi-x-circle"></i> Reject
+          </button>
+        </form>
+
+        <!-- Hold -->
+        <form method="post" style="display:flex;gap:4px;">
+          {% csrf_token %}
+          <input type="hidden" name="case_id" value="{{ case.pk }}">
+          <input type="text" name="hold_reason" class="sa-form-control" placeholder="Hold reason" style="width:160px;">
+          <button type="submit" name="action" value="hold" class="sa-btn sa-btn-outline sa-btn-sm">On Hold</button>
+        </form>
+
+        <a href="{% url 'sa_verification_case' case.pk %}" class="sa-btn sa-btn-outline sa-btn-sm">
+          <i class="bi bi-folder2-open"></i> Full Case
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="sa-card">
+  <p style="color:var(--sa-muted);padding:20px 0;">No verification cases{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+</div>
+{% endif %}
+{% endblock %}

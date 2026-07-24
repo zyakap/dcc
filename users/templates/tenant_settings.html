@@ -16,6 +16,7 @@
       </p>
       <form method="post">
         {% csrf_token %}
+        <input type="hidden" name="action" value="theme">
         <div class="d-flex gap-3 mb-4 flex-wrap">
 
           <!-- Dark mode card -->
@@ -81,6 +82,88 @@
         <a href="{% url 'profile' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-person"></i> Edit Profile</a>
         <a href="{% url 'my_billing' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-receipt"></i> Billing</a>
       </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Second row: Notifications + Borrower Onboarding -->
+<div class="row g-4 mt-1">
+
+  <!-- Notification preferences -->
+  <div class="col-lg-6">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-bell"></i> Watch List Notifications</div>
+      <p style="font-size:13px; color:var(--sa-muted); margin-bottom:16px;">
+        Choose how you receive alerts when clients on your Watch List have changes.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="notifications">
+
+        <label class="notif-option {% if user.watch_digest_mode == 'IMMEDIATE' %}notif-option-active{% endif %}" style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; padding:14px; border:2px solid {% if user.watch_digest_mode == 'IMMEDIATE' %}var(--sa-accent2){% else %}var(--sa-border){% endif %}; border-radius:10px; margin-bottom:10px;">
+          <input type="radio" name="watch_digest_mode" value="IMMEDIATE" {% if user.watch_digest_mode == 'IMMEDIATE' %}checked{% endif %} style="margin-top:2px; accent-color:var(--sa-accent2);">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:var(--sa-text);"><i class="bi bi-lightning-fill" style="color:var(--sa-accent2);"></i> Immediate</div>
+            <div style="font-size:11px; color:var(--sa-muted); margin-top:3px;">One email per alert — sent the moment a change is detected.</div>
+          </div>
+        </label>
+
+        <label class="notif-option {% if user.watch_digest_mode == 'WEEKLY' %}notif-option-active{% endif %}" style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; padding:14px; border:2px solid {% if user.watch_digest_mode == 'WEEKLY' %}var(--sa-accent2){% else %}var(--sa-border){% endif %}; border-radius:10px; margin-bottom:16px;">
+          <input type="radio" name="watch_digest_mode" value="WEEKLY" {% if user.watch_digest_mode == 'WEEKLY' %}checked{% endif %} style="margin-top:2px; accent-color:var(--sa-accent2);">
+          <div>
+            <div style="font-size:13px; font-weight:600; color:var(--sa-text);"><i class="bi bi-calendar-week" style="color:#58a6ff;"></i> Weekly Digest</div>
+            <div style="font-size:11px; color:var(--sa-muted); margin-top:3px;">All alerts for the week consolidated into one email, sent every Monday at 7 AM.</div>
+          </div>
+        </label>
+
+        <button type="submit" class="sa-btn sa-btn-primary">
+          <i class="bi bi-check-lg"></i> Save Preferences
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Borrower onboarding -->
+  <div class="col-lg-6">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-person-plus"></i> Borrower Onboarding</div>
+      <p style="font-size:13px; color:var(--sa-muted); margin-bottom:12px;">
+        When enabled, new client records created by your account automatically receive a PIN
+        email so they can log in to the DCC borrower self-service portal.
+      </p>
+
+      {% if not platform.borrower_portal_enabled %}
+      <div style="background:rgba(210,130,0,.1); border:1px solid rgba(210,130,0,.35); border-radius:8px; padding:12px 14px; font-size:12px; color:#e3b341; margin-bottom:14px;">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        The borrower portal is not currently active on this platform. Contact the DCC administrator to enable it before this setting takes effect.
+      </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="borrower">
+        <label style="display:flex; align-items:center; gap:12px; cursor:{% if platform.borrower_portal_enabled %}pointer{% else %}not-allowed{% endif %}; margin-bottom:16px;">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" name="borrower_onboarding_enabled"
+                   id="borrowerOnboardingToggle"
+                   {% if user.borrower_onboarding_enabled %}checked{% endif %}
+                   {% if not platform.borrower_portal_enabled %}disabled{% endif %}
+                   style="width:2.4em; height:1.2em; accent-color:var(--sa-accent2); cursor:{% if platform.borrower_portal_enabled %}pointer{% else %}not-allowed{% endif %};">
+          </div>
+          <div>
+            <div style="font-size:13px; font-weight:600; color:{% if platform.borrower_portal_enabled %}var(--sa-text){% else %}var(--sa-muted){% endif %};">
+              Auto-send login PIN to new borrowers
+            </div>
+            <div style="font-size:11px; color:var(--sa-muted); margin-top:2px;">
+              Only applies to client records <em>created after</em> this setting is turned on.
+            </div>
+          </div>
+        </label>
+        <button type="submit" class="sa-btn sa-btn-primary" {% if not platform.borrower_portal_enabled %}disabled{% endif %}>
+          <i class="bi bi-check-lg"></i> Save Setting
+        </button>
+      </form>
     </div>
   </div>
 

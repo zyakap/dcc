@@ -1,0 +1,73 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Upload Records{% endblock %}
+{% block topbar_title %}Upload Client Records{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Upload Client Records</h1>
+    <div class="sa-page-sub">Upload Excel data on behalf of any lender. Non-Loanmasta records enter the verification queue.</div>
+  </div>
+  <a href="{% url 'sa_records_under_review' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-hourglass-split"></i> View Under Review</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-upload"></i> Upload Excel File</div>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="sa-form-group">
+          <label class="sa-form-label">Lender LUID <span style="color:var(--sa-danger);">*</span></label>
+          <input type="text" name="userprofile_luid" class="sa-form-control" required placeholder="e.g. LMX-0001">
+          <div style="font-size:11px;color:var(--sa-muted);margin-top:4px;">The LUID of the lender whose records are being uploaded.</div>
+        </div>
+        <div class="sa-form-group">
+          <label class="sa-form-label">Excel File (.xlsx) <span style="color:var(--sa-danger);">*</span></label>
+          <input type="file" name="recordsexceldata" accept=".xlsx" class="sa-form-control" required>
+        </div>
+        <div style="background:var(--sa-hover);border-radius:6px;padding:12px;font-size:12px;color:var(--sa-muted);margin-bottom:16px;border-left:3px solid var(--sa-accent);">
+          <strong>Important:</strong> Records for Loanmasta-connected lenders are admitted immediately. Records for non-Loanmasta lenders are queued for verification — DCC will contact the borrower before the record goes live.
+        </div>
+        <button type="submit" class="sa-btn sa-btn-primary" style="width:100%;">
+          <i class="bi bi-cloud-upload"></i> Upload &amp; Process
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-clock-history"></i> Recent Upload Batches</div>
+      {% if recent_batches %}
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead>
+            <tr><th>#</th><th>Lender</th><th>Date</th><th>Records</th><th>Verified</th><th>Rejected</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for batch in recent_batches %}
+            <tr>
+              <td>{{ batch.pk }}</td>
+              <td>{{ batch.uploaded_by.organisation|default:batch.uploaded_by.email|default:"—" }}</td>
+              <td style="color:var(--sa-muted);">{{ batch.uploaded_at|date:"d M Y H:i" }}</td>
+              <td>{{ batch.record_count }}</td>
+              <td style="color:var(--sa-success);">{{ batch.verified_count }}</td>
+              <td style="color:var(--sa-danger);">{{ batch.rejected_count }}</td>
+              <td>
+                {% if batch.status == 'COMPLETED' %}<span class="sa-badge sa-badge-success">Done</span>
+                {% elif batch.status == 'PENDING_REVIEW' %}<span class="sa-badge" style="background:#4a6fa5;color:#fff;">Pending</span>
+                {% else %}<span class="sa-badge">{{ batch.status }}</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="color:var(--sa-muted);">No upload batches yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

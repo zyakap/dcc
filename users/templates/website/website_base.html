@@ -5,9 +5,9 @@
         <!-- Meta Tags -->
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<meta name="keywords" content="Site keywords here">
-		<meta name="description" content="">
-		<meta name='copyright' content=''>
+		<meta name="keywords" content="credit bureau PNG, credit data, default list, credit check, Papua New Guinea finance, DCC, Dinau Control Center">
+		<meta name="description" content="Dinau Control Center (DCC) — Papua New Guinea's trusted credit bureau. Search defaults, submit credit data, verify borrowers, and manage risk with real-time credit intelligence.">
+		<meta name='copyright' content='Dinau Control Center'>
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		
 		<!-- Title -->
@@ -74,9 +74,9 @@
 						<div class="col-lg-6 col-md-5 col-12">
 							<!-- Contact -->
 							<ul class="top-link">
-								<li><a href="#">Terms & Conditions</a></li>
-								<li><a href="#">Privacy Policy</a></li>
-								<li><a href="#">FAQ</a></li>
+								<li><a href="{% url 'terms_conditions' %}">Terms &amp; Conditions</a></li>
+								<li><a href="{% url 'about' %}">About Us</a></li>
+								<li><a href="{% url 'contact' %}">Contact</a></li>
 							</ul>
 							<!-- End Contact -->
 						</div>
@@ -112,11 +112,12 @@
 								<div class="main-menu">
 									<nav class="navigation">
 										<ul class="nav menu">
-											<li class="{% if nav == 'home' %}active{% endif %}"><a href="{% url 'home' %}">Home <i class="icofont-rounded-down"></i></a></li>
+											<li class="{% if nav == 'home' %}active{% endif %}"><a href="{% url 'home' %}">Home</a></li>
 											<li class="{% if nav == 'front_search' %}active{% endif %}"><a href="{% url 'front_search' %}">Search</a></li>
 											<li class="{% if nav == 'public_listing' %}active{% endif %}"><a href="{% url 'public_listing' %}">Defaults List</a></li>
                                             <li class="{% if nav == 'submit_default_list' %}active{% endif %}"><a href="{% url 'submit_default_list' %}">Submit Defaults</a></li>
 											<li class="{% if nav == 'request_delist' %}active{% endif %}"><a href="{% url 'request_delist' %}">Delist</a></li>
+											<li class="{% if nav == 'about' %}active{% endif %}"><a href="{% url 'about' %}">About</a></li>
 										</ul>
 									</nav>
 								</div>
@@ -124,7 +125,8 @@
 							</div>
 							<div class="col-lg-2 col-12">
 								
-								<div class="get-quote">
+								<div class="get-quote" style="display:flex;gap:8px;align-items:center;">
+									<a href="{% url 'register' %}" class="btn" style="background:transparent;border:1px solid #fff;margin-right:4px;">Register</a>
 									<a href="{% url 'login_user' %}" class="btn">Login</a>
 								</div>
 							</div>
@@ -163,14 +165,12 @@
 						<div class="col-lg-3 col-md-6 col-12">
 							<div class="single-footer f-link">
 								<h2>Quick Links</h2>
-								
-										<ul>
-											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Consulting</a></li>
-											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Finance Management</a></li>
-											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Debt Recovery</a></li>
-											<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Credit Rating</a></li>
-											</ul>
-								
+								<ul>
+									<li><a href="{% url 'front_search' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Search Database</a></li>
+									<li><a href="{% url 'public_listing' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Public Default List</a></li>
+									<li><a href="{% url 'submit_default_list' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Submit Defaults</a></li>
+									<li><a href="{% url 'register' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Register / Subscribe</a></li>
+								</ul>
 							</div>
 						</div>
 						<div class="col-lg-3 col-md-6 col-12">
@@ -186,14 +186,12 @@
 						</div>
 						<div class="col-lg-3 col-md-6 col-12">
 							<div class="single-footer f-link">
-								
-								<h2>Important Links</h2>
-								
+								<h2>Legal</h2>
 								<ul>
-									<li><a href="{% url 'submit_default_list' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Submit Defaults</a></li>
+									<li><a href="{% url 'terms_conditions' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Terms &amp; Conditions</a></li>
 									<li><a href="{% url 'request_delist' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Request Delist</a></li>
-									<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Terms and Conditions</a></li>
-									<li><a href="#"><i class="fa fa-caret-right" aria-hidden="true"></i>Privacy Policy</a></li>	
+									<li><a href="{% url 'about' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>About DCC</a></li>
+									<li><a href="{% url 'contact' %}"><i class="fa fa-caret-right" aria-hidden="true"></i>Contact Us</a></li>
 								</ul>
 								
 
@@ -258,8 +256,8 @@
 		<script src="{% static 'web/js/wow.min.js' %}"></script>
 		<!-- Magnific Popup JS -->
 		<script src="{% static 'web/js/jquery.magnific-popup.min.js' %}"></script>
-		<!-- Counter Up CDN JS -->
-		<script src="http://cdnjs.cloudflare.com/ajax/libs/waypoints/2.0.3/waypoints.min.js' %}"></script>
+		<!-- Counter Up JS -->
+		<script src="{% static 'web/js/waypoints.min.js' %}"></script>
 		<!-- Bootstrap JS -->
 		<script src="{% static 'web/js/bootstrap.min.js' %}"></script>
 		<!-- Main JS -->

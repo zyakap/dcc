@@ -3,6 +3,10 @@ from django.conf import settings
 
 register = template.Library()
 
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
+
 @register.filter(is_safe=True)
 def domain(value):
     value = settings.DOMAIN

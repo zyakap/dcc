@@ -69,7 +69,7 @@
           </td>
           <td style="font-size:11px; color:var(--sa-muted);">{{ c.updated_at|date:"Y-m-d" }}</td>
           <td>
-            <a href="{% url 'admin_view_client' c.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
+            <a href="{% url 'sa_client_detail' c.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
           </td>
         </tr>
         {% empty %}

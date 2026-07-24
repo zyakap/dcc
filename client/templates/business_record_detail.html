@@ -110,7 +110,7 @@
           </thead>
           <tbody>
             {% for loan in loans %}
-            <tr onclick="window.location.href='{% url 'admin_loan_detail' loan.ref %}';" style="cursor:pointer;">
+            <tr onclick="window.location.href='{% url 'sa_loan_detail' loan.ref %}';" style="cursor:pointer;">
               <td><code>{{ loan.ref }}</code></td>
               <td>
                 <span class="badge {% if loan.status == 'RUNNING' %}bg-success{% elif loan.status == 'DEFAULTED' %}bg-danger{% elif loan.status == 'COMPLETED' %}bg-secondary{% else %}bg-warning{% endif %}">

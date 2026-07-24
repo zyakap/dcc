@@ -1,0 +1,99 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Transactions{% endblock %}
+{% block topbar_title %}All Transactions{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Transactions</h1>
+    <div class="sa-page-sub">All loan statements across all tenants — showing up to 1,000 records</div>
+  </div>
+</div>
+
+<!-- Totals -->
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Total Records</div><div style="font-size:18px;font-weight:700;">{{ total_count }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Total Credits</div><div style="font-size:18px;font-weight:700;color:var(--sa-success);">K {{ totals.total_credit|default:"0"|floatformat:2 }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Total Debits</div><div style="font-size:18px;font-weight:700;color:var(--sa-danger);">K {{ totals.total_debit|default:"0"|floatformat:2 }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Total Arrears</div><div style="font-size:18px;font-weight:700;color:#e3b341;">K {{ totals.total_arrears|default:"0"|floatformat:2 }}</div></div></div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="sa-card mb-3" style="padding:14px;">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <input type="text" name="q" value="{{ query }}" class="sa-form-control" placeholder="Search borrower name or loan ref…">
+    </div>
+    <div class="col-md-3">
+      <select name="type" class="sa-form-control">
+        <option value="">All Types</option>
+        <option value="PAYMENT" {% if type_filter == 'PAYMENT' %}selected{% endif %}>Payments</option>
+        <option value="DEFAULT" {% if type_filter == 'DEFAULT' %}selected{% endif %}>Defaults</option>
+        <option value="OTHER" {% if type_filter == 'OTHER' %}selected{% endif %}>Other</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="tenant" class="sa-form-control">
+        <option value="">All Tenants</option>
+        {% for t in tenants %}
+        <option value="{{ t.id }}" {% if tenant_filter == t.id|stringformat:"i" %}selected{% endif %}>{{ t.organisation|default:t.user.email }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="sa-btn sa-btn-primary" style="width:100%;"><i class="bi bi-search"></i> Filter</button>
+    </div>
+  </div>
+</form>
+
+<div class="sa-card">
+  <div style="overflow-x:auto;">
+    <table class="sa-table datatable" style="width:100%;">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Borrower</th>
+          <th>Lender</th>
+          <th>Loan Ref</th>
+          <th>Type</th>
+          <th>Statement</th>
+          <th>Credit</th>
+          <th>Debit</th>
+          <th>Default Amt</th>
+          <th>Arrears</th>
+          <th>Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn in transactions %}
+        <tr>
+          <td style="font-size:11px;white-space:nowrap;">{{ txn.date|date:"Y-m-d" }}</td>
+          <td style="font-size:12px;">
+            {% if txn.owner %}
+            <a href="{% url 'sa_client_detail' txn.owner.id %}">{{ txn.owner.first_name }} {{ txn.owner.last_name }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:12px;">{{ txn.lender.organisation|default:"—" }}</td>
+          <td style="font-size:11px;">
+            {% if txn.loanref %}<a href="{% url 'sa_loan_detail' txn.loanref.ref %}"><code>{{ txn.loanref.ref }}</code></a>{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if txn.type == 'PAYMENT' %}<span class="sa-badge sa-badge-success">Payment</span>
+            {% elif txn.type == 'DEFAULT' %}<span class="sa-badge sa-badge-danger">Default</span>
+            {% else %}<span class="sa-badge" style="background:var(--sa-border);">{{ txn.type|default:"—" }}</span>{% endif %}
+          </td>
+          <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ txn.statement }}">{{ txn.statement|default:"—" }}</td>
+          <td style="font-size:12px;color:var(--sa-success);">{{ txn.credit|default:"" }}</td>
+          <td style="font-size:12px;color:var(--sa-danger);">{{ txn.debit|default:"" }}</td>
+          <td style="font-size:12px;">{{ txn.default_amount|default:"" }}</td>
+          <td style="font-size:12px;{% if txn.arrears %}color:#e3b341;{% endif %}">{{ txn.arrears|default:"" }}</td>
+          <td style="font-size:12px;font-weight:600;">{{ txn.balance|default:"" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="11" style="color:var(--sa-muted);text-align:center;padding:20px;">No transactions found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

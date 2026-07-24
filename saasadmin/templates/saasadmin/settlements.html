@@ -1,0 +1,125 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Debt Settlements{% endblock %}
+{% block topbar_title %}Debt Settlement & Brokerage{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Debt Settlements</h1>
+    <div class="sa-page-sub">DCC acts as broker between lenders and borrowers to negotiate debt resolution</div>
+  </div>
+  <button class="sa-btn sa-btn-primary sa-btn-sm" onclick="document.getElementById('open-case-modal').style.display='flex'">
+    <i class="bi bi-plus-circle"></i> Open New Case
+  </button>
+</div>
+
+<!-- Status filter -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="?" class="sa-btn {% if not status_filter %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">All</a>
+  {% for val, label in status_choices %}
+  <a href="?status={{ val }}" class="sa-btn {% if status_filter == val %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">
+    {{ label|truncatechars:18 }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="sa-card">
+  {% if settlements %}
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Borrower</th><th>Lender</th><th>Original (K)</th>
+          <th>Offer (K)</th><th>Agreed (K)</th><th>Status</th><th>Opened</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ds in settlements %}
+        <tr>
+          <td>DS-{{ ds.pk }}</td>
+          <td>
+            <strong>{{ ds.client.first_name }} {{ ds.client.last_name }}</strong>
+            <div style="font-size:11px;color:var(--sa-muted);">{{ ds.client.CUID|default:"" }}</div>
+          </td>
+          <td style="font-size:12px;">{{ ds.lender.organisation|default:ds.lender.email }}</td>
+          <td>K {{ ds.original_amount }}</td>
+          <td>{% if ds.offered_amount %}K {{ ds.offered_amount }}{% else %}<span style="color:var(--sa-muted);">—</span>{% endif %}</td>
+          <td>{% if ds.agreed_amount %}<strong style="color:var(--sa-success);">K {{ ds.agreed_amount }}</strong>{% else %}<span style="color:var(--sa-muted);">—</span>{% endif %}</td>
+          <td>
+            {% if ds.status == 'OPEN' %}<span class="sa-badge" style="background:#555;">Open</span>
+            {% elif ds.status == 'NEGOTIATING' %}<span class="sa-badge" style="background:#4a6fa5;color:#fff;">Negotiating</span>
+            {% elif ds.status == 'OFFER_MADE' %}<span class="sa-badge" style="background:#e09b3d;color:#fff;">Offer Made</span>
+            {% elif ds.status == 'ACCEPTED' %}<span class="sa-badge" style="background:#2a7f4f;color:#fff;">Accepted</span>
+            {% elif ds.status == 'SETTLED' %}<span class="sa-badge sa-badge-success">Settled</span>
+            {% elif ds.status == 'REJECTED' %}<span class="sa-badge sa-badge-danger">Rejected</span>
+            {% else %}<span class="sa-badge">{{ ds.status }}</span>{% endif %}
+          </td>
+          <td style="color:var(--sa-muted);font-size:12px;">{{ ds.opened_at|date:"d M Y" }}</td>
+          <td>
+            <a href="{% url 'sa_settlement_detail' ds.pk %}" class="sa-btn sa-btn-outline sa-btn-sm">
+              <i class="bi bi-chat-dots"></i> Open
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--sa-muted);padding:20px 0;">No settlement cases{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+  {% endif %}
+</div>
+
+<!-- Open Case Modal -->
+<div id="open-case-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div class="sa-card" style="width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <strong>Open New Settlement Case</strong>
+      <button onclick="document.getElementById('open-case-modal').style.display='none'" style="background:none;border:none;color:var(--sa-muted);font-size:20px;cursor:pointer;">&times;</button>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="open">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="sa-form-label">Borrower (ClientProfile) <span style="color:var(--sa-danger);">*</span></label>
+          <select name="client_id" class="sa-form-control">
+            <option value="">— Select borrower —</option>
+            {% for c in defaulted_clients %}
+            <option value="{{ c.pk }}">{{ c.first_name }} {{ c.last_name }} ({{ c.CUID|default:c.pk }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="sa-form-label">Lender <span style="color:var(--sa-danger);">*</span></label>
+          <select name="lender_id" class="sa-form-control">
+            <option value="">— Select lender —</option>
+            {% for t in tenants %}
+            <option value="{{ t.pk }}">{{ t.organisation|default:t.email }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="sa-form-label">Original Amount (K) <span style="color:var(--sa-danger);">*</span></label>
+          <input type="number" name="original_amount" class="sa-form-control" step="0.01" min="0" required>
+        </div>
+        <div class="col-md-6">
+          <label class="sa-form-label">Default Notice ID (optional)</label>
+          <input type="text" name="default_notice_id" class="sa-form-control" placeholder="e.g. 42">
+        </div>
+        <div class="col-md-6">
+          <label class="sa-form-label">Borrower Email</label>
+          <input type="email" name="borrower_email" class="sa-form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="sa-form-label">Borrower Phone</label>
+          <input type="text" name="borrower_phone" class="sa-form-control">
+        </div>
+      </div>
+      <button type="submit" class="sa-btn sa-btn-primary" style="margin-top:16px;width:100%;">
+        <i class="bi bi-plus-circle"></i> Open Case
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

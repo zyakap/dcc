@@ -1,0 +1,290 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}{{ client.first_name }} {{ client.last_name }}{% endblock %}
+{% block topbar_title %}Client Record{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">{{ client.first_name }} {{ client.middle_name|default:"" }} {{ client.last_name }}</h1>
+    <div class="sa-page-sub">
+      CUID: <code>{{ client.CUID|default:"—" }}</code> &nbsp;·&nbsp;
+      LUID: <code>{{ client.LUID|default:"—" }}</code> &nbsp;·&nbsp;
+      <span style="color:var(--sa-muted);">{{ client.user_profile.organisation|default:"—" }}</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'sa_client_history' client.id %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-clock-history"></i> Audit Trail</a>
+    <a href="{% url 'sa_clients' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- Status chips -->
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="sa-card" style="padding:12px 16px;">
+      <div style="font-size:11px;color:var(--sa-muted);">DCC Status</div>
+      <div style="font-weight:700;font-size:14px;color:{% if client.dcc_flagged %}var(--sa-danger){% else %}var(--sa-success){% endif %};">
+        {{ client.dcc_status|default:"CLEAR" }}{% if client.dcc_flagged %} ⚑{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-card" style="padding:12px 16px;">
+      <div style="font-size:11px;color:var(--sa-muted);">Credit Rating</div>
+      <div style="font-weight:700;font-size:14px;">{{ client.credit_rating|default:"—" }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-card" style="padding:12px 16px;">
+      <div style="font-size:11px;color:var(--sa-muted);">Listed By</div>
+      <div style="font-weight:700;font-size:13px;">{{ client.user_profile.organisation|default:"—" }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sa-card" style="padding:12px 16px;">
+      <div style="font-size:11px;color:var(--sa-muted);">Last Updated</div>
+      <div style="font-weight:700;font-size:13px;">{{ client.updated_at|date:"d M Y" }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="clientTab">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-overview">Overview</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-loans">Loans ({{ loans|length }})</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dcc">DCC Credit Intelligence</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-history">Recent History</button></li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- OVERVIEW -->
+  <div class="tab-pane fade show active" id="tab-overview">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="sa-card">
+          <div class="sa-card-header"><i class="bi bi-person"></i> Personal</div>
+          <table class="sa-table" style="font-size:13px;">
+            <tr><th>Gender</th><td>{{ client.gender|default:"—" }}</td></tr>
+            <tr><th>DOB</th><td>{{ client.date_of_birth|default:"—" }}</td></tr>
+            <tr><th>Marital Status</th><td>{{ client.marital_status|default:"—" }}</td></tr>
+            <tr><th>NID</th><td>{{ client.nid_number|default:"—" }}</td></tr>
+            <tr><th>Passport</th><td>{{ client.passport_number|default:"—" }}</td></tr>
+            <tr><th>Driver's Licence</th><td>{{ client.drivers_license_number|default:"—" }}</td></tr>
+            <tr><th>Province</th><td>{{ client.province_of_origin|default:"—" }}</td></tr>
+            <tr><th>Public Listing</th><td>{% if client.public_listing %}<span style="color:var(--sa-success);">Yes</span>{% else %}<span style="color:var(--sa-muted);">No</span>{% endif %}</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="sa-card">
+          <div class="sa-card-header"><i class="bi bi-telephone"></i> Contact</div>
+          <table class="sa-table" style="font-size:13px;">
+            <tr><th>Mobile</th><td>{{ client.mobile1|default:"—" }}</td></tr>
+            <tr><th>Email</th><td>{{ client.email|default:"—" }}</td></tr>
+            {% for c in client.client_contact.all %}
+            <tr><th>Alt Mobile 1</th><td>{{ c.mobile1|default:"—" }}</td></tr>
+            <tr><th>Alt Mobile 2</th><td>{{ c.mobile2|default:"—" }}</td></tr>
+            <tr><th>Alt Email</th><td>{{ c.email1|default:"—" }}</td></tr>
+            {% endfor %}
+            {% for a in client.client_address.all %}
+            <tr><th>Address</th><td>{{ a.address|default:"—" }} ({{ a.residential_province|default:"" }})</td></tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="sa-card">
+          <div class="sa-card-header"><i class="bi bi-briefcase"></i> Employment</div>
+          {% for emp in client.client_employer.all %}
+          <table class="sa-table" style="font-size:13px;">
+            <tr><th>Employer</th><td>{{ emp.employer|default:"—" }}</td></tr>
+            <tr><th>Job Title</th><td>{{ emp.job_title|default:"—" }}</td></tr>
+            <tr><th>Sector</th><td>{{ emp.sector|default:"—" }}</td></tr>
+            <tr><th>Gross Pay</th><td>K {{ emp.gross_pay|default:"0" }}</td></tr>
+            <tr><th>Work Phone</th><td>{{ emp.work_phone|default:"—" }}</td></tr>
+          </table>
+          {% empty %}
+          <p style="color:var(--sa-muted);font-size:13px;padding:8px 0;">No employment details.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% if client.dcc_comment or client.notes %}
+    <div class="sa-card mt-3">
+      <div class="sa-card-header"><i class="bi bi-chat-text"></i> Notes</div>
+      {% if client.dcc_comment %}<p style="font-size:13px;margin-bottom:8px;"><strong>DCC Comment:</strong> {{ client.dcc_comment }}</p>{% endif %}
+      {% if client.notes %}<p style="font-size:13px;margin:0;"><strong>Notes:</strong> {{ client.notes }}</p>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- LOANS -->
+  <div class="tab-pane fade" id="tab-loans">
+    <div class="sa-card">
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead>
+            <tr><th>Ref</th><th>Lender</th><th>Status</th><th>Amount</th><th>Funded</th><th>Term</th><th>Repayment</th><th>Arrears</th><th>Outstanding</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for loan in loans %}
+            <tr>
+              <td><a href="{% url 'sa_loan_detail' loan.ref %}"><code>{{ loan.ref }}</code></a></td>
+              <td>{{ loan.lender.organisation|default:"—" }}</td>
+              <td>
+                {% if loan.status == 'RUNNING' %}<span class="sa-badge sa-badge-success">Running</span>
+                {% elif loan.status == 'DEFAULTED' %}<span class="sa-badge sa-badge-danger">Defaulted</span>
+                {% elif loan.status == 'COMPLETED' %}<span class="sa-badge" style="background:var(--sa-border);">Completed</span>
+                {% else %}<span class="sa-badge">{{ loan.status }}</span>{% endif %}
+              </td>
+              <td>K {{ loan.amount|default:"0" }}</td>
+              <td>{{ loan.funding_date|default:"—" }}</td>
+              <td>{{ loan.number_of_fortnights|default:"—" }}fn</td>
+              <td>K {{ loan.repayment_amount|default:"0" }}</td>
+              <td style="{% if loan.total_arrears %}color:var(--sa-danger);font-weight:600;{% endif %}">K {{ loan.total_arrears|default:"0" }}</td>
+              <td>K {{ loan.total_outstanding|default:"0" }}</td>
+              <td><a href="{% url 'sa_loan_detail' loan.ref %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" style="color:var(--sa-muted);text-align:center;padding:20px;">No loan records.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DCC CREDIT INTELLIGENCE (no gate for superusers) -->
+  <div class="tab-pane fade" id="tab-dcc">
+
+    {% if credit_score %}
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-graph-up"></i> DCC Credit Score</div>
+      <div class="row align-items-center g-3" style="padding:16px;">
+        <div class="col-md-2 text-center">
+          <div style="font-size:3rem;font-weight:700;color:{% if credit_score.grade in 'AAA,AA,A' %}var(--sa-success){% elif credit_score.grade in 'BBB,BB' %}#e3b341{% else %}var(--sa-danger){% endif %};">
+            {{ credit_score.grade }}
+          </div>
+          <div style="font-size:12px;color:var(--sa-muted);">{{ credit_score.score }} / 1000</div>
+          <div style="height:8px;background:var(--sa-border);border-radius:9999px;overflow:hidden;margin-top:6px;">
+            <div style="height:100%;width:{{ credit_score.score|floatformat:0 }}%;background:linear-gradient(90deg,#c0392b 0%,#e3b341 40%,var(--sa-success) 80%);border-radius:9999px;"></div>
+          </div>
+        </div>
+        <div class="col-md-10">
+          <div class="row g-2 text-center">
+            {% with s=credit_score %}
+            <div class="col-4 col-md-2"><div class="sa-stat"><div class="sa-stat-value">{{ s.total_loans }}</div><div class="sa-stat-label">Total</div></div></div>
+            <div class="col-4 col-md-2"><div class="sa-stat" style="color:var(--sa-success);"><div class="sa-stat-value">{{ s.completed_loans }}</div><div class="sa-stat-label">Completed</div></div></div>
+            <div class="col-4 col-md-2"><div class="sa-stat" style="color:#58a6ff;"><div class="sa-stat-value">{{ s.active_loans }}</div><div class="sa-stat-label">Active</div></div></div>
+            <div class="col-4 col-md-2"><div class="sa-stat" style="color:#e3b341;"><div class="sa-stat-value">{{ s.arrears_loans }}</div><div class="sa-stat-label">Arrears</div></div></div>
+            <div class="col-4 col-md-2"><div class="sa-stat" style="color:var(--sa-danger);"><div class="sa-stat-value">{{ s.defaulted_loans }}</div><div class="sa-stat-label">Defaulted</div></div></div>
+            <div class="col-4 col-md-2"><div class="sa-stat" style="color:var(--sa-danger);"><div class="sa-stat-value">{{ s.recovery_loans }}</div><div class="sa-stat-label">Recovery</div></div></div>
+            {% endwith %}
+          </div>
+          <div class="row g-2 mt-1 text-center">
+            <div class="col-6"><div class="sa-stat"><div class="sa-stat-value">K {{ credit_score.total_borrowed|floatformat:2 }}</div><div class="sa-stat-label">Total Borrowed</div></div></div>
+            <div class="col-6"><div class="sa-stat" style="color:{% if credit_score.total_outstanding > 0 %}#e3b341{% endif %};"><div class="sa-stat-value">K {{ credit_score.total_outstanding|floatformat:2 }}</div><div class="sa-stat-label">Outstanding</div></div></div>
+          </div>
+          <div style="font-size:11px;color:var(--sa-muted);margin-top:8px;">Computed: {{ credit_score.computed_at|date:"d M Y H:i" }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if other_profiles %}
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-people"></i> Same Person — Other Tenant Registrations ({{ other_profiles|length }})</div>
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead><tr><th>Name</th><th>Lender</th><th>NID</th><th>DCC Status</th><th>Updated</th><th></th></tr></thead>
+          <tbody>
+            {% for p in other_profiles %}
+            <tr>
+              <td>{{ p.first_name }} {{ p.last_name }}</td>
+              <td>{{ p.user_profile.organisation|default:"—" }}</td>
+              <td>{{ p.nid_number|default:"—" }}</td>
+              <td><span class="sa-badge {% if p.dcc_flagged %}sa-badge-danger{% else %}sa-badge-success{% endif %}">{{ p.dcc_status|default:"CLEAR" }}</span></td>
+              <td style="font-size:12px;color:var(--sa-muted);">{{ p.updated_at|date:"d M Y" }}</td>
+              <td><a href="{% url 'sa_client_detail' p.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sa-card">
+      <div class="sa-card-header">
+        <i class="bi bi-credit-card-2-front"></i> All Loans Across All Lenders
+        <span style="float:right;font-size:12px;color:var(--sa-muted);">
+          Borrowed: <strong>K {{ loan_summary.total_borrowed|default:"0"|floatformat:2 }}</strong> &nbsp;·&nbsp;
+          Outstanding: <strong>K {{ loan_summary.total_outstanding|default:"0"|floatformat:2 }}</strong> &nbsp;·&nbsp;
+          Arrears: <strong style="color:var(--sa-danger);">K {{ loan_summary.total_arrears|default:"0"|floatformat:2 }}</strong>
+        </span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead><tr><th>Ref</th><th>Lender</th><th>Borrower</th><th>Status</th><th>Amount</th><th>Funded</th><th>Arrears</th><th>Outstanding</th><th>Category</th></tr></thead>
+          <tbody>
+            {% for loan in all_loans %}
+            <tr>
+              <td><a href="{% url 'sa_loan_detail' loan.ref %}"><code>{{ loan.ref }}</code></a></td>
+              <td>{{ loan.lender.organisation|default:"—" }}</td>
+              <td>{{ loan.owner.first_name }} {{ loan.owner.last_name }}</td>
+              <td>
+                {% if loan.status == 'RUNNING' %}<span class="sa-badge sa-badge-success">Running</span>
+                {% elif loan.status == 'DEFAULTED' %}<span class="sa-badge sa-badge-danger">Defaulted</span>
+                {% elif loan.status == 'COMPLETED' %}<span class="sa-badge" style="background:var(--sa-border);">Completed</span>
+                {% else %}<span class="sa-badge">{{ loan.status }}</span>{% endif %}
+              </td>
+              <td>K {{ loan.amount|default:"0" }}</td>
+              <td>{{ loan.funding_date|default:"—" }}</td>
+              <td style="{% if loan.total_arrears %}color:var(--sa-danger);{% endif %}">K {{ loan.total_arrears|default:"0" }}</td>
+              <td>K {{ loan.total_outstanding|default:"0" }}</td>
+              <td>{{ loan.funded_category|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" style="color:var(--sa-muted);text-align:center;padding:20px;">No loans found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECENT HISTORY -->
+  <div class="tab-pane fade" id="tab-history">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-clock-history"></i> Recent Audit Trail (last 50)</div>
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead><tr><th>Changed</th><th>Field</th><th>Old Value</th><th>New Value</th><th>Source</th></tr></thead>
+          <tbody>
+            {% for entry in history %}
+            <tr>
+              <td style="font-size:11px;color:var(--sa-muted);">{{ entry.changed_at|date:"Y-m-d H:i:s" }}</td>
+              <td><code>{{ entry.field_name }}</code></td>
+              <td style="font-size:12px;">{{ entry.old_value|default:"—" }}</td>
+              <td style="font-size:12px;">{{ entry.new_value|default:"—" }}</td>
+              <td>
+                {% if entry.source == 'SYNC' %}<span class="sa-badge" style="background:#1a6fc4;">Sync</span>
+                {% elif entry.source == 'MANUAL' %}<span class="sa-badge" style="background:#e09b3d;">Manual</span>
+                {% else %}<span class="sa-badge" style="background:var(--sa-border);">{{ entry.source }}</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="color:var(--sa-muted);text-align:center;padding:20px;">No history recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;">
+        <a href="{% url 'sa_client_history' client.id %}" style="color:var(--sa-accent);">View full audit trail →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

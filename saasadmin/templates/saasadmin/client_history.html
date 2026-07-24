@@ -1,0 +1,83 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}{{ client.first_name }} {{ client.last_name }} — Audit Trail{% endblock %}
+{% block topbar_title %}Client Audit Trail{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">{{ client.first_name }} {{ client.last_name }}</h1>
+    <div class="sa-page-sub">Full audit trail &amp; cross-tenant profiles</div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'sa_client_detail' client.id %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-person-badge"></i> Client Detail</a>
+    <a href="{% url 'sa_clients' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-arrow-left"></i> Clients</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-person"></i> This Profile</div>
+      <table class="sa-table" style="font-size:13px;">
+        <tr><th>Tenant</th><td>{{ client.user_profile.organisation|default:"—" }}</td></tr>
+        <tr><th>LUID</th><td><code>{{ client.LUID|default:"—" }}</code></td></tr>
+        <tr><th>CUID</th><td><code>{{ client.CUID|default:"—" }}</code></td></tr>
+        <tr><th>Email</th><td>{{ client.email|default:"—" }}</td></tr>
+        <tr><th>Mobile</th><td>{{ client.mobile1|default:"—" }}</td></tr>
+        <tr><th>NID</th><td>{{ client.nid_number|default:"—" }}</td></tr>
+        <tr><th>DCC Status</th><td>{{ client.dcc_status|default:"CLEAR" }}</td></tr>
+        <tr><th>Created</th><td>{{ client.created_at|date:"Y-m-d H:i" }}</td></tr>
+        <tr><th>Updated</th><td>{{ client.updated_at|date:"Y-m-d H:i" }}</td></tr>
+      </table>
+    </div>
+
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-people"></i> Other Tenant Profiles</div>
+      <p style="font-size:12px;color:var(--sa-muted);margin-bottom:12px;">
+        Same person registered with other lenders — each has its own history.
+      </p>
+      {% for other in other_profiles %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--sa-border);">
+        <div>
+          <div style="font-size:13px;font-weight:600;">{{ other.user_profile.organisation|default:"—" }}</div>
+          <div style="font-size:11px;color:var(--sa-muted);">LUID: {{ other.LUID|default:"—" }} · {{ other.updated_at|date:"Y-m-d" }}</div>
+        </div>
+        <a href="{% url 'sa_client_history' other.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
+      </div>
+      {% empty %}
+      <p style="color:var(--sa-muted);font-size:12px;">No other tenant profiles found for this name.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-clock-history"></i> Audit Trail <span style="font-size:12px;color:var(--sa-muted);font-weight:400;">(most recent first)</span></div>
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead>
+            <tr><th>Changed</th><th>Field</th><th>Old Value</th><th>New Value</th><th>Source</th></tr>
+          </thead>
+          <tbody>
+            {% for entry in history %}
+            <tr>
+              <td style="font-size:11px;white-space:nowrap;color:var(--sa-muted);">{{ entry.changed_at|date:"Y-m-d H:i:s" }}</td>
+              <td><code style="font-size:11px;">{{ entry.field_name }}</code></td>
+              <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ entry.old_value }}">{{ entry.old_value|default:"—" }}</td>
+              <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ entry.new_value }}">{{ entry.new_value|default:"—" }}</td>
+              <td>
+                {% if entry.source == 'SYNC' %}<span class="sa-badge" style="background:#1a6fc4;">Tenant Sync</span>
+                {% elif entry.source == 'MANUAL' %}<span class="sa-badge" style="background:#e09b3d;">DCC Staff</span>
+                {% else %}<span class="sa-badge" style="background:var(--sa-border);">{{ entry.source|default:"System" }}</span>{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="color:var(--sa-muted);text-align:center;padding:20px;">No changes recorded yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

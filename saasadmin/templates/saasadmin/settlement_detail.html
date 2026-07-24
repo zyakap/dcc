@@ -1,0 +1,163 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}DS-{{ ds.pk }} — Settlement{% endblock %}
+{% block topbar_title %}Settlement DS-{{ ds.pk }}{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">DS-{{ ds.pk }} — {{ ds.client.first_name }} {{ ds.client.last_name }}</h1>
+    <div class="sa-page-sub">
+      Lender: {{ ds.lender.organisation|default:ds.lender.email }} &nbsp;|&nbsp;
+      Opened: {{ ds.opened_at|date:"d M Y" }}
+      {% if ds.assigned_dcc_officer %} &nbsp;|&nbsp; Officer: {{ ds.assigned_dcc_officer.email }}{% endif %}
+    </div>
+  </div>
+  <a href="{% url 'sa_settlements' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-arrow-left"></i> All Settlements</a>
+</div>
+
+<div class="row g-3">
+  <!-- Left: case facts + controls -->
+  <div class="col-lg-4">
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-cash-stack"></i> Settlement Facts</div>
+      <div style="font-size:13px;line-height:2.2;">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sa-border);padding-bottom:6px;margin-bottom:6px;">
+          <span style="color:var(--sa-muted);">Original Debt</span>
+          <strong>K {{ ds.original_amount }}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--sa-border);padding-bottom:6px;margin-bottom:6px;">
+          <span style="color:var(--sa-muted);">Offer Made</span>
+          <strong>{% if ds.offered_amount %}K {{ ds.offered_amount }}{% else %}—{% endif %}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--sa-muted);">Agreed Amount</span>
+          <strong style="color:var(--sa-success);">{% if ds.agreed_amount %}K {{ ds.agreed_amount }}{% else %}—{% endif %}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-people"></i> Parties</div>
+      <div style="font-size:12px;line-height:2;">
+        <div><strong>Borrower:</strong> {{ ds.client.first_name }} {{ ds.client.last_name }}</div>
+        <div style="color:var(--sa-muted);">{{ ds.borrower_email|default:"No email" }} &nbsp; {{ ds.borrower_phone|default:"" }}</div>
+        <div style="margin-top:8px;"><strong>Lender:</strong> {{ ds.lender.organisation|default:ds.lender.email }}</div>
+        <div style="color:var(--sa-muted);">{{ ds.lender.work_email|default:"" }}</div>
+      </div>
+    </div>
+
+    <!-- Status change -->
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-arrow-repeat"></i> Update Status</div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="sa-form-group">
+          <select name="new_status" class="sa-form-control">
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if ds.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="sa-form-group">
+          <label class="sa-form-label">Agreed Amount (K) — if ACCEPTED or SETTLED</label>
+          <input type="number" name="agreed_amount" class="sa-form-control" step="0.01" value="{{ ds.agreed_amount|default:'' }}">
+        </div>
+        <button type="submit" name="action" value="status" class="sa-btn sa-btn-outline sa-btn-sm">Update Status</button>
+      </form>
+    </div>
+
+    <!-- Make offer -->
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-send"></i> Make Settlement Offer</div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="sa-form-group">
+          <label class="sa-form-label">Offer Amount (K)</label>
+          <input type="number" name="offered_amount" class="sa-form-control" step="0.01" placeholder="0.00">
+        </div>
+        <button type="submit" name="action" value="offer" class="sa-btn sa-btn-primary sa-btn-sm">
+          <i class="bi bi-send"></i> Send Offer to All Parties
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: message thread -->
+  <div class="col-lg-8">
+    <div class="sa-card" style="display:flex;flex-direction:column;height:calc(100vh - 180px);min-height:500px;">
+      <div class="sa-card-header"><i class="bi bi-chat-dots"></i> Communication Thread</div>
+
+      <!-- Messages -->
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:12px;">
+        {% for msg in messages_log %}
+        <div style="
+          max-width:80%;
+          {% if msg.is_internal %}align-self:center;{% elif msg.sender_type == 'DCC' %}align-self:flex-end;{% else %}align-self:flex-start;{% endif %}
+        ">
+          <div style="
+            background:{% if msg.is_internal %}rgba(210,153,34,.1){% elif msg.sender_type == 'DCC' %}var(--sa-accent){% elif msg.sender_type == 'LENDER' %}var(--sa-hover){% elif msg.sender_type == 'SYSTEM' %}var(--sa-bg){% else %}#1a3a1a{% endif %};
+            color:{% if msg.sender_type == 'DCC' and not msg.is_internal %}#fff{% else %}var(--sa-text){% endif %};
+            border-radius:12px;padding:10px 14px;font-size:13px;
+            {% if msg.is_internal %}border:1px dashed var(--sa-border);border-radius:6px;{% endif %}
+          ">
+            {% if msg.is_internal %}<div style="font-size:10px;color:var(--sa-muted);text-transform:uppercase;margin-bottom:4px;">Internal note</div>{% endif %}
+            <div style="font-weight:600;font-size:11px;margin-bottom:3px;">
+              {% if msg.sender_type == 'DCC' %}DCC{% elif msg.sender_type == 'SYSTEM' %}System{% elif msg.sender_type == 'LENDER' %}Lender{% else %}Borrower{% endif %}
+              {% if msg.sender_name %} — {{ msg.sender_name }}{% endif %}
+            </div>
+            {{ msg.body }}
+            {% if msg.attachment %}
+            <div style="margin-top:6px;font-size:11px;">
+              <a href="{{ msg.attachment.url }}" target="_blank" style="color:{% if msg.sender_type == 'DCC' %}#cce;{% else %}var(--sa-accent);{% endif %}">
+                <i class="bi bi-paperclip"></i> Attachment
+              </a>
+            </div>
+            {% endif %}
+          </div>
+          <div style="font-size:10px;color:var(--sa-muted);margin-top:2px;{% if msg.sender_type == 'DCC' %}text-align:right;{% endif %}">
+            {{ msg.sent_at|date:"d M Y H:i" }}
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;color:var(--sa-muted);padding:40px 0;">No messages yet.</div>
+        {% endfor %}
+      </div>
+
+      <!-- Compose -->
+      <div style="border-top:1px solid var(--sa-border);padding-top:12px;">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-2 mb-2">
+            <div class="col-md-4">
+              <select name="sender_type" class="sa-form-control">
+                {% for val, label in sender_types %}
+                {% if val != 'SYSTEM' %}<option value="{{ val }}">Sending as: {{ label }}</option>{% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <input type="text" name="sender_name" class="sa-form-control" placeholder="Sender name / email">
+            </div>
+            <div class="col-md-4" style="display:flex;align-items:center;gap:8px;font-size:13px;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                <input type="checkbox" name="is_internal" style="accent-color:var(--sa-accent);width:14px;height:14px;">
+                Internal note only
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <textarea name="body" class="sa-form-control" rows="3" placeholder="Type a message…"
+              style="resize:none;flex:1;" required></textarea>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <input type="file" name="attachment" class="sa-form-control" style="font-size:11px;padding:4px;">
+              <button type="submit" name="action" value="message" class="sa-btn sa-btn-primary">
+                <i class="bi bi-send"></i> Send
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

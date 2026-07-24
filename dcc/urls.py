@@ -2,14 +2,12 @@
 from django.conf import settings
 from django.conf.urls.static import static
 # others
-from django.contrib import admin
 from django.urls import include, path, re_path
 
 from users.views import home, terms_conditions, about, contact, front_search, public_listing,submit_default_list,request_delist, request_delist_feedback, newsletter_subscribe, submit_default_list_feedback
 
 urlpatterns = [
 
-    path('appadmin/', admin.site.urls),
     path('__debug__/', include('debug_toolbar.urls')), 
     path('ckeditor/', include('ckeditor_uploader.urls')),
 
@@ -21,7 +19,8 @@ urlpatterns = [
     path('client/', include('client.urls')),
     path('loan/', include('loan.urls')),
     path('transaction/', include('transaction.urls')),
-    path('admin/', include('admin1.urls')),
+    # /admin/ and /saasadmin/ both serve the saasadmin control panel
+    path('admin/', include('saasadmin.urls')),
     path('saasadmin/', include('saasadmin.urls')),
     path('borrower/',  include('borrower.urls')),
     path('tpapi/v1/', include('thirdparty_api.urls')),

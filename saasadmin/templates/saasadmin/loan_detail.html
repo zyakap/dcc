@@ -1,0 +1,120 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Loan {{ loan.ref }}{% endblock %}
+{% block topbar_title %}Loan Record{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">{{ loan.ref }}</h1>
+    <div class="sa-page-sub">
+      {{ loan.lender.organisation|default:"—" }} &nbsp;·&nbsp;
+      {% if loan.status == 'RUNNING' %}<span class="sa-badge sa-badge-success">Running</span>
+      {% elif loan.status == 'DEFAULTED' %}<span class="sa-badge sa-badge-danger">Defaulted</span>
+      {% elif loan.status == 'COMPLETED' %}<span class="sa-badge" style="background:var(--sa-border);">Completed</span>
+      {% else %}<span class="sa-badge">{{ loan.status }}</span>{% endif %}
+      &nbsp;
+      <span class="sa-badge" style="background:var(--sa-hover);color:var(--sa-text);">{{ loan.funded_category|default:"—" }}</span>
+    </div>
+  </div>
+  <a href="{% url 'sa_loans' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-arrow-left"></i> Back to Loans</a>
+</div>
+
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Loan Amount</div><div style="font-size:18px;font-weight:700;">K {{ loan.amount|default:"0" }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Outstanding</div><div style="font-size:18px;font-weight:700;color:{% if loan.total_outstanding %}#e3b341{% endif %};">K {{ loan.total_outstanding|default:"0" }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Arrears</div><div style="font-size:18px;font-weight:700;color:{% if loan.total_arrears %}var(--sa-danger){% endif %};">K {{ loan.total_arrears|default:"0" }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="sa-card" style="padding:12px 16px;text-align:center;"><div style="font-size:11px;color:var(--sa-muted);">Repayment</div><div style="font-size:18px;font-weight:700;">K {{ loan.repayment_amount|default:"0" }}</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+
+    {% if loan.owner %}
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-person"></i> Borrower</div>
+      <table class="sa-table" style="font-size:13px;">
+        <tr><th>Name</th><td><strong>{{ loan.owner.first_name }} {{ loan.owner.last_name }}</strong></td></tr>
+        <tr><th>CUID</th><td><code>{{ loan.owner.CUID|default:"—" }}</code></td></tr>
+        <tr><th>Mobile</th><td>{{ loan.owner.mobile1|default:"—" }}</td></tr>
+        <tr><th>DCC Status</th><td><span class="sa-badge {% if loan.owner.dcc_flagged %}sa-badge-danger{% else %}sa-badge-success{% endif %}">{{ loan.owner.dcc_status|default:"CLEAR" }}</span></td></tr>
+      </table>
+      <div style="margin-top:10px;">
+        <a href="{% url 'sa_client_detail' loan.owner.id %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-person-badge"></i> View Client Record</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-file-text"></i> Loan Terms</div>
+      <table class="sa-table" style="font-size:13px;">
+        <tr><th>Ref</th><td><code>{{ loan.ref|default:"—" }}</code></td></tr>
+        <tr><th>UID</th><td><code>{{ loan.UID|default:"—" }}</code></td></tr>
+        <tr><th>LUID</th><td><code>{{ loan.LUID|default:"—" }}</code></td></tr>
+        <tr><th>Lender</th><td>{{ loan.lender.organisation|default:"—" }}</td></tr>
+        <tr><th>Type</th><td>{{ loan.loan_type|default:"—" }}</td></tr>
+        <tr><th>Classification</th><td>{{ loan.classification|default:"—" }}</td></tr>
+        <tr><th>Amount</th><td>K {{ loan.amount|default:"0" }}</td></tr>
+        <tr><th>Interest</th><td>K {{ loan.interest|default:"0" }}</td></tr>
+        <tr><th>Processing Fee</th><td>K {{ loan.processing_fee|default:"0" }}</td></tr>
+        <tr><th>Total Loan</th><td>K {{ loan.total_loan_amount|default:"0" }}</td></tr>
+        <tr><th>Repayment</th><td>K {{ loan.repayment_amount|default:"0" }} ({{ loan.repayment_frequency|default:"—" }})</td></tr>
+        <tr><th>Term</th><td>{{ loan.number_of_fortnights|default:"—" }} fortnights</td></tr>
+        <tr><th>Funding Date</th><td>{{ loan.funding_date|default:"—" }}</td></tr>
+        <tr><th>Repayment Start</th><td>{{ loan.repayment_start_date|default:"—" }}</td></tr>
+        <tr><th>Expected End</th><td>{{ loan.expected_end_date|default:"—" }}</td></tr>
+        <tr><th>Next Payment</th><td>{{ loan.next_payment_date|default:"—" }}</td></tr>
+      </table>
+    </div>
+
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-graph-down-arrow"></i> Performance</div>
+      <table class="sa-table" style="font-size:13px;">
+        <tr><th>Repayments Made</th><td>{{ loan.number_of_repayments|default:"0" }}</td></tr>
+        <tr><th>Total Paid</th><td>K {{ loan.total_paid|default:"0" }}</td></tr>
+        <tr><th>Last Payment</th><td>{{ loan.last_repayment_date|default:"—" }} (K {{ loan.last_repayment_amount|default:"0" }})</td></tr>
+        <tr><th>Defaults</th><td>{{ loan.number_of_defaults|default:"0" }}</td></tr>
+        <tr><th>Days in Default</th><td>{{ loan.days_in_default|default:"0" }}</td></tr>
+        <tr><th>Last Default</th><td>{{ loan.last_default_date|default:"—" }} (K {{ loan.last_default_amount|default:"0" }})</td></tr>
+        <tr><th>Arrears</th><td style="{% if loan.total_arrears %}color:var(--sa-danger);font-weight:600;{% endif %}">K {{ loan.total_arrears|default:"0" }}</td></tr>
+        <tr><th>Outstanding</th><td>K {{ loan.total_outstanding|default:"0" }}</td></tr>
+        <tr><th>Aging Category</th><td>{{ loan.aging_category|default:"—" }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="sa-card">
+      <div class="sa-card-header">
+        <i class="bi bi-list-ul"></i> Transaction History
+        <span class="sa-badge" style="float:right;background:var(--sa-hover);color:var(--sa-text);">{{ transactions|length }}</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="sa-table">
+          <thead>
+            <tr><th>Date</th><th>Type</th><th>Statement</th><th>Credit</th><th>Debit</th><th>Arrears</th><th>Balance</th></tr>
+          </thead>
+          <tbody>
+            {% for txn in transactions %}
+            <tr>
+              <td style="font-size:11px;white-space:nowrap;">{{ txn.date|date:"Y-m-d" }}</td>
+              <td>
+                {% if txn.type == 'PAYMENT' %}<span class="sa-badge sa-badge-success">Payment</span>
+                {% elif txn.type == 'DEFAULT' %}<span class="sa-badge sa-badge-danger">Default</span>
+                {% else %}<span class="sa-badge" style="background:var(--sa-border);">{{ txn.type|default:"—" }}</span>{% endif %}
+              </td>
+              <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ txn.statement }}">{{ txn.statement|default:"—" }}</td>
+              <td style="font-size:12px;color:var(--sa-success);">{{ txn.credit|default:"" }}</td>
+              <td style="font-size:12px;color:var(--sa-danger);">{{ txn.debit|default:"" }}</td>
+              <td style="font-size:12px;{% if txn.arrears %}color:#e3b341;{% endif %}">{{ txn.arrears|default:"" }}</td>
+              <td style="font-size:12px;font-weight:600;">{{ txn.balance|default:"" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="color:var(--sa-muted);text-align:center;padding:20px;">No transactions recorded.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

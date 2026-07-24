@@ -28,9 +28,19 @@ urlpatterns = [
 
     # Client records
     path('clients/', views.sa_clients, name='sa_clients'),
+    path('clients/<int:client_id>/', views.sa_client_detail, name='sa_client_detail'),
+    path('clients/<int:client_id>/history/', views.sa_client_history, name='sa_client_history'),
 
     # Loan records
     path('loans/', views.sa_loans, name='sa_loans'),
+    path('loans/<str:ref>/', views.sa_loan_detail, name='sa_loan_detail'),
+
+    # Transactions
+    path('transactions/', views.sa_transactions, name='sa_transactions'),
+
+    # Website tools
+    path('delist-requests/', views.sa_delist_requests, name='sa_delist_requests'),
+    path('subscribers/', views.sa_subscribers, name='sa_subscribers'),
 
     # DCC report
     path('dcc-report/', views.sa_dcc_report, name='sa_dcc_report'),
@@ -44,4 +54,13 @@ urlpatterns = [
     # Default notices & disputes
     path('default-notices/', views.sa_default_notices, name='sa_default_notices'),
     path('disputes/', views.sa_disputes, name='sa_disputes'),
+
+    # Workflow — Upload, Verification, Settlements
+    path('upload-records/', views.sa_upload_records, name='sa_upload_records'),
+    path('records-under-review/', views.sa_records_under_review, name='sa_records_under_review'),
+    path('records-under-review/<int:case_id>/', views.sa_verification_case, name='sa_verification_case'),
+    path('business-records-under-review/', views.sa_business_records_under_review, name='sa_business_records_under_review'),
+    path('default-submissions/', views.sa_default_submissions, name='sa_default_submissions'),
+    path('settlements/', views.sa_settlements, name='sa_settlements'),
+    path('settlements/<int:settlement_id>/', views.sa_settlement_detail, name='sa_settlement_detail'),
 ]

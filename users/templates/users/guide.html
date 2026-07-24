@@ -1,0 +1,579 @@
+{% extends "dashboard_base.html" %}
+{% load static %}
+{% block title %}Platform Guide{% endblock %}
+{% block breadcrumb %}<a href="{% url 'dashboard' %}">Dashboard</a>{% endblock %}
+{% block breadcrumb_active %}Platform Guide{% endblock %}
+{% block dashboard_title %}How to Use DCC{% endblock %}
+
+{% block content %}
+<style>
+  .guide-toc { position:sticky; top:20px; }
+  .guide-toc a { display:block; padding:6px 12px; font-size:13px; color:var(--sa-muted); border-left:2px solid var(--sa-border); text-decoration:none; transition:all .15s; }
+  .guide-toc a:hover, .guide-toc a.active { color:var(--sa-accent); border-left-color:var(--sa-accent); background:rgba(35,134,54,.07); }
+  .guide-toc .toc-section { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--sa-muted); padding:10px 12px 4px; }
+
+  .guide-section { scroll-margin-top:70px; margin-bottom:40px; }
+  .guide-section h2 { font-size:20px; font-weight:700; color:var(--sa-text); border-bottom:1px solid var(--sa-border); padding-bottom:8px; margin-bottom:18px; display:flex; align-items:center; gap:10px; }
+  .guide-section h2 i { color:var(--sa-accent); font-size:18px; }
+  .guide-section h3 { font-size:15px; font-weight:700; color:var(--sa-text); margin:20px 0 8px; }
+  .guide-section p, .guide-section li { font-size:14px; color:var(--sa-muted); line-height:1.7; }
+  .guide-section ul { padding-left:20px; }
+  .guide-section li { margin-bottom:4px; }
+
+  .guide-step { display:flex; gap:14px; align-items:flex-start; margin-bottom:16px; background:var(--sa-hover); border-radius:8px; padding:14px; }
+  .guide-step .step-num { flex-shrink:0; width:32px;height:32px;border-radius:50%;background:var(--sa-accent);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center; }
+  .guide-step-body h6 { font-size:13px; font-weight:700; color:var(--sa-text); margin:0 0 3px; }
+  .guide-step-body p { font-size:12px; color:var(--sa-muted); margin:0; line-height:1.5; }
+
+  .tip-box { background:rgba(35,134,54,.08); border-left:3px solid var(--sa-accent); border-radius:0 6px 6px 0; padding:12px 16px; margin:14px 0; }
+  .tip-box strong { color:var(--sa-accent); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  .tip-box p { font-size:13px; color:var(--sa-muted); margin:4px 0 0; }
+
+  .warn-box { background:rgba(229,162,17,.08); border-left:3px solid #e3b341; border-radius:0 6px 6px 0; padding:12px 16px; margin:14px 0; }
+  .warn-box strong { color:#e3b341; font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  .warn-box p { font-size:13px; color:var(--sa-muted); margin:4px 0 0; }
+
+  .guide-card { background:var(--sa-hover); border:1px solid var(--sa-border); border-radius:8px; padding:16px; margin-bottom:12px; }
+  .guide-card h6 { font-size:13px; font-weight:700; color:var(--sa-text); margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+  .guide-card p { font-size:12px; color:var(--sa-muted); margin:0; }
+
+  code.inline { background:var(--sa-border); border-radius:4px; padding:1px 6px; font-size:12px; color:var(--sa-accent2); }
+
+  .badge-pill { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:.04em; }
+  .badge-free { background:rgba(139,148,158,.15); color:var(--sa-muted); }
+  .badge-sme { background:rgba(35,134,54,.15); color:var(--sa-accent); }
+  .badge-biz { background:rgba(31,111,235,.15); color:var(--sa-accent2); }
+
+  .feature-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .feature-table th { background:var(--sa-hover); color:var(--sa-muted); font-weight:600; font-size:11px; text-transform:uppercase; padding:8px 12px; text-align:left; border-bottom:1px solid var(--sa-border); }
+  .feature-table td { padding:9px 12px; border-bottom:1px solid var(--sa-border); color:var(--sa-text); vertical-align:middle; }
+  .feature-table tr:hover td { background:var(--sa-hover); }
+  .check { color:var(--sa-accent); font-size:15px; }
+  .cross { color:#f85149; font-size:15px; }
+</style>
+
+<div class="row g-4">
+
+  <!-- ── Table of Contents (sidebar) ── -->
+  <div class="col-lg-3 d-none d-lg-block">
+    <div class="sa-card guide-toc" id="guide-toc">
+      <div style="font-size:12px;font-weight:700;color:var(--sa-text);padding:10px 12px 6px;">Contents</div>
+      <div class="toc-section">Getting Started</div>
+      <a href="#getting-started">Account Setup</a>
+      <a href="#dashboard">Your Dashboard</a>
+      <div class="toc-section">Data Management</div>
+      <a href="#adding-records">Adding Client Records</a>
+      <a href="#uploading">Bulk Upload</a>
+      <a href="#searching">Searching the Database</a>
+      <div class="toc-section">Credit & Risk</div>
+      <a href="#credit-checks">Credit Checks</a>
+      <a href="#watch-list">Watch List &amp; Alerts</a>
+      <a href="#portfolio">Portfolio Analytics</a>
+      <div class="toc-section">Workflows</div>
+      <a href="#default-notices">Default Notices</a>
+      <a href="#disputes">Disputes</a>
+      <a href="#debt-settlement">Debt Settlement</a>
+      <div class="toc-section">For Borrowers</div>
+      <a href="#borrower-portal">Borrower Portal</a>
+      <div class="toc-section">Integrations</div>
+      <a href="#api">API Access</a>
+      <div class="toc-section">Plans & Billing</div>
+      <a href="#billing">Plans &amp; Billing</a>
+    </div>
+  </div>
+
+  <!-- ── Main Guide Content ── -->
+  <div class="col-lg-9" id="guide-content">
+
+    <!-- GETTING STARTED -->
+    <div id="getting-started" class="guide-section sa-card">
+      <h2><i class="bi bi-rocket-takeoff"></i> Account Setup</h2>
+      <p>Welcome to <strong>DCC — Dinau Control Center</strong>, Papua New Guinea's centralised credit bureau platform. This guide walks you through every feature so you can get maximum value from your subscription.</p>
+
+      <h3>Completing Your Profile</h3>
+      <p>Before you can use most features, complete your organisation profile at <a href="{% url 'profile' %}" style="color:var(--sa-accent2);">Users → Profile</a>. You'll need:</p>
+      <ul>
+        <li><strong>Organisation name</strong> — displayed on records you submit</li>
+        <li><strong>IPA Number and TIN</strong> — required for verification</li>
+        <li><strong>Work email</strong> — used for billing and system notifications</li>
+        <li><strong>LUID</strong> — your unique Lender ID assigned by DCC (contact <a href="mailto:info@dc.com.pg" style="color:var(--sa-accent2);">info@dc.com.pg</a> if not assigned)</li>
+      </ul>
+
+      <div class="tip-box">
+        <strong>Tip</strong>
+        <p>LoanMasta users: your account is automatically synced. Non-LoanMasta users need to complete profile setup manually before data submissions are accepted.</p>
+      </div>
+
+      <h3>Theme &amp; Settings</h3>
+      <p>Switch between dark and light theme at <a href="{% url 'tenant_settings' %}" style="color:var(--sa-accent2);">Users → Settings</a>. You can also configure credit check window hours (how long a paid access window stays open after unlocking a credit file).</p>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="guide-section sa-card">
+      <h2><i class="bi bi-grid-1x2"></i> Your Dashboard</h2>
+      <p>The Dashboard at <code class="inline">/users/dashboard/</code> is your command centre. It shows:</p>
+
+      <div class="row g-2 mb-3">
+        <div class="col-md-6">
+          <div class="guide-card">
+            <h6><i class="bi bi-exclamation-circle" style="color:#e3b341;"></i> Defaults Summary</h6>
+            <p>Your portfolio's current arrears (K amount), defaults count, and loans in recovery — each links to a filtered list.</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="guide-card">
+            <h6><i class="bi bi-activity" style="color:var(--sa-accent);"></i> Today's Activity</h6>
+            <p>Records you created or updated today, with percentage change vs. yesterday.</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="guide-card">
+            <h6><i class="bi bi-globe" style="color:var(--sa-accent2);"></i> DCC Network Activity</h6>
+            <p>New records across all DCC institutions today — gives you a sense of the network's growth.</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="guide-card">
+            <h6><i class="bi bi-search" style="color:var(--sa-accent);"></i> Quick Search</h6>
+            <p>Search borrower names directly from the dashboard — returns matching client records instantly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADDING RECORDS -->
+    <div id="adding-records" class="guide-section sa-card">
+      <h2><i class="bi bi-person-fill-add"></i> Adding Client Records</h2>
+      <p>You can add individual client records at <a href="{% url 'add_client' %}" style="color:var(--sa-accent2);">My Records → Add Record</a>.</p>
+
+      <h3>Required Fields</h3>
+      <ul>
+        <li><strong>Full Name</strong> (First, Middle, Last)</li>
+        <li><strong>Date of Birth</strong></li>
+        <li><strong>NID Number</strong> — used for deduplication and matching across lenders</li>
+        <li><strong>Mobile Number</strong></li>
+        <li><strong>Loan Reference</strong></li>
+        <li><strong>Loan Amount and Status</strong></li>
+      </ul>
+
+      <div class="tip-box">
+        <strong>Tip — NID Matching</strong>
+        <p>When you enter a client's NID number, DCC automatically checks if that person exists in other lenders' records. If matched, a CUID (Cross-institution Unique ID) is assigned, linking their history across all lenders. This is what makes the cross-lender credit check possible.</p>
+      </div>
+
+      <h3>DCC Status Flags</h3>
+      <p>Each client record carries a <strong>DCC Status</strong>. Key statuses:</p>
+      <ul>
+        <li><code class="inline">CLEAR</code> — No outstanding defaults</li>
+        <li><code class="inline">ARREARS</code> — Behind on repayments</li>
+        <li><code class="inline">DEFAULT</code> — Formally defaulted loan</li>
+        <li><code class="inline">RECOVERY</code> — In active debt recovery</li>
+        <li><code class="inline">SETTLED</code> — Debt resolved via settlement</li>
+        <li><code class="inline">BLACKLISTED</code> — Barred from new credit</li>
+      </ul>
+
+      <h3>Adding Business Records</h3>
+      <p>For business clients, use <a href="{% url 'add_business' %}" style="color:var(--sa-accent2);">My Records → Add Business</a>. Business records use the IPA registration number as the matching key instead of NID.</p>
+    </div>
+
+    <!-- BULK UPLOAD -->
+    <div id="uploading" class="guide-section sa-card">
+      <h2><i class="bi bi-upload"></i> Bulk Upload</h2>
+      <p>Upload hundreds of records at once using a spreadsheet file at <a href="{% url 'upload_records' %}" style="color:var(--sa-accent2);">My Records → Upload Records</a>.</p>
+
+      <h3>Upload Steps</h3>
+      <div class="guide-step">
+        <div class="step-num">1</div>
+        <div class="guide-step-body">
+          <h6>Download the Template</h6>
+          <p>Use the downloadable Excel template to ensure your columns are correctly labelled. Do not rename columns.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">2</div>
+        <div class="guide-step-body">
+          <h6>Enter Your Data</h6>
+          <p>One row per client. Required: First Name, Last Name, NID, Mobile, Loan Ref, Amount, Status, Funding Date.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">3</div>
+        <div class="guide-step-body">
+          <h6>Enter Your LUID</h6>
+          <p>Your Lender Unique ID (from your profile) must be entered before uploading. This identifies your institution as the data source.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">4</div>
+        <div class="guide-step-body">
+          <h6>Submit and Wait for Processing</h6>
+          <p>Records are processed row by row. Errors are reported per-row. Successful records appear in your Client Records list immediately.</p>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <strong>Non-LoanMasta Uploaders</strong>
+        <p>If your account is not linked to LoanMasta, uploaded records go through a DCC verification workflow before going public. DCC will contact the borrower to verify the default claim. You'll be notified of the outcome.</p>
+      </div>
+    </div>
+
+    <!-- SEARCHING -->
+    <div id="searching" class="guide-section sa-card">
+      <h2><i class="bi bi-search"></i> Searching the Database</h2>
+      <p>Search across all DCC member institution records at <a href="{% url 'client_records_dcc' %}" style="color:var(--sa-accent2);">Database → Search</a>.</p>
+
+      <h3>How Matching Works</h3>
+      <ul>
+        <li>Search by <strong>name, NID, mobile, or email</strong></li>
+        <li>Results show all clients matching your query across all lenders</li>
+        <li>DCC Status flag is always visible — no credit check needed to see if someone is flagged</li>
+        <li>Full cross-lender history requires <strong>unlocking the credit file</strong> (billed per view)</li>
+      </ul>
+
+      <h3>Public vs. Private Records</h3>
+      <ul>
+        <li><strong>Your own records</strong> — always visible in full, no charge</li>
+        <li><strong>Other lenders' records</strong> — name and status visible, full details require a paid credit check</li>
+        <li><strong>Recent clients</strong> — the Recent Records page shows the latest additions across the network</li>
+      </ul>
+    </div>
+
+    <!-- CREDIT CHECKS -->
+    <div id="credit-checks" class="guide-section sa-card">
+      <h2><i class="bi bi-shield-check"></i> Credit Checks</h2>
+      <p>A credit check unlocks the full cross-lender credit file for a specific borrower. It is billed per view according to your plan.</p>
+
+      <h3>Running a Credit Check</h3>
+      <div class="guide-step">
+        <div class="step-num">1</div>
+        <div class="guide-step-body">
+          <h6>Find the Client</h6>
+          <p>Search for the client in your records or the DCC database. Open their record detail page.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">2</div>
+        <div class="guide-step-body">
+          <h6>Unlock the Credit File</h6>
+          <p>Click <strong>"View Data"</strong> on the locked credit check panel. Confirm the charge. Access is billed at your plan rate.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">3</div>
+        <div class="guide-step-body">
+          <h6>Review the Full Profile</h6>
+          <p>You'll see the DCC Benchmark Score, all matched profiles across lenders, complete loan history, arrears, and outstanding balances.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">4</div>
+        <div class="guide-step-body">
+          <h6>Access Window</h6>
+          <p>Your access stays open for the number of hours configured in your account settings (default: 12 hours). Within that window, re-visiting the page is free.</p>
+        </div>
+      </div>
+
+      <h3>Credit Check Rates by Plan</h3>
+      <div style="overflow-x:auto;">
+        <table class="feature-table">
+          <thead>
+            <tr><th>Plan</th><th>Per Credit Check</th><th>Free Checks / Period</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="badge-pill badge-free">Free</span></td><td>K10.00</td><td>0</td></tr>
+            <tr><td><span class="badge-pill badge-sme">SME</span></td><td>K2.50</td><td>0</td></tr>
+            <tr><td><span class="badge-pill badge-biz">Business</span></td><td>K1.50</td><td>First 100 per billing period</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Downloading a Credit Report</h3>
+      <p>While a credit file is unlocked, you can download a PDF credit report from the client detail page using the <strong>Download PDF Report</strong> link. The PDF includes all cross-lender loan history and the DCC Benchmark Score.</p>
+    </div>
+
+    <!-- WATCH LIST -->
+    <div id="watch-list" class="guide-section sa-card">
+      <h2><i class="bi bi-bell"></i> Watch List &amp; Alerts</h2>
+      <p>The Watch List lets you flag clients so that any change to their DCC record triggers an email alert to your account. This is especially useful for monitoring defaulted or high-risk clients.</p>
+
+      <h3>Adding a Client to Watch List</h3>
+      <div class="guide-step">
+        <div class="step-num">1</div>
+        <div class="guide-step-body">
+          <h6>Open the Client's Record</h6>
+          <p>Navigate to any client detail page via My Records or the DCC database search.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">2</div>
+        <div class="guide-step-body">
+          <h6>Scroll to the Watch List Section</h6>
+          <p>At the bottom of the client detail page, find the Watch List card.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">3</div>
+        <div class="guide-step-body">
+          <h6>Choose Alert Types and Save</h6>
+          <p>Select which changes should trigger an alert: Status, Contact Details, Address, Employer, New Loan, or "Any Change". Add an optional note for your reference, then click <strong>Watch This Client</strong>.</p>
+        </div>
+      </div>
+
+      <h3>What Triggers an Alert?</h3>
+      <ul>
+        <li><strong>Status Change</strong> — DCC status or flag changes (e.g. CLEAR → DEFAULT)</li>
+        <li><strong>Contact Details</strong> — Email or mobile number updated</li>
+        <li><strong>Address</strong> — Residential or postal address changes</li>
+        <li><strong>Employer</strong> — Employer or job details updated</li>
+        <li><strong>New Loan</strong> — A new loan record is added for this client</li>
+        <li><strong>Any Change</strong> — Alerts on all of the above</li>
+      </ul>
+
+      <div class="tip-box">
+        <strong>Use Case</strong>
+        <p>A borrower defaults and disappears. Add them to your Watch List. The moment any lender updates their employer or address in DCC, you get an email with a direct link to their updated credit file — so you can follow up the recovery.</p>
+      </div>
+
+      <h3>Managing Your Watch List</h3>
+      <p>View all watched clients at <a href="{% url 'my_watch_list' %}" style="color:var(--sa-accent2);">Credit Actions → Watch List</a>. Remove any client from the list using the Remove button on that page or on the client detail page.</p>
+
+      <div class="warn-box">
+        <strong>Billing Note</strong>
+        <p>Watch List alerts are a premium feature. Each alert email sent to your account is logged. Depending on your plan, high-volume alert usage may incur additional charges — check your billing page for current usage.</p>
+      </div>
+    </div>
+
+    <!-- PORTFOLIO ANALYTICS -->
+    <div id="portfolio" class="guide-section sa-card">
+      <h2><i class="bi bi-bar-chart-line"></i> Portfolio Analytics</h2>
+      <p>Portfolio Analytics at <a href="{% url 'portfolio_analytics' %}" style="color:var(--sa-accent2);">Credit Actions → Portfolio Analytics</a> gives you a visual overview of your entire loan book's risk profile.</p>
+
+      <h3>What's Available</h3>
+      <ul>
+        <li><strong>DCC Status Distribution</strong> — Pie chart of Clear / Arrears / Default / Recovery / Settled across your records</li>
+        <li><strong>Monthly Arrears Trend</strong> — Line chart showing arrears over time</li>
+        <li><strong>Top Defaulters</strong> — Your highest-outstanding clients ranked by arrears amount</li>
+        <li><strong>Recovery Progress</strong> — Loans in recovery and their outstanding balances</li>
+        <li><strong>DCC Coverage</strong> — What percentage of your borrowers have DCC cross-lender data available</li>
+      </ul>
+
+      <p>See the <a href="{% url 'recovery_insights' %}" style="color:var(--sa-accent2);">Recovery Insights</a> page for a focused view of your clients in default/recovery stages with direct links to each client's record.</p>
+    </div>
+
+    <!-- DEFAULT NOTICES -->
+    <div id="default-notices" class="guide-section sa-card">
+      <h2><i class="bi bi-exclamation-triangle"></i> Default Notices</h2>
+      <p>Issue formal default notices to borrowers directly from within DCC. All notices are logged with a timestamp and are part of the client's permanent DCC record.</p>
+
+      <h3>Submitting a Default Notice</h3>
+      <p>Navigate to a client's record detail page and use <strong>Actions → Submit Default Notice</strong>, or go to <a href="{% url 'my_default_notices' %}" style="color:var(--sa-accent2);">Credit Actions → Default Notices</a> and choose a client.</p>
+
+      <h3>Notice Types</h3>
+      <ul>
+        <li><strong>Demand Notice</strong> — Formal demand for outstanding repayment</li>
+        <li><strong>Default Notice</strong> — Official notification of loan default</li>
+        <li><strong>Legal Referral Notice</strong> — Notice that matter has been referred for legal action</li>
+        <li><strong>Settlement Offer</strong> — Formal offer of partial settlement</li>
+      </ul>
+
+      <h3>Notice Workflow</h3>
+      <p>Once submitted, a notice enters the DCC workflow: <strong>PENDING → NOTIFIED → ACKNOWLEDGED → SETTLED / DISPUTED / CANCELLED</strong>. DCC staff manage escalation and updates on each notice.</p>
+    </div>
+
+    <!-- DISPUTES -->
+    <div id="disputes" class="guide-section sa-card">
+      <h2><i class="bi bi-chat-square-text"></i> Disputes</h2>
+      <p>If a borrower disputes information in their credit file, or if your institution needs to raise a formal dispute about another lender's data, DCC manages this through a structured workflow.</p>
+
+      <h3>Who Can Raise a Dispute?</h3>
+      <ul>
+        <li><strong>Borrowers</strong> — via the Borrower Self-Service Portal</li>
+        <li><strong>Your organisation</strong> — via the client detail page → Submit Dispute</li>
+      </ul>
+
+      <h3>Dispute Types</h3>
+      <ul>
+        <li>Incorrect personal details</li>
+        <li>Wrong loan amount or status</li>
+        <li>Fraudulent record (identity theft)</li>
+        <li>Data belongs to a different person</li>
+        <li>Loan already repaid / settled</li>
+      </ul>
+
+      <h3>Resolution Process</h3>
+      <p>DCC reviews all disputes within 5 business days. Status tracks through: <strong>OPEN → UNDER REVIEW → RESOLVED / REJECTED</strong>. All parties are notified by email at each stage.</p>
+    </div>
+
+    <!-- DEBT SETTLEMENT -->
+    <div id="debt-settlement" class="guide-section sa-card">
+      <h2><i class="bi bi-handshake"></i> Debt Settlement Brokerage</h2>
+      <p>DCC acts as a neutral broker to facilitate debt settlements between your institution and defaulted borrowers. All negotiations are documented, and the platform maintains a full communication audit trail.</p>
+
+      <h3>How to Open a Settlement Case</h3>
+      <p>Contact DCC at <a href="mailto:info@dc.com.pg" style="color:var(--sa-accent2);">info@dc.com.pg</a> or, if you have dashboard access, navigate to your client's record and request a settlement case through <strong>Actions → Request Debt Settlement</strong>.</p>
+
+      <h3>Settlement Workflow</h3>
+      <div class="guide-step">
+        <div class="step-num">1</div>
+        <div class="guide-step-body">
+          <h6>OPEN</h6>
+          <p>DCC opens the case with lender and borrower details recorded.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">2</div>
+        <div class="guide-step-body">
+          <h6>NEGOTIATING</h6>
+          <p>DCC contacts the borrower and facilitates message exchange between all parties. Lender and borrower can submit messages via the platform.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">3</div>
+        <div class="guide-step-body">
+          <h6>OFFER MADE</h6>
+          <p>A formal settlement offer is drafted — specifying the agreed amount and payment timeline.</p>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="step-num">4</div>
+        <div class="guide-step-body">
+          <h6>ACCEPTED / SETTLED</h6>
+          <p>Once payment is confirmed, the case is marked SETTLED and the borrower's DCC status is updated accordingly.</p>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <strong>Why Use DCC Brokerage?</strong>
+        <p>DCC's involvement gives borrowers a trusted, neutral party to engage with — dramatically increasing engagement rates vs. direct lender contact. Settlement outcomes are documented and the borrower's DCC status reflects the resolution, incentivising their cooperation.</p>
+      </div>
+    </div>
+
+    <!-- BORROWER PORTAL -->
+    <div id="borrower-portal" class="guide-section sa-card">
+      <h2><i class="bi bi-person-circle"></i> Borrower Self-Service Portal</h2>
+      <p>The Borrower Portal at <code class="inline">/borrower/</code> allows your borrowers to log in with their email and a PIN to:</p>
+      <ul>
+        <li>View their own DCC credit summary and status</li>
+        <li>See who has accessed their credit file (enquiry log)</li>
+        <li>Submit disputes about incorrect data</li>
+        <li>Review and manage their consent history</li>
+      </ul>
+
+      <div class="warn-box">
+        <strong>Enable the Portal</strong>
+        <p>The Borrower Portal is disabled by default. DCC SaaS Admin can enable it in <strong>Platform Settings → Feature Toggles</strong>. Once enabled, borrowers need a <code class="inline">BorrowerAccount</code> created by DCC staff to log in.</p>
+      </div>
+
+      <h3>Benefits for Lenders</h3>
+      <ul>
+        <li>Reduces enquiries to your team — borrowers self-serve</li>
+        <li>Builds trust — borrowers can see exactly what's on their file</li>
+        <li>Dispute workflow integration — disputes raised via the portal flow directly to DCC's resolution queue</li>
+      </ul>
+    </div>
+
+    <!-- API ACCESS -->
+    <div id="api" class="guide-section sa-card">
+      <h2><i class="bi bi-code-square"></i> API Access</h2>
+      <p>DCC provides a REST API for system-to-system integration. Use it to sync your Loan Management System (LMS) automatically, run credit checks programmatically, or build custom integrations.</p>
+
+      <h3>Getting an API Key</h3>
+      <p>API keys are issued by DCC Admin. Contact <a href="mailto:info@dc.com.pg" style="color:var(--sa-accent2);">info@dc.com.pg</a> to request access. Keys are scoped to specific permissions and rate limits.</p>
+
+      <h3>Base URL</h3>
+      <p><code class="inline">https://dc.com.pg/tpapi/v1/</code></p>
+
+      <h3>Authentication</h3>
+      <p>All API requests require a <code class="inline">Bearer</code> token in the <code class="inline">Authorization</code> header:</p>
+      <div style="background:var(--sa-hover);border-radius:6px;padding:12px 16px;font-family:monospace;font-size:12px;color:var(--sa-accent2);margin:10px 0;">
+        Authorization: Bearer YOUR_API_KEY
+      </div>
+
+      <h3>Key Endpoints</h3>
+      <div style="overflow-x:auto;">
+        <table class="feature-table">
+          <thead>
+            <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code class="inline">/clients/search/</code></td><td>GET</td><td>Search the DCC database</td></tr>
+            <tr><td><code class="inline">/clients/{id}/</code></td><td>GET</td><td>Get a specific client record</td></tr>
+            <tr><td><code class="inline">/clients/upload/</code></td><td>POST</td><td>Upload client records</td></tr>
+            <tr><td><code class="inline">/credit-check/</code></td><td>POST</td><td>Run a billable credit check</td></tr>
+            <tr><td><code class="inline">/loans/</code></td><td>GET/POST</td><td>List or create loan records</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tip-box">
+        <strong>LoanMasta Integration</strong>
+        <p>If you use LoanMasta, your system may already be configured for automatic data sync via API. Check <strong>Settings → API / Integrations</strong> to verify your sync status and last sync timestamp.</p>
+      </div>
+    </div>
+
+    <!-- BILLING -->
+    <div id="billing" class="guide-section sa-card">
+      <h2><i class="bi bi-credit-card"></i> Plans &amp; Billing</h2>
+      <p>View your usage and billing at <a href="{% url 'my_billing' %}" style="color:var(--sa-accent2);">Account → Billing &amp; Usage</a>.</p>
+
+      <h3>Plan Comparison</h3>
+      <div style="overflow-x:auto;">
+        <table class="feature-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th><span class="badge-pill badge-free">Free</span></th>
+              <th><span class="badge-pill badge-sme">SME</span></th>
+              <th><span class="badge-pill badge-biz">Business</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Joining Fee</td><td>K0</td><td>K1,000</td><td>K1,000</td></tr>
+            <tr><td>Base Fee</td><td>K0/month</td><td>K180/month</td><td>K180/fortnight</td></tr>
+            <tr><td>Credit Check Rate</td><td>K10.00</td><td>K2.50</td><td>K1.50</td></tr>
+            <tr><td>Free Checks / Period</td><td>—</td><td>—</td><td>First 100</td></tr>
+            <tr><td>Upload Records</td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td></tr>
+            <tr><td>Search Database</td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td></tr>
+            <tr><td>Watch List Alerts</td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td></tr>
+            <tr><td>Portfolio Analytics</td><td><i class="bi bi-x-lg cross"></i></td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td></tr>
+            <tr><td>Debt Recovery Assistance</td><td><i class="bi bi-x-lg cross"></i></td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td></tr>
+            <tr><td>API Access</td><td><i class="bi bi-x-lg cross"></i></td><td><i class="bi bi-check-lg check"></i></td><td><i class="bi bi-check-lg check"></i></td></tr>
+            <tr><td>Borrower Portal</td><td><i class="bi bi-x-lg cross"></i></td><td><i class="bi bi-x-lg cross"></i></td><td><i class="bi bi-check-lg check"></i></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Understanding Your Bill</h3>
+      <ul>
+        <li>The <strong>base fee</strong> is charged at the start of each billing period</li>
+        <li><strong>Credit checks</strong> are billed as you run them (or deducted from free allowance first on Business plan)</li>
+        <li>Profile lookups, record syncs, and Watch List alerts are billed per event at your plan's rates</li>
+        <li>Your billing page shows a full usage breakdown with event type, count, unit price, and total</li>
+      </ul>
+
+      <h3>Need Help?</h3>
+      <p>Contact DCC support at <a href="mailto:info@dc.com.pg" style="color:var(--sa-accent2);">info@dc.com.pg</a> or call <strong>+675 78222774</strong> during business hours (Monday–Friday, 8 AM–5 PM).</p>
+    </div>
+
+  </div><!-- /col-lg-9 -->
+</div><!-- /row -->
+
+<script>
+// Highlight active ToC link on scroll
+document.addEventListener('DOMContentLoaded', function() {
+  const sections = document.querySelectorAll('.guide-section');
+  const links = document.querySelectorAll('.guide-toc a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        const id = entry.target.getAttribute('id');
+        const link = document.querySelector('.guide-toc a[href="#' + id + '"]');
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+});
+</script>
+{% endblock %}

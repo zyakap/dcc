@@ -170,7 +170,7 @@
           </td>
           <td class="text-end"><strong>{{ row.access_count }}</strong></td>
           <td>
-            <a href="{% url 'admin_view_client' row.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
+            <a href="{% url 'sa_client_detail' row.client.id %}" class="sa-btn sa-btn-outline sa-btn-sm">View</a>
           </td>
         </tr>
         {% endfor %}

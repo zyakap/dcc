@@ -30,26 +30,69 @@ class PlatformSettings(models.Model):
 
 
 class PricingSettings(models.Model):
-    """DCC service pricing. One row (the latest is used) — editable from the
-    control panel so usage cost can be computed per tenant."""
+    """DCC service pricing — one row per subscription plan.
+
+    Free:     K0 joining fee, K0/month,  K10/credit check
+    SME:      K1,000 joining, K180/month, K2.50/credit check
+    Business: K1,000 joining, K180/fortnight, first 100 checks free then K1.50
+    """
+    PLAN_CHOICES = [('FREE', 'Free Plan'), ('SME', 'SME Plan'), ('BUSINESS', 'Business Plan')]
+    BILLING_PERIOD_CHOICES = [('MONTHLY', 'Monthly'), ('FORTNIGHTLY', 'Fortnightly')]
+
+    plan = models.CharField(max_length=10, choices=PLAN_CHOICES, default='FREE', unique=True)
     updated_at = models.DateTimeField(auto_now=True)
     currency = models.CharField(max_length=10, default='PGK')
-    monthly_base_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text='Flat monthly access fee per tenant.')
-    price_per_credit_check = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'), help_text='Charged each time a tenant unlocks (pays to view) a client credit report.')
-    price_per_profile_lookup = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'), help_text='Charged for each single profile/loans/transactions lookup.')
-    price_per_record_synced = models.DecimalField(max_digits=8, decimal_places=4, default=Decimal('0.0000'), help_text='Charged per record ingested from the tenant feed.')
-    price_per_rating_check = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'), help_text='Charged for each rating-only lookup (used by tenant auto credit-check).')
+
+    joining_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text='One-time joining/setup fee charged when a tenant signs up on this plan.')
+    monthly_base_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text='Flat recurring access fee per billing period.')
+    billing_period = models.CharField(max_length=15, choices=BILLING_PERIOD_CHOICES, default='MONTHLY',
+        help_text='How often the base fee is charged.')
+
+    price_per_credit_check = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'),
+        help_text='Per credit report view after any free-check allowance is used.')
+    free_credit_checks = models.PositiveIntegerField(default=0,
+        help_text='Number of credit checks included free each billing period (Business plan: 100).')
+
+    price_per_profile_lookup = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'),
+        help_text='Per profile/loans/transactions lookup.')
+    price_per_record_synced = models.DecimalField(max_digits=8, decimal_places=4, default=Decimal('0.0000'),
+        help_text='Per record ingested from the tenant feed.')
+    price_per_rating_check = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'),
+        help_text='Rating-only lookup (used by tenant auto credit-check).')
 
     class Meta:
         verbose_name = 'Pricing settings'
         verbose_name_plural = 'Pricing settings'
 
     def __str__(self):
-        return f'DCC pricing ({self.currency}, updated {self.updated_at:%Y-%m-%d})'
+        return f'DCC {self.plan} Plan pricing ({self.currency})'
 
     @classmethod
-    def current(cls):
-        return cls.objects.order_by('-updated_at').first() or cls()
+    def current(cls, plan=None):
+        """Return the PricingSettings for the given plan (or FREE as fallback)."""
+        from users.models import UserProfile
+        if plan is None:
+            plan = 'FREE'
+        obj = cls.objects.filter(plan=plan).first()
+        if obj is None:
+            # Return defaults matching the plan without hitting the DB again
+            defaults = {
+                'FREE':     {'monthly_base_fee': Decimal('0.00'), 'price_per_credit_check': Decimal('10.00'), 'free_credit_checks': 0},
+                'SME':      {'monthly_base_fee': Decimal('180.00'), 'price_per_credit_check': Decimal('2.50'), 'free_credit_checks': 0},
+                'BUSINESS': {'monthly_base_fee': Decimal('180.00'), 'price_per_credit_check': Decimal('1.50'), 'free_credit_checks': 100, 'billing_period': 'FORTNIGHTLY'},
+            }
+            inst = cls(plan=plan, **defaults.get(plan, {}))
+            return inst
+        return obj
+
+    @classmethod
+    def all_plans(cls):
+        """Return a dict of {plan_code: PricingSettings} for all 3 plans."""
+        existing = {p.plan: p for p in cls.objects.all()}
+        return {code: existing.get(code, cls.current(code))
+                for code, _ in cls.PLAN_CHOICES}
 
 
 class ApiUsageLog(models.Model):
@@ -93,13 +136,12 @@ class ApiUsageLog(models.Model):
 
 
 def usage_summary(tenant, year, month):
-    """Month-to-date billing summary for one tenant: one row per action plus
-    the base fee and grand total. Shared by the tenant billing page, the
-    saasadmin billing screens, invoicing and the tenant-facing
-    billing_summary API.
+    """Month-to-date billing summary for one tenant — plan-aware.
 
-    Rows that carry a unit_price snapshot are billed at that price; legacy
-    rows without one fall back to the current pricing table."""
+    Looks up pricing for the tenant's plan (FREE/SME/BUSINESS). For the
+    Business plan the first `free_credit_checks` views each period are
+    not billed. Rows that carry a unit_price snapshot are billed at that
+    price; legacy rows fall back to the current plan pricing."""
     import datetime as _dt
     from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 
@@ -108,12 +150,15 @@ def usage_summary(tenant, year, month):
     next_year = year if month < 12 else year + 1
     period_end = _dt.datetime(next_year, next_month, 1, tzinfo=_dt.timezone.utc)
 
-    pricing = PricingSettings.current()
+    tenant_plan = getattr(tenant, 'plan', 'FREE') or 'FREE'
+    pricing = PricingSettings.current(plan=tenant_plan)
     logs = ApiUsageLog.objects.filter(tenant=tenant, created_at__gte=period_start, created_at__lt=period_end)
     rows = []
     total = pricing.monthly_base_fee
     row_cost = ExpressionWrapper(F('units') * F('unit_price'),
                                  output_field=DecimalField(max_digits=14, decimal_places=4))
+    free_remaining = int(pricing.free_credit_checks or 0)  # e.g. 100 for Business plan
+
     for action, label in ApiUsageLog.ACTION_CHOICES:
         action_logs = logs.filter(action=action)
         units = action_logs.aggregate(n=Sum('units'))['n'] or 0
@@ -121,6 +166,14 @@ def usage_summary(tenant, year, month):
                          .aggregate(c=Sum(row_cost))['c'] or Decimal('0'))
         legacy_units = (action_logs.filter(unit_price__isnull=True)
                         .aggregate(n=Sum('units'))['n'] or 0)
+
+        # Apply free-check allowance to credit checks (Business plan)
+        if action == 'CREDIT_CHECK' and free_remaining > 0:
+            free_used = min(legacy_units, free_remaining)
+            free_remaining -= free_used
+            legacy_units -= free_used
+            units_display = units  # keep for display
+
         cost = snapshot_cost + ApiUsageLog.cost_for(action, legacy_units, pricing)
         total += cost
         rows.append({'action': action, 'label': label, 'units': units,
@@ -130,6 +183,9 @@ def usage_summary(tenant, year, month):
         'year': year,
         'month': month,
         'base_fee': pricing.monthly_base_fee,
+        'free_credit_checks': int(pricing.free_credit_checks or 0),
+        'billing_period': pricing.billing_period,
+        'plan': tenant_plan,
         'rows': rows,
         'total': total,
         'pricing': pricing,

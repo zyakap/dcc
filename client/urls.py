@@ -63,5 +63,13 @@ urlpatterns = [
 
     # Portfolio analytics
     path('portfolio-analytics/', views.portfolio_analytics, name='portfolio_analytics'),
+
+    # Watch List
+    path('watch-list/', views.my_watch_list, name='my_watch_list'),
+    path('watch-list/export.csv', views.export_watch_list, name='export_watch_list'),
+    path('view/<int:client_id>/watch/', views.toggle_watch, name='toggle_watch'),
+
+    # Public credit score widget (no auth — embeddable iframe)
+    path('widget/<str:cuid>/', views.credit_score_widget, name='credit_score_widget'),
 ]
 

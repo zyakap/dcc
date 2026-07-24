@@ -1,0 +1,83 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Delist Requests{% endblock %}
+{% block topbar_title %}Delist Requests{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Delist Requests</h1>
+    <div class="sa-page-sub">Requests from borrowers to be removed from public credit listings</div>
+  </div>
+</div>
+
+<!-- Status filter -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+  <a href="?" class="sa-btn {% if not status_filter %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">All</a>
+  <a href="?status=pending" class="sa-btn {% if status_filter == 'pending' %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">Pending</a>
+  <a href="?status=approved" class="sa-btn {% if status_filter == 'approved' %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">Approved</a>
+  <a href="?status=rejected" class="sa-btn {% if status_filter == 'rejected' %}sa-btn-primary{% else %}sa-btn-outline{% endif %} sa-btn-sm">Rejected</a>
+</div>
+
+<div class="sa-card">
+  {% if delist_requests %}
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Requester</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Reason</th>
+          <th>Submitted</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dr in delist_requests %}
+        <tr>
+          <td>{{ dr.pk }}</td>
+          <td><strong>{{ dr.name_of_requester }}</strong></td>
+          <td style="font-size:12px;">{{ dr.email_of_requester }}</td>
+          <td style="font-size:12px;">{{ dr.phone_of_requester }}</td>
+          <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ dr.reason }}">{{ dr.reason }}</td>
+          <td style="font-size:12px;color:var(--sa-muted);">{{ dr.date|date:"d M Y" }}</td>
+          <td>
+            {% if dr.is_delisted %}<span class="sa-badge sa-badge-success">Delisted</span>
+            {% elif dr.is_approved %}<span class="sa-badge" style="background:#1a6fc4;">Approved</span>
+            {% elif dr.is_feedbacked %}<span class="sa-badge sa-badge-danger">Rejected</span>
+            {% else %}<span class="sa-badge" style="background:#e09b3d;">Pending</span>{% endif %}
+          </td>
+          <td>
+            {% if not dr.is_approved and not dr.is_feedbacked %}
+            <form method="post" style="min-width:200px;">
+              {% csrf_token %}
+              <input type="hidden" name="request_id" value="{{ dr.pk }}">
+              <textarea name="feedback" class="sa-form-control" rows="2" placeholder="Feedback notes…" style="font-size:11px;resize:none;margin-bottom:4px;"></textarea>
+              <div style="display:flex;gap:4px;">
+                <button type="submit" name="action" value="approve" class="sa-btn sa-btn-sm" style="background:var(--sa-success);color:#fff;border:none;flex:1;">
+                  <i class="bi bi-check-lg"></i> Approve
+                </button>
+                <button type="submit" name="action" value="reject" class="sa-btn sa-btn-sm" style="background:var(--sa-danger);color:#fff;border:none;flex:1;">
+                  <i class="bi bi-x-lg"></i> Reject
+                </button>
+              </div>
+            </form>
+            {% else %}
+            <div style="font-size:12px;color:var(--sa-muted);">
+              {% if dr.feedback %}{{ dr.feedback|truncatechars:80 }}{% else %}—{% endif %}
+              {% if dr.feedback_date %}<div style="font-size:11px;">{{ dr.feedback_date|date:"d M Y" }}</div>{% endif %}
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--sa-muted);padding:20px 0;">No delist requests{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+  {% endif %}
+</div>
+{% endblock %}

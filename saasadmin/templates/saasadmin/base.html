@@ -406,12 +406,15 @@
     <a href="{% url 'sa_loans' %}" class="{% if nav == 'sa_loans' %}active{% endif %}">
       <i class="bi bi-cash-coin"></i> Loan Records
     </a>
+    <a href="{% url 'sa_transactions' %}" class="{% if nav == 'sa_transactions' %}active{% endif %}">
+      <i class="bi bi-arrow-left-right"></i> Transactions
+    </a>
 
     <div class="sa-section-label">Billing</div>
     <a href="{% url 'sa_billing' %}" class="{% if nav == 'sa_billing' %}active{% endif %}">
       <i class="bi bi-receipt"></i> Usage & Billing
     </a>
-    <a href="{% url 'sa_pricing' %}" class="{% if nav == 'sa_billing' and request.resolver_match.url_name == 'sa_pricing' %}active{% endif %}">
+    <a href="{% url 'sa_pricing' %}" class="{% if nav == 'sa_pricing' %}active{% endif %}">
       <i class="bi bi-tag"></i> Pricing
     </a>
     <a href="{% url 'sa_invoices' %}" class="{% if nav == 'sa_invoices' %}active{% endif %}">
@@ -429,15 +432,43 @@
       <i class="bi bi-people"></i> Identity Resolution
     </a>
 
+    <div class="sa-section-label">Workflow</div>
+    <a href="{% url 'sa_upload_records' %}" class="{% if nav == 'sa_upload_records' %}active{% endif %}">
+      <i class="bi bi-upload"></i> Upload Records
+    </a>
+    <a href="{% url 'sa_records_under_review' %}" class="{% if nav == 'sa_records_under_review' %}active{% endif %}">
+      <i class="bi bi-hourglass-split"></i> Under Review
+    </a>
+    <a href="{% url 'sa_business_records_under_review' %}" class="{% if nav == 'sa_business_records_under_review' %}active{% endif %}">
+      <i class="bi bi-building"></i> Biz Under Review
+    </a>
+    <a href="{% url 'sa_default_submissions' %}" class="{% if nav == 'sa_default_submissions' %}active{% endif %}">
+      <i class="bi bi-inbox"></i> Default Submissions
+    </a>
+    <a href="{% url 'sa_default_notices' %}" class="{% if nav == 'sa_default_notices' %}active{% endif %}">
+      <i class="bi bi-exclamation-triangle"></i> Default Notices
+    </a>
+    <a href="{% url 'sa_disputes' %}" class="{% if nav == 'sa_disputes' %}active{% endif %}">
+      <i class="bi bi-flag"></i> Disputes
+    </a>
+    <a href="{% url 'sa_settlements' %}" class="{% if nav == 'sa_settlements' %}active{% endif %}">
+      <i class="bi bi-handshake"></i> Debt Settlements
+    </a>
+
+    <div class="sa-section-label">Website</div>
+    <a href="{% url 'sa_delist_requests' %}" class="{% if nav == 'sa_delist_requests' %}active{% endif %}">
+      <i class="bi bi-person-x"></i> Delist Requests
+    </a>
+    <a href="{% url 'sa_subscribers' %}" class="{% if nav == 'sa_subscribers' %}active{% endif %}">
+      <i class="bi bi-envelope-at"></i> Subscribers
+    </a>
+
     <div class="sa-section-label">System</div>
+    <a href="{% url 'sa_tp_api_keys' %}" class="{% if nav == 'sa_tp_api_keys' %}active{% endif %}">
+      <i class="bi bi-key"></i> API Keys
+    </a>
     <a href="{% url 'sa_settings' %}" class="{% if nav == 'sa_settings' %}active{% endif %}">
       <i class="bi bi-gear"></i> Settings
-    </a>
-    <a href="{% url 'admin_dashboard' %}">
-      <i class="bi bi-arrow-left-right"></i> Tenant Admin
-    </a>
-    <a href="/appadmin/">
-      <i class="bi bi-database"></i> Django Admin
     </a>
   </div>
 

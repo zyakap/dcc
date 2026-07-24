@@ -1,15 +1,18 @@
-import {
-    $$,
-    ajax,
-    debounce,
-    getDebugElement,
-    replaceToolbarState,
-} from "./utils.js";
+import { $$, ajax, debounce, replaceToolbarState } from "./utils.js";
 
 function onKeyDown(event) {
     if (event.keyCode === 27) {
         djdt.hideOneLevel();
     }
+}
+
+function getDebugElement() {
+    // Fetch the debug element from the DOM.
+    // This is used to avoid writing the element's id
+    // everywhere the element is being selected. A fixed reference
+    // to the element should be avoided because the entire DOM could
+    // be reloaded such as via HTMX boosting.
+    return document.getElementById("djDebug");
 }
 
 const djdt = {
@@ -24,7 +27,7 @@ const djdt = {
                 return;
             }
             const panelId = this.className;
-            const current = djDebug.querySelector(`#${panelId}`);
+            const current = document.getElementById(panelId);
             if ($$.visible(current)) {
                 djdt.hidePanels();
             } else {
@@ -40,7 +43,7 @@ const djdt = {
                 if (requestId && inner.children.length === 0) {
                     const url = new URL(
                         djDebug.dataset.renderPanelUrl,
-                        globalThis.location
+                        window.location
                     );
                     url.searchParams.append("request_id", requestId);
                     url.searchParams.append("panel_id", panelId);
@@ -100,7 +103,7 @@ const djdt = {
             }
 
             ajax(url, ajaxData).then((data) => {
-                const win = djDebug.querySelector("#djDebugWindow");
+                const win = document.getElementById("djDebugWindow");
                 win.innerHTML = data.content;
                 $$.show(win);
             });
@@ -113,7 +116,7 @@ const djdt = {
             const toggleClose = "-";
             const openMe = this.textContent === toggleOpen;
             const name = this.dataset.toggleName;
-            const container = djDebug.querySelector(`#${name}_${id}`);
+            const container = document.getElementById(`${name}_${id}`);
             for (const el of container.querySelectorAll(".djDebugCollapsed")) {
                 $$.toggle(el, openMe);
             }
@@ -153,7 +156,7 @@ const djdt = {
         });
         let startPageY;
         let baseY;
-        const handle = djDebug.querySelector("#djDebugToolbarHandle");
+        const handle = document.getElementById("djDebugToolbarHandle");
         function onHandleMove(event) {
             // Chrome can send spurious mousemove events, so don't do anything unless the
             // cursor really moved.  Otherwise, it will be impossible to expand the toolbar
@@ -163,8 +166,8 @@ const djdt = {
 
                 if (top < 0) {
                     top = 0;
-                } else if (top + handle.offsetHeight > globalThis.innerHeight) {
-                    top = globalThis.innerHeight - handle.offsetHeight;
+                } else if (top + handle.offsetHeight > window.innerHeight) {
+                    top = window.innerHeight - handle.offsetHeight;
                 }
 
                 handle.style.top = `${top}px`;
@@ -209,20 +212,19 @@ const djdt = {
             djdt.updateOnAjax();
         }
 
-        const prefersDark = globalThis.matchMedia(
+        const prefersDark = window.matchMedia(
             "(prefers-color-scheme: dark)"
         ).matches;
         const themeList = prefersDark
             ? ["auto", "light", "dark"]
             : ["auto", "dark", "light"];
-
-        function setTheme(theme) {
+        const setTheme = (theme) => {
             djDebug.setAttribute(
                 "data-theme",
                 theme === "auto" ? (prefersDark ? "dark" : "light") : theme
             );
             djDebug.setAttribute("data-user-theme", theme);
-        }
+        };
 
         // Updates the theme using user settings
         let userTheme = localStorage.getItem("djdt.user-theme") || "auto";
@@ -238,45 +240,42 @@ const djdt = {
     },
     hidePanels() {
         const djDebug = getDebugElement();
-        $$.hide(djDebug.querySelector("#djDebugWindow"));
+        $$.hide(document.getElementById("djDebugWindow"));
         for (const el of djDebug.querySelectorAll(".djdt-panelContent")) {
             $$.hide(el);
         }
-        for (const el of djDebug.querySelectorAll("#djDebugToolbar li")) {
+        for (const el of document.querySelectorAll("#djDebugToolbar li")) {
             el.classList.remove("djdt-active");
         }
     },
     ensureHandleVisibility() {
-        const djDebug = getDebugElement();
-        const handle = djDebug.querySelector("#djDebugToolbarHandle");
+        const handle = document.getElementById("djDebugToolbarHandle");
         // set handle position
         const handleTop = Math.min(
             localStorage.getItem("djdt.top") || 265,
-            globalThis.innerHeight - handle.offsetWidth
+            window.innerHeight - handle.offsetWidth
         );
         handle.style.top = `${handleTop}px`;
     },
     hideToolbar() {
-        const djDebug = getDebugElement();
         djdt.hidePanels();
 
-        $$.hide(djDebug.querySelector("#djDebugToolbar"));
+        $$.hide(document.getElementById("djDebugToolbar"));
 
-        const handle = djDebug.querySelector("#djDebugToolbarHandle");
+        const handle = document.getElementById("djDebugToolbarHandle");
         $$.show(handle);
         djdt.ensureHandleVisibility();
-        globalThis.addEventListener("resize", djdt.ensureHandleVisibility);
+        window.addEventListener("resize", djdt.ensureHandleVisibility);
         document.removeEventListener("keydown", onKeyDown);
 
         localStorage.setItem("djdt.show", "false");
     },
     hideOneLevel() {
-        const djDebug = getDebugElement();
-        const win = djDebug.querySelector("#djDebugWindow");
+        const win = document.getElementById("djDebugWindow");
         if ($$.visible(win)) {
             $$.hide(win);
         } else {
-            const toolbar = djDebug.querySelector("#djDebugToolbar");
+            const toolbar = document.getElementById("djDebugToolbar");
             if (toolbar.querySelector("li.djdt-active")) {
                 djdt.hidePanels();
             } else {
@@ -285,32 +284,28 @@ const djdt = {
         }
     },
     showToolbar() {
-        const djDebug = getDebugElement();
         document.addEventListener("keydown", onKeyDown);
-        $$.show(djDebug);
-        $$.hide(djDebug.querySelector("#djDebugToolbarHandle"));
-        $$.show(djDebug.querySelector("#djDebugToolbar"));
+        $$.show(document.getElementById("djDebug"));
+        $$.hide(document.getElementById("djDebugToolbarHandle"));
+        $$.show(document.getElementById("djDebugToolbar"));
         localStorage.setItem("djdt.show", "true");
-        globalThis.removeEventListener("resize", djdt.ensureHandleVisibility);
+        window.removeEventListener("resize", djdt.ensureHandleVisibility);
     },
     updateOnAjax() {
-        const handleAjaxResponse = debounce(async (requestId) => {
-            const sidebarUrl = getDebugElement().dataset.sidebarUrl;
+        const sidebarUrl =
+            document.getElementById("djDebug").dataset.sidebarUrl;
+        const slowjax = debounce(ajax, 200);
 
+        function handleAjaxResponse(requestId) {
             const encodedRequestId = encodeURIComponent(requestId);
             const dest = `${sidebarUrl}?request_id=${encodedRequestId}`;
-            if (djdt.needUpdateOnFetch) {
-                try {
-                    const data = await ajax(dest);
+            slowjax(dest).then((data) => {
+                if (djdt.needUpdateOnFetch) {
                     replaceToolbarState(encodedRequestId, data);
-                } catch (error) {
-                    console.error(
-                        `"${error.name}" occurred within django-debug-toolbar: ${error.message}`,
-                        error
-                    );
                 }
-            }
-        }, 200);
+            });
+        }
+
         // Patch XHR / traditional AJAX requests
         const origOpen = XMLHttpRequest.prototype.open;
         XMLHttpRequest.prototype.open = function (...args) {
@@ -329,8 +324,8 @@ const djdt = {
             origOpen.apply(this, args);
         };
 
-        const origFetch = globalThis.fetch;
-        globalThis.fetch = function (...args) {
+        const origFetch = window.fetch;
+        window.fetch = function (...args) {
             // Heads up! Before modifying this code, please be aware of the
             // possible unhandled errors that might arise from changing this.
             // For details, see
@@ -338,7 +333,15 @@ const djdt = {
             const promise = origFetch.apply(this, args);
             return promise.then((response) => {
                 if (response.headers.get("djdt-request-id") !== null) {
-                    handleAjaxResponse(response.headers.get("djdt-request-id"));
+                    try {
+                        handleAjaxResponse(
+                            response.headers.get("djdt-request-id")
+                        );
+                    } catch (err) {
+                        throw new Error(
+                            `"${err.name}" occurred within django-debug-toolbar: ${err.message}`
+                        );
+                    }
                 }
                 return response;
             });
@@ -364,7 +367,7 @@ const djdt = {
             if (typeof options.expires === "number") {
                 const days = options.expires;
                 const expires = new Date();
-                expires.setDate(expires.getDate() + days);
+                expires.setDate(expires.setDate() + days);
                 options.expires = expires;
             }
 
@@ -385,7 +388,7 @@ const djdt = {
         },
     },
 };
-globalThis.djdt = {
+window.djdt = {
     show_toolbar: djdt.showToolbar,
     hide_toolbar: djdt.hideToolbar,
     init: djdt.init,

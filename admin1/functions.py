@@ -78,12 +78,19 @@ def login_check(func):
 
     return wrapper
 
-def admin_upload_client_records_uploader(request, recordsexceldata, userprofile_LUID):
+def admin_upload_client_records_uploader(request, recordsexceldata, userprofile_LUID, _batch=None):
     dbframe = recordsexceldata
     count_loans = 0
 
     user_profile = UserProfile.objects.get(LUID=userprofile_LUID)
-    
+
+    if _batch is None and not getattr(user_profile, 'use_loanmasta', False):
+        from admin1.models import RecordUploadBatch
+        _batch = RecordUploadBatch.objects.create(
+            uploaded_by=user_profile,
+            record_count=len(recordsexceldata),
+        )
+
     for dbframe in dbframe.itertuples():
         #print(dbframe)
         No = dbframe.No
@@ -174,11 +181,22 @@ def admin_upload_client_records_uploader(request, recordsexceldata, userprofile_
         clientprofile.LUID = user_profile.LUID
         clientprofile.credit_rating = Decimal(100.00)
         clientprofile.repayment_limit = 0
-        clientprofile.public_search = True
-        clientprofile.public_listing = True
-        clientprofile.vetted = True
-        clientprofile.vetting_status = 'VETTED'
+        # Non-Loanmasta uploads must go through DCC verification
+        # before becoming publicly visible. Set vetted=False so they
+        # land in the review queue; a VerificationCase is created below.
+        is_loanmasta = getattr(user_profile, 'use_loanmasta', False)
+        clientprofile.public_search = is_loanmasta
+        clientprofile.public_listing = is_loanmasta
+        clientprofile.vetted = is_loanmasta
+        clientprofile.vetting_status = 'VETTED' if is_loanmasta else 'REVIEW'
         clientprofile.save()
+
+        if not is_loanmasta:
+            from admin1.models import VerificationCase
+            VerificationCase.objects.get_or_create(
+                client=clientprofile,
+                defaults={'lender': user_profile, 'batch': _batch},
+            )
         
         if Middle_Name and Middle_Name != 'N/A':
             clientprofile.Middle_Name = dbframe.Middle_Name

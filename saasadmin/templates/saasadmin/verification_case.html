@@ -1,0 +1,134 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}VC-{{ case.pk }} — Verification Case{% endblock %}
+{% block topbar_title %}Verification Case VC-{{ case.pk }}{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">VC-{{ case.pk }} — {{ case.client.first_name }} {{ case.client.last_name }}</h1>
+    <div class="sa-page-sub">Lender: {{ case.lender.organisation|default:"—" }} &nbsp;|&nbsp; Opened: {{ case.created_at|date:"d M Y" }}</div>
+  </div>
+  <a href="{% url 'sa_records_under_review' %}" class="sa-btn sa-btn-outline sa-btn-sm"><i class="bi bi-arrow-left"></i> Back to Queue</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <!-- Status + quick actions -->
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-person"></i> Borrower Details</div>
+      <div style="font-size:13px;line-height:2.2;">
+        <div><strong>{{ case.client.first_name }} {{ case.client.last_name }}</strong></div>
+        <div style="color:var(--sa-muted);">CUID: {{ case.client.CUID|default:"—" }}</div>
+        <div style="color:var(--sa-muted);">Email: {{ case.client.email|default:"—" }}</div>
+        <div style="color:var(--sa-muted);">Mobile: {{ case.client.mobile1|default:"—" }}</div>
+        <div style="color:var(--sa-muted);">NID: {{ case.client.national_id|default:"—" }}</div>
+        <div style="color:var(--sa-muted);">Employer: {{ case.client.employer|default:"—" }}</div>
+      </div>
+      <div style="margin-top:12px;">
+        <a href="{% url 'sa_clients' %}?q={{ case.client.CUID|default:case.client.pk }}" class="sa-btn sa-btn-outline sa-btn-sm">
+          <i class="bi bi-eye"></i> View Full Profile
+        </a>
+      </div>
+    </div>
+
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-info-circle"></i> Case Status</div>
+      <div style="margin-bottom:12px;">
+        {% if case.status == 'PENDING' %}<span class="sa-badge" style="background:#555;font-size:13px;padding:4px 12px;">Pending</span>
+        {% elif case.status == 'CONTACTED' %}<span class="sa-badge" style="background:#e09b3d;color:#fff;font-size:13px;padding:4px 12px;">Contacted</span>
+        {% elif case.status == 'VERIFIED' %}<span class="sa-badge sa-badge-success" style="font-size:13px;padding:4px 12px;">Verified</span>
+        {% elif case.status == 'REJECTED' %}<span class="sa-badge sa-badge-danger" style="font-size:13px;padding:4px 12px;">Rejected</span>
+        {% elif case.status == 'HOLD' %}<span class="sa-badge" style="background:#7a5c00;color:#ffd;font-size:13px;padding:4px 12px;">On Hold</span>
+        {% endif %}
+      </div>
+      {% if case.status not in 'VERIFIED,REJECTED' %}
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" name="action" value="verify" class="sa-btn sa-btn-sm" style="background:var(--sa-success);color:#fff;border:none;width:100%;"
+            onclick="return confirm('Admit this record to the database?')">
+            <i class="bi bi-check-circle"></i> Verify &amp; Admit to Database
+          </button>
+        </form>
+        <form method="post" style="display:flex;flex-direction:column;gap:4px;">
+          {% csrf_token %}
+          <textarea name="lender_feedback" class="sa-form-control" rows="2" placeholder="Rejection feedback for lender…" style="font-size:12px;resize:none;"></textarea>
+          <button type="submit" name="action" value="reject" class="sa-btn sa-btn-sm" style="background:var(--sa-danger);color:#fff;border:none;"
+            onclick="return confirm('Reject and notify lender?')">
+            <i class="bi bi-x-circle"></i> Reject &amp; Notify Lender
+          </button>
+        </form>
+      </div>
+      {% endif %}
+      {% if case.lender_feedback %}
+      <div style="margin-top:12px;font-size:12px;color:var(--sa-muted);border-top:1px solid var(--sa-border);padding-top:8px;">
+        <strong>Feedback sent:</strong> {{ case.lender_feedback }}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Internal note -->
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-sticky"></i> Internal Notes</div>
+      <form method="post">
+        {% csrf_token %}
+        <textarea name="note" class="sa-form-control" rows="3" placeholder="Add an internal note…" style="font-size:12px;resize:none;margin-bottom:8px;"></textarea>
+        <button type="submit" name="action" value="note" class="sa-btn sa-btn-outline sa-btn-sm">Add Note</button>
+      </form>
+      {% if case.internal_notes %}
+      <pre style="margin-top:12px;font-size:11px;color:var(--sa-muted);white-space:pre-wrap;background:var(--sa-bg);border:1px solid var(--sa-border);border-radius:6px;padding:8px;">{{ case.internal_notes }}</pre>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <!-- Contact attempt form -->
+    <div class="sa-card mb-3">
+      <div class="sa-card-header"><i class="bi bi-telephone"></i> Log Contact Attempt</div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-2">
+          <div class="col-md-3">
+            <label class="sa-form-label">Method</label>
+            <select name="contact_method" class="sa-form-control">
+              {% for val, label in contact_methods %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="sa-form-label">Outcome</label>
+            <input type="text" name="outcome" class="sa-form-control" placeholder="e.g. Answered, No reply">
+          </div>
+          <div class="col-md-6">
+            <label class="sa-form-label">Notes</label>
+            <input type="text" name="contact_notes" class="sa-form-control" placeholder="What was said / agreed">
+          </div>
+        </div>
+        <button type="submit" name="action" value="contact" class="sa-btn sa-btn-outline sa-btn-sm" style="margin-top:8px;">
+          <i class="bi bi-plus"></i> Log Attempt
+        </button>
+      </form>
+    </div>
+
+    <!-- Contact history -->
+    <div class="sa-card">
+      <div class="sa-card-header"><i class="bi bi-list-ul"></i> Contact History ({{ contacts|length }})</div>
+      {% if contacts %}
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {% for c in contacts %}
+        <div style="border-left:3px solid var(--sa-accent);padding:8px 12px;background:var(--sa-hover);border-radius:0 6px 6px 0;font-size:13px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <strong>{{ c.get_method_display }}</strong>
+            <span style="color:var(--sa-muted);font-size:11px;">{{ c.contacted_at|date:"d M Y H:i" }} by {{ c.contacted_by.email|default:"—" }}</span>
+          </div>
+          {% if c.outcome %}<div style="color:var(--sa-muted);">Outcome: {{ c.outcome }}</div>{% endif %}
+          {% if c.notes %}<div style="color:var(--sa-text);margin-top:2px;">{{ c.notes }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:var(--sa-muted);font-size:13px;">No contact attempts logged yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

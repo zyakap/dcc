@@ -31,6 +31,7 @@
           <th>Field</th>
           <th>Description</th>
           <th>Status</th>
+          <th>SLA</th>
           <th>Submitted</th>
           <th>Actions</th>
         </tr>
@@ -54,11 +55,26 @@
             {% if d.status == 'OPEN' %}<span class="sa-badge" style="background:#5a7fcf;">Open</span>
             {% elif d.status == 'UNDER_REVIEW' %}<span class="sa-badge" style="background:#e09b3d;">Under Review</span>
             {% elif d.status == 'RESOLVED' %}<span class="sa-badge sa-badge-success">Resolved</span>
+            {% elif d.status == 'ESCALATED' %}<span class="sa-badge" style="background:#c0392b;">Escalated</span>
             {% else %}<span class="sa-badge" style="background:var(--sa-border);">{{ d.status }}</span>{% endif %}
+          </td>
+          <td style="font-size:12px;">
+            {% if d.status == 'ESCALATED' %}
+              <span style="color:#c0392b;font-weight:600;"><i class="bi bi-exclamation-triangle-fill"></i> SLA Breached</span>
+              {% if d.sla_deadline %}<div style="font-size:10px;color:var(--sa-muted);">Due {{ d.sla_deadline|date:"d M H:i" }}</div>{% endif %}
+            {% elif d.sla_deadline %}
+              {% if d.sla_breached %}
+                <span style="color:#c0392b;font-size:12px;"><i class="bi bi-exclamation-triangle-fill"></i> Overdue</span>
+              {% else %}
+                <span style="color:var(--sa-success);font-size:12px;"><i class="bi bi-clock"></i> Due {{ d.sla_deadline|date:"d M" }}</span>
+              {% endif %}
+            {% else %}
+              <span style="color:var(--sa-muted);font-size:11px;">—</span>
+            {% endif %}
           </td>
           <td style="font-size:12px;color:var(--sa-muted);">{{ d.created_at|date:"d M Y" }}</td>
           <td>
-            {% if d.status in 'OPEN,UNDER_REVIEW' %}
+            {% if d.status == 'OPEN' or d.status == 'UNDER_REVIEW' or d.status == 'ESCALATED' %}
             <form method="post">
               {% csrf_token %}
               <input type="hidden" name="dispute_id" value="{{ d.pk }}">

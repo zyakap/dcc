@@ -154,6 +154,36 @@ class ClientProfile(_AuditedModel):
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
+    def save(self, *args, _watch_fields=None, **kwargs):
+        # Capture which fields changed before saving (for watch alerts)
+        changed = set()
+        if self.pk and _watch_fields is None:
+            try:
+                old = ClientProfile.objects.filter(pk=self.pk).values_list(
+                    'dcc_status', 'dcc_flagged', 'email', 'mobile1',
+                    'address', 'residential_address', 'employer',
+                ).first()
+                new = (self.dcc_status, self.dcc_flagged, self.email, self.mobile1,
+                       self.address, self.residential_address, self.employer)
+                fields = ('dcc_status','dcc_flagged','email','mobile1',
+                          'address','residential_address','employer')
+                if old:
+                    changed = {f for f, o, n in zip(fields, old, new) if str(o or '') != str(n or '')}
+            except Exception:
+                pass
+        is_new = not self.pk
+        super().save(*args, **kwargs)
+        if changed:
+            try:
+                _fire_watch_alerts(self, changed)
+            except Exception:
+                pass
+        if is_new:
+            try:
+                _maybe_onboard_borrower(self)
+            except Exception:
+                pass
+
 
 def matched_profiles(seed):
     """Resolve a seed set of ClientProfile rows to the ONE person they belong
@@ -884,10 +914,26 @@ class DefaultNotice(models.Model):
 # Dispute — borrower or lender challenges a credit record
 # ============================================================================
 
+def _business_days_ahead(start, days):
+    """Return the date that is `days` business days after `start`."""
+    import datetime
+    count = 0
+    current = start.date() if hasattr(start, 'date') else start
+    while count < days:
+        current += datetime.timedelta(days=1)
+        if current.weekday() < 5:  # Mon–Fri
+            count += 1
+    from django.utils import timezone as tz
+    return tz.make_aware(
+        __import__('datetime').datetime.combine(current, __import__('datetime').time(9, 0))
+    )
+
+
 class Dispute(models.Model):
     STATUS_CHOICES = [
         ('OPEN',         'Open'),
         ('UNDER_REVIEW', 'Under Review'),
+        ('ESCALATED',    'Escalated — SLA Breached'),
         ('RESOLVED',     'Resolved'),
         ('DISMISSED',    'Dismissed'),
     ]
@@ -914,6 +960,10 @@ class Dispute(models.Model):
     resolved_by = models.CharField(max_length=100, blank=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
 
+    sla_deadline  = models.DateTimeField(null=True, blank=True,
+        help_text='5 business days after submission — auto-escalate if still open.')
+    escalated_at  = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -922,6 +972,17 @@ class Dispute(models.Model):
 
     def __str__(self):
         return f'Dispute #{self.pk} — {self.client} [{self.status}]'
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.sla_deadline:
+            from django.utils import timezone
+            self.sla_deadline = _business_days_ahead(timezone.now(), 5)
+        super().save(*args, **kwargs)
+
+    @property
+    def sla_breached(self):
+        from django.utils import timezone
+        return self.sla_deadline and timezone.now() > self.sla_deadline and self.status in ('OPEN', 'UNDER_REVIEW')
 
 
 # ============================================================================
@@ -986,3 +1047,183 @@ class EnquiryLog(models.Model):
     def __str__(self):
         who = self.tenant or self.tp_key_name or 'unknown'
         return f'{self.query_type} on {self.client} by {who} @ {self.queried_at:%Y-%m-%d %H:%M}'
+
+
+# ---------------------------------------------------------------------------
+# Tenant Watch List — alert on any change to a watched client
+# ---------------------------------------------------------------------------
+
+class ClientWatch(models.Model):
+    """A lender flags a client to be notified of any data change: status,
+    contact details, address, employer, new loans, or DCC listing events.
+    Each view triggered by an alert is a billable credit-check event."""
+    ALERT_TYPES = [
+        ('STATUS',    'DCC Status Change'),
+        ('CONTACT',   'Contact Details Change'),
+        ('ADDRESS',   'Address Change'),
+        ('EMPLOYER',  'Employer Change'),
+        ('NEW_LOAN',  'New Loan Recorded'),
+        ('ANY',       'Any Change'),
+    ]
+    tenant = models.ForeignKey('users.UserProfile', on_delete=models.CASCADE,
+                               related_name='watch_list')
+    client = models.ForeignKey(ClientProfile, on_delete=models.CASCADE,
+                               related_name='watchers')
+    alert_types = models.JSONField(default=list,
+        help_text='List of alert type codes to watch. Empty = ALL changes.')
+    added_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    notes = models.CharField(max_length=255, blank=True)
+    last_alerted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [('tenant', 'client')]
+        ordering = ['-added_at']
+
+    def __str__(self):
+        return f'{self.tenant} watching {self.client}'
+
+    def watches(self, alert_type):
+        if not self.alert_types:
+            return True
+        return alert_type in self.alert_types or 'ANY' in self.alert_types
+
+
+class ClientWatchEvent(models.Model):
+    """One row per alert fired on a ClientWatch. Used for weekly digest emails
+    (tenants on WEEKLY mode) and for audit purposes."""
+    watch       = models.ForeignKey(ClientWatch, on_delete=models.CASCADE, related_name='events')
+    alert_types = models.JSONField(default=list, help_text='Which alert types fired.')
+    fired_at    = models.DateTimeField(auto_now_add=True)
+    sent_immediately = models.BooleanField(default=False,
+        help_text='True if an immediate email was sent; False if queued for digest.')
+    digest_sent_at   = models.DateTimeField(null=True, blank=True,
+        help_text='Set when this event was included in a digest email.')
+
+    class Meta:
+        ordering = ['-fired_at']
+
+    def __str__(self):
+        return f'Alert {self.watch} @ {self.fired_at:%Y-%m-%d %H:%M}'
+
+
+def _fire_watch_alerts(client, changed_fields):
+    """Log alert events for all active watchers of `client`. Tenants set to
+    IMMEDIATE get an email now; WEEKLY tenants have the event queued for the
+    Monday digest task. Called from ClientProfile.save()."""
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    from django.utils import timezone
+
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    from django.utils import timezone
+
+    FIELD_MAP = {
+        'dcc_status': 'STATUS', 'dcc_flagged': 'STATUS',
+        'email': 'CONTACT', 'mobile1': 'CONTACT', 'phone': 'CONTACT',
+        'address': 'ADDRESS', 'residential_address': 'ADDRESS', 'permanent_address': 'ADDRESS',
+        'employer': 'EMPLOYER',
+    }
+    triggered = list({FIELD_MAP[f] for f in changed_fields if f in FIELD_MAP} or {'ANY'})
+
+    watchers = ClientWatch.objects.filter(
+        client=client, is_active=True
+    ).select_related('tenant')
+
+    now = timezone.now()
+    for watch in watchers:
+        if not any(watch.watches(t) for t in triggered):
+            continue
+
+        # Log the event regardless of mode
+        event = ClientWatchEvent.objects.create(
+            watch=watch,
+            alert_types=triggered,
+            sent_immediately=False,
+        )
+
+        digest_mode = getattr(watch.tenant, 'watch_digest_mode', 'IMMEDIATE')
+        email = getattr(watch.tenant, 'work_email', None) or getattr(watch.tenant, 'email', None)
+
+        if digest_mode == 'IMMEDIATE' and email:
+            try:
+                domain = dj_settings.DOMAIN if hasattr(dj_settings, 'DOMAIN') else 'https://dc.com.pg'
+                send_mail(
+                    subject=f'DCC Alert — {client.first_name} {client.last_name} ({", ".join(triggered)})',
+                    message=(
+                        f'Dear {watch.tenant.organisation or watch.tenant.first_name},\n\n'
+                        f'Your Watch List detected a change for:\n'
+                        f'  {client.first_name} {client.last_name}  |  CUID: {client.CUID or "—"}\n\n'
+                        f'Change detected: {", ".join(triggered)}\n'
+                        f'Notes on watch: {watch.notes or "—"}\n\n'
+                        f'Log in to DCC to view the latest credit file:\n'
+                        f'  {domain}/client/view/{client.id}/\n\n'
+                        f'Credit file views are billed at your plan rate.\n\n'
+                        f'— DCC Dinau Control Center\n'
+                        f'To remove this client from your Watch List, visit {domain}/client/view/{client.id}/\n'
+                    ),
+                    from_email=dj_settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=True,
+                )
+                event.sent_immediately = True
+                event.save(update_fields=['sent_immediately'])
+                watch.last_alerted_at = now
+                watch.save(update_fields=['last_alerted_at'])
+            except Exception:
+                pass
+        # WEEKLY mode: event is saved, digest task will pick it up
+
+
+def _maybe_onboard_borrower(client):
+    """If the owning tenant has borrower_onboarding_enabled and the platform
+    portal is on, create a BorrowerAccount with a random PIN and email the
+    borrower their login details. Safe to call multiple times — skips if an
+    account already exists or if the client has no email."""
+    from api.models import PlatformSettings
+    try:
+        platform = PlatformSettings.current()
+        if not platform.borrower_portal_enabled:
+            return
+        tenant = client.user_profile
+        if not getattr(tenant, 'borrower_onboarding_enabled', False):
+            return
+        if not client.email:
+            return
+        from borrower.models import BorrowerAccount
+        if BorrowerAccount.objects.filter(client=client).exists():
+            return
+        import random
+        raw_pin = str(random.randint(100000, 999999))
+        account = BorrowerAccount(client=client)
+        account.set_pin(raw_pin)
+        account.save()
+
+        from django.conf import settings as dj_settings
+        from django.core.mail import send_mail
+        domain = getattr(dj_settings, 'DOMAIN', 'https://dc.com.pg')
+        send_mail(
+            subject='Your DCC Borrower Portal Account',
+            message=(
+                f'Dear {client.first_name},\n\n'
+                f'Your lender has set up a Borrower Portal account for you with\n'
+                f'the Dinau Control Center (DCC) — Papua New Guinea\'s credit bureau.\n\n'
+                f'You can use this account to:\n'
+                f'  • View your DCC credit summary\n'
+                f'  • See who has accessed your credit file\n'
+                f'  • Submit disputes about incorrect information\n\n'
+                f'Login details:\n'
+                f'  URL:   {domain}/borrower/\n'
+                f'  Email: {client.email}\n'
+                f'  PIN:   {raw_pin}\n\n'
+                f'Please keep your PIN secure. You can change it after logging in.\n\n'
+                f'— DCC Dinau Control Center\n'
+                f'This account was created because your lender submitted your credit record to DCC.\n'
+            ),
+            from_email=dj_settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[client.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass

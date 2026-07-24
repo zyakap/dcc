@@ -75,7 +75,7 @@
               {% else %}<span class="sa-badge sa-badge-green">{{ row.profile.dcc_status|default:"CLEAR" }}</span>{% endif %}
             </td>
             <td>{{ row.profile.updated_at|date:"Y-m-d" }}</td>
-            <td><a href="/appadmin/client/clientprofile/{{ row.profile.id }}/change/" target="_blank" class="sa-btn sa-btn-outline sa-btn-sm">Open</a></td>
+            <td><a href="{% url 'sa_client_detail' row.profile.id %}" class="sa-btn sa-btn-outline sa-btn-sm">Open</a></td>
           </tr>
           {% endfor %}
         </tbody>

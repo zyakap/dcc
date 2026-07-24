@@ -741,10 +741,10 @@ def public_listing(request):
     return render(request, 'website/public_listing.html', context)
 
 def about(request):
-    return render(request, 'website/about.html')
+    return render(request, 'website/about.html', {'nav': 'about'})
 
 def contact(request):
-    return render(request, 'website/contact.html')
+    return render(request, 'website/contact.html', {'nav': 'contact'})
 
 def submit_default_list(request):
     if request.method == 'POST':
@@ -824,7 +824,7 @@ def submit_default_list(request):
             messages.success(request, "Admin was notified on upload.", extra_tags='info')
         except:
             messages.error(request, "Upload notice was NOT sent to admin.", extra_tags='danger')
-            return redirect('admin_dashboard')
+            return redirect('sa_dashboard')
 
         messages.success(request, f'{upload_type} uploaded successfully...')
 
@@ -882,7 +882,13 @@ def home(request):
             subscriber.save()
             return JsonResponse({'message': 'Subscriber added successfully'})
 
-    return render(request, 'website/home.html', {'nav': 'home'})
+    client_logos = [
+        'client4.png', 'client6.png', 'client9.png', 'client2.png',
+        'client3.png', 'client1.png', 'client5.png', 'client7.png',
+        'client8.png', 'client10.png', 'jcyloans.jpg',
+        'niuginifinance_dark.png', 'primecapital.png',
+    ]
+    return render(request, 'website/home.html', {'nav': 'home', 'client_logos': client_logos})
 
 def terms_conditions(request):
     return render(request, 'terms-conditions.html', {'nav': 'terms'})
@@ -911,19 +917,42 @@ def support(request):
 
 
 @login_check
+def platform_guide(request):
+    return render(request, 'users/guide.html', {'nav': 'platform_guide'})
+
+
+@login_check
 def tenant_settings(request):
-    from django.http import HttpResponseNotAllowed
     user_profile = UserProfile.objects.get(user=request.user)
     if request.method == 'POST':
-        theme = request.POST.get('theme', 'dark')
-        if theme in ('dark', 'light'):
-            user_profile.theme = theme
-            user_profile.save(update_fields=['theme'])
-            messages.success(request, 'Settings saved.', extra_tags='success')
+        action = request.POST.get('action', 'theme')
+        if action == 'theme':
+            theme = request.POST.get('theme', 'dark')
+            if theme in ('dark', 'light'):
+                user_profile.theme = theme
+                user_profile.save(update_fields=['theme'])
+            messages.success(request, 'Appearance saved.', extra_tags='success')
+        elif action == 'notifications':
+            digest = request.POST.get('watch_digest_mode', 'IMMEDIATE')
+            if digest in ('IMMEDIATE', 'WEEKLY'):
+                user_profile.watch_digest_mode = digest
+                user_profile.save(update_fields=['watch_digest_mode'])
+            messages.success(request, 'Notification preferences saved.', extra_tags='success')
+        elif action == 'borrower':
+            from api.models import PlatformSettings
+            portal_on = PlatformSettings.current().borrower_portal_enabled
+            if portal_on:
+                user_profile.borrower_onboarding_enabled = request.POST.get('borrower_onboarding_enabled') == 'on'
+                user_profile.save(update_fields=['borrower_onboarding_enabled'])
+                messages.success(request, 'Borrower onboarding setting saved.', extra_tags='success')
+            else:
+                messages.error(request, 'Borrower portal is not enabled on this platform. Contact DCC admin.', extra_tags='danger')
         return redirect('tenant_settings')
+    from api.models import PlatformSettings
     return render(request, 'tenant_settings.html', {
         'nav': 'tenant_settings',
         'user': user_profile,
+        'platform': PlatformSettings.current(),
     })
 
 

@@ -103,3 +103,127 @@ def expire_old_defaults():
         archived += 1
 
     return {'archived_notices': archived, 'cutoff_years': cutoff_years}
+
+
+@shared_task
+def send_watch_digest():
+    """Monday 7 AM: for every tenant on WEEKLY digest mode, collect all
+    un-emailed ClientWatchEvent rows and send one consolidated email.
+    Skips tenants with no pending events."""
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    from django.utils import timezone
+    from client.models import ClientWatchEvent, ClientWatch
+    from users.models import UserProfile
+
+    now = timezone.now()
+    sent = 0
+
+    for tenant in UserProfile.objects.filter(watch_digest_mode='WEEKLY'):
+        email = getattr(tenant, 'work_email', None) or getattr(tenant, 'email', None)
+        if not email:
+            continue
+
+        # Collect events not yet sent in a digest
+        events = (ClientWatchEvent.objects
+                  .filter(watch__tenant=tenant, digest_sent_at__isnull=True)
+                  .select_related('watch__client')
+                  .order_by('fired_at'))
+        if not events.exists():
+            continue
+
+        # Group by client
+        from collections import defaultdict
+        by_client = defaultdict(list)
+        for ev in events:
+            by_client[ev.watch.client].append(ev)
+
+        domain = getattr(dj_settings, 'DOMAIN', 'https://dc.com.pg')
+        lines = [f'Weekly Watch List Digest — {now:%d %b %Y}\n']
+        lines.append(f'Dear {tenant.organisation or tenant.first_name},\n')
+        lines.append(f'The following clients on your Watch List had changes this week:\n')
+        for client, evs in by_client.items():
+            all_types = sorted({t for ev in evs for t in ev.alert_types})
+            lines.append(
+                f'  • {client.first_name} {client.last_name}  (CUID: {client.CUID or "—"})\n'
+                f'    Changes: {", ".join(all_types)}\n'
+                f'    View: {domain}/client/view/{client.id}/\n'
+            )
+
+        lines.append(f'\nTotal alerts this week: {len(events)}\n')
+        lines.append(f'Credit file views are billed at your plan rate.\n')
+        lines.append(f'\n— DCC Dinau Control Center')
+
+        try:
+            send_mail(
+                subject=f'DCC Weekly Watch Digest — {now:%d %b %Y}',
+                message='\n'.join(lines),
+                from_email=dj_settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            events.update(digest_sent_at=now)
+            sent += 1
+        except Exception:
+            pass
+
+    return {'digests_sent': sent}
+
+
+@shared_task
+def check_dispute_slas():
+    """Daily 8 AM: escalate disputes that have breached their 5-business-day SLA
+    and haven't been resolved. Sends a notification to SaaS admin and the filing
+    tenant."""
+    from django.conf import settings as dj_settings
+    from django.core.mail import send_mail
+    from django.utils import timezone
+    from client.models import Dispute
+
+    now = timezone.now()
+    breached = Dispute.objects.filter(
+        sla_deadline__lt=now,
+        status__in=('OPEN', 'UNDER_REVIEW'),
+        escalated_at__isnull=True,
+    ).select_related('client', 'filed_by_tenant')
+
+    escalated = 0
+    for dispute in breached:
+        dispute.status = 'ESCALATED'
+        dispute.escalated_at = now
+        dispute.save(update_fields=['status', 'escalated_at'])
+
+        domain = getattr(dj_settings, 'DOMAIN', 'https://dc.com.pg')
+        admin_email = dj_settings.DEFAULT_FROM_EMAIL
+
+        body = (
+            f'Dispute #{dispute.pk} has breached its 5-business-day SLA.\n\n'
+            f'Client: {dispute.client.first_name} {dispute.client.last_name}  '
+            f'(CUID: {dispute.client.CUID or "—"})\n'
+            f'Type: {dispute.get_dispute_type_display()}\n'
+            f'Filed: {dispute.created_at:%d %b %Y}\n'
+            f'SLA Deadline: {dispute.sla_deadline:%d %b %Y %H:%M}\n\n'
+            f'Review: {domain}/saasadmin/disputes/\n\n'
+            f'— DCC Auto-Escalation System'
+        )
+
+        recipients = [admin_email]
+        if dispute.filed_by_tenant:
+            tenant_email = (getattr(dispute.filed_by_tenant, 'work_email', None)
+                            or getattr(dispute.filed_by_tenant, 'email', None))
+            if tenant_email and tenant_email != admin_email:
+                recipients.append(tenant_email)
+
+        try:
+            send_mail(
+                subject=f'[ESCALATED] Dispute #{dispute.pk} — SLA breached',
+                message=body,
+                from_email=admin_email,
+                recipient_list=recipients,
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        escalated += 1
+
+    return {'escalated': escalated}

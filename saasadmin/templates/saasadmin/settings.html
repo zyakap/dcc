@@ -16,11 +16,11 @@
     <div class="sa-card mb-3">
       <div class="sa-card-header"><i class="bi bi-lightning"></i> Admin Shortcuts</div>
       <div class="d-flex flex-column gap-2">
-        <a href="/appadmin/" class="sa-btn sa-btn-outline">
-          <i class="bi bi-database"></i> Django Admin (full)
+        <a href="{% url 'sa_clients' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-person-vcard"></i> Browse All Clients
         </a>
-        <a href="{% url 'admin_dashboard' %}" class="sa-btn sa-btn-outline">
-          <i class="bi bi-grid"></i> Tenant Admin Dashboard
+        <a href="{% url 'sa_transactions' %}" class="sa-btn sa-btn-outline">
+          <i class="bi bi-arrow-left-right"></i> All Transactions
         </a>
         <a href="{% url 'sa_pricing' %}" class="sa-btn sa-btn-outline">
           <i class="bi bi-tag"></i> Edit Pricing
@@ -35,31 +35,21 @@
     </div>
 
     <div class="sa-card">
-      <div class="sa-card-header"><i class="bi bi-tag"></i> Current Pricing</div>
-      <div style="font-size:13px; line-height:2.2;">
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--sa-border); margin-bottom:6px; padding-bottom:6px;">
-          <span style="color:var(--sa-muted);">Currency</span> <strong>{{ pricing.currency }}</strong>
+      <div class="sa-card-header"><i class="bi bi-tag"></i> Subscription Plans</div>
+      <div style="font-size:12px;">
+        {% for plan_code, p in all_plans.items %}
+        <div style="padding:8px 0;border-bottom:1px solid var(--sa-border);">
+          <div style="font-weight:600;margin-bottom:2px;">{{ p }}</div>
+          <div style="color:var(--sa-muted);display:flex;justify-content:space-between;">
+            <span>K{{ p.monthly_base_fee }}/{% if p.billing_period == 'FORTNIGHTLY' %}fortnight{% else %}month{% endif %}</span>
+            <span>K{{ p.price_per_credit_check }}/check</span>
+          </div>
         </div>
-        <div style="display:flex; justify-content:space-between;">
-          <span style="color:var(--sa-muted);">Monthly base fee</span>
-          <strong>{{ pricing.monthly_base_fee|floatformat:2 }}</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between;">
-          <span style="color:var(--sa-muted);">Per credit check</span>
-          <strong>{{ pricing.price_per_credit_check|floatformat:2 }}</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between;">
-          <span style="color:var(--sa-muted);">Per profile lookup</span>
-          <strong>{{ pricing.price_per_profile_lookup|floatformat:2 }}</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between;">
-          <span style="color:var(--sa-muted);">Per feed record</span>
-          <strong>{{ pricing.price_per_record_synced|floatformat:4 }}</strong>
-        </div>
+        {% endfor %}
       </div>
       <div style="margin-top:12px;">
         <a href="{% url 'sa_pricing' %}" class="sa-btn sa-btn-primary sa-btn-sm">
-          <i class="bi bi-pencil"></i> Edit Pricing
+          <i class="bi bi-pencil"></i> Edit Plan Pricing
         </a>
       </div>
     </div>
@@ -160,10 +150,8 @@
         <div class="row">
           <div class="col-5" style="color:var(--sa-muted);">Admin URL</div>
           <div class="col-7"><code>/saasadmin/</code></div>
-          <div class="col-5" style="color:var(--sa-muted);">Tenant Admin URL</div>
+          <div class="col-5" style="color:var(--sa-muted);">Admin URL (alias)</div>
           <div class="col-7"><code>/admin/</code></div>
-          <div class="col-5" style="color:var(--sa-muted);">Django Admin URL</div>
-          <div class="col-7"><code>/appadmin/</code></div>
           <div class="col-5" style="color:var(--sa-muted);">API Base</div>
           <div class="col-7"><code>/api/</code> <span style="color:var(--sa-muted); font-size:11px;">(also /API/)</span></div>
           <div class="col-5" style="color:var(--sa-muted);">Logged in as</div>

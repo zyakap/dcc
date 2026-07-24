@@ -1,0 +1,55 @@
+{% extends "saasadmin/base.html" %}
+{% block title %}Business Records Under Review{% endblock %}
+{% block topbar_title %}Business Records Under Review{% endblock %}
+
+{% block content %}
+<div class="sa-page-header">
+  <div>
+    <h1 class="sa-page-title">Business Records Under Review</h1>
+    <div class="sa-page-sub">Verify uploaded business profiles before they enter the public DCC database</div>
+  </div>
+</div>
+
+<div class="sa-card">
+  {% if businesses %}
+  <div style="overflow-x:auto;">
+    <table class="sa-table">
+      <thead>
+        <tr><th>Business Name</th><th>Lender</th><th>Type</th><th>Submitted</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for biz in businesses %}
+        <tr>
+          <td>
+            <strong>{{ biz.registered_name|default:biz.trading_name|default:"—" }}</strong>
+            <div style="font-size:11px;color:var(--sa-muted);">{{ biz.ipa_registration_number|default:"" }}</div>
+          </td>
+          <td style="font-size:12px;">{{ biz.user_profile.organisation|default:"—" }}</td>
+          <td style="font-size:12px;">{{ biz.category|default:"—" }}</td>
+          <td style="font-size:12px;color:var(--sa-muted);">{{ biz.created_at|date:"d M Y"|default:"—" }}</td>
+          <td>
+            <form method="post" style="display:flex;gap:4px;">
+              {% csrf_token %}
+              <input type="hidden" name="biz_id" value="{{ biz.pk }}">
+              <button type="submit" name="action" value="verify" class="sa-btn sa-btn-sm"
+                style="background:var(--sa-success);color:#fff;border:none;"
+                onclick="return confirm('Admit this business to the database?')">
+                <i class="bi bi-check"></i> Admit
+              </button>
+              <button type="submit" name="action" value="reject" class="sa-btn sa-btn-sm"
+                style="background:var(--sa-danger);color:#fff;border:none;"
+                onclick="return confirm('Reject this business record?')">
+                <i class="bi bi-x"></i> Reject
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--sa-muted);padding:20px 0;">No business records pending review.</p>
+  {% endif %}
+</div>
+{% endblock %}
