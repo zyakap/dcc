@@ -203,7 +203,7 @@ def check_dispute_slas():
             f'Type: {dispute.get_dispute_type_display()}\n'
             f'Filed: {dispute.created_at:%d %b %Y}\n'
             f'SLA Deadline: {dispute.sla_deadline:%d %b %Y %H:%M}\n\n'
-            f'Review: {domain}/saasadmin/disputes/\n\n'
+            f'Review: {domain}/admin/disputes/\n\n'
             f'— DCC Auto-Escalation System'
         )
 

@@ -134,11 +134,11 @@
           <div class="col-6" style="color:var(--sa-muted);">Third-Party API</div>
           <div class="col-6"><code>/tpapi/v1/</code></div>
           <div class="col-6" style="color:var(--sa-muted);">TP API Key Manager</div>
-          <div class="col-6"><a href="{% url 'sa_tp_api_keys' %}" style="color:var(--sa-accent);">/saasadmin/tp-api-keys/</a></div>
+          <div class="col-6"><a href="{% url 'sa_tp_api_keys' %}" style="color:var(--sa-accent);">/admin/tp-api-keys/</a></div>
           <div class="col-6" style="color:var(--sa-muted);">Default Notices</div>
-          <div class="col-6"><a href="{% url 'sa_default_notices' %}" style="color:var(--sa-accent);">/saasadmin/default-notices/</a></div>
+          <div class="col-6"><a href="{% url 'sa_default_notices' %}" style="color:var(--sa-accent);">/admin/default-notices/</a></div>
           <div class="col-6" style="color:var(--sa-muted);">Disputes Queue</div>
-          <div class="col-6"><a href="{% url 'sa_disputes' %}" style="color:var(--sa-accent);">/saasadmin/disputes/</a></div>
+          <div class="col-6"><a href="{% url 'sa_disputes' %}" style="color:var(--sa-accent);">/admin/disputes/</a></div>
         </div>
       </div>
     </div>
@@ -149,9 +149,9 @@
       <div style="font-size:13px; line-height:2.5;">
         <div class="row">
           <div class="col-5" style="color:var(--sa-muted);">Admin URL</div>
-          <div class="col-7"><code>/saasadmin/</code></div>
-          <div class="col-5" style="color:var(--sa-muted);">Admin URL (alias)</div>
           <div class="col-7"><code>/admin/</code></div>
+          <div class="col-5" style="color:var(--sa-muted);">Django Admin</div>
+          <div class="col-7"><code>/appadmin/</code></div>
           <div class="col-5" style="color:var(--sa-muted);">API Base</div>
           <div class="col-7"><code>/api/</code> <span style="color:var(--sa-muted); font-size:11px;">(also /API/)</span></div>
           <div class="col-5" style="color:var(--sa-muted);">Logged in as</div>
@@ -163,7 +163,7 @@
     <div class="sa-card">
       <div class="sa-card-header"><i class="bi bi-shield-check"></i> Access Control Notes</div>
       <div style="font-size:13px; color:var(--sa-muted); line-height:1.8;">
-        <p>The <code>/saasadmin/</code> area is restricted to superuser accounts only. Tenants access their own admin area at <code>/admin/</code>, which is protected by staff-level credentials.</p>
+        <p>The <code>/admin/</code> area is restricted to superuser accounts only. The Django admin is available at <code>/appadmin/</code>, which is protected by staff-level credentials.</p>
         <p>To create a superuser from the command line:</p>
         <pre style="background: var(--sa-bg); border: 1px solid var(--sa-border); border-radius:6px; padding:10px; font-size:12px; color:#79c0ff; margin: 0;">pipenv run python manage.py shell -c "
 from users.models import User
